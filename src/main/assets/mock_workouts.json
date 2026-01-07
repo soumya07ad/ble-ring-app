@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Stretching",
+    "duration": 10,
+    "calories": 30
+  },
+  {
+    "name": "Cardio Blast",
+    "duration": 25,
+    "calories": 200
+  },
+  {
+    "name": "Core Workout",
+    "duration": 20,
+    "calories": 150
+  },
+  {
+    "name": "Flexibility Training",
+    "duration": 30,
+    "calories": 90
+  },
+  {
+    "name": "Dance Fitness",
+    "duration": 35,
+    "calories": 280
+  },
+  {
+    "name": "Martial Arts",
+    "duration": 40,
+    "calories": 320
+  }
+]
