@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Buddy - Kotlin/JS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #0f172a;
+            --secondary-dark: #1e293b;
+            --tertiary-dark: #334155;
+            --teal-accent: #14b8a6;
+            --gold-accent: #f59e0b;
+            --vibrant-purple: #14b8a6;
+            --success-green: #10b981;
+            --error-red: #ef4444;
+            --glass-light: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-light: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1a1f35 100%);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text-light);
+        }
+
+        #root {
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        input[type="email"], input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1.5px solid var(--glass-border);
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+            background: var(--glass-light);
+            color: var(--text-light);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        input[type="email"]:focus, input[type="password"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--teal-accent);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 20px rgba(20, 184, 166, 0.3);
+        }
+
+        input[type="email"]::placeholder, input[type="password"]::placeholder, input[type="text"]::placeholder {
+            color: var(--text-secondary);
+        }
+
+        button {
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(20, 184, 166, 0.3);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .nav-btn {
+            font-size: 1.25rem !important;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn.active {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(20, 184, 166, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(20, 184, 166, 0.8);
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Loading Spinner Styles */
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--glass-border);
+            border-radius: 50%;
+            border-top-color: var(--teal-accent);
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg-gradient);
+        }
+        
+        .loading-text {
+            margin-top: 1.5rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 1.125rem;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Glassmorphism Card Styles */
+        .glass-card {
+            background: var(--glass-light);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--teal-accent);
+            box-shadow: 0 12px 48px rgba(20, 184, 166, 0.2);
+            transform: translateY(-4px);
+        }
+        
+        /* Error Toast */
+        .error-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(239, 68, 68, 0.95);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .success-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(16, 185, 129, 0.95);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Meditation Card Styles */
+        .meditation-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            background: var(--glass-light);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .meditation-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--teal-accent);
+            box-shadow: 0 8px 30px rgba(20, 184, 166, 0.2);
+            transform: translateX(4px);
+        }
+        
+        .meditation-start-btn {
+            background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
+        }
+        
+        .meditation-start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(20, 184, 166, 0.5);
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+        }
+
+        .meditation-start-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Button Loading State */
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .retry-button {
+            background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%);
+            color: white;
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .retry-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5);
+        }
+        
+        .error-message {
+            color: #fca5a5;
+            font-size: 0.95rem;
+            margin-top: 0.75rem;
+            text-align: center;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--teal-accent);
+            box-shadow: 0 0 10px rgba(20, 184, 166, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        // Fitness Buddy - Kotlin/JS Fitness App
+        let currentPage = "dashboard";
+        let isDarkMode = false;
+        let isLoggedIn = false;
+        let isLoading = false;
+        let lastError = null;
+        
+        // PageBridge fallback for testing/development
+        if (typeof window.PageBridge === 'undefined') {
+            window.PageBridge = {
+                startMeditation: (sessionId) => console.log('Meditation started:', sessionId),
+                pauseMeditation: () => console.log('Meditation paused'),
+                resumeMeditation: () => console.log('Meditation resumed'),
+                stopMeditation: () => console.log('Meditation stopped'),
+                onMeditationComplete: (sessionId, duration) => console.log('Meditation complete:', sessionId, duration),
+                sendOtp: (phone) => JSON.stringify({status: 'pending', message: `OTP sent to ${phone}`}),
+                loginWithOtp: (phone, otp) => JSON.stringify({success: true, message: 'Logged in', token: 'sample_token'}),
+                getUserProfile: () => JSON.stringify({id: '123', name: 'User', email: 'user@example.com'}),
+                getSteps: () => {
+                    try { return window.MainActivity.getRemoteSteps(); } 
+                    catch(e) { return JSON.stringify({steps: 5000, goal: 10000, progress: 0.5}); }
+                },
+                getCalories: () => {
+                    try { return window.MainActivity.getRemoteCalories(); } 
+                    catch(e) { return JSON.stringify({calories: 1000, goal: 750, progress: 1.33}); }
+                },
+                getHeartRate: () => {
+                    try { return window.MainActivity.getRemoteHeartRate(); } 
+                    catch(e) { return JSON.stringify({bpm: 80, avg: 80, min: 70, max: 95}); }
+                }
+            };
+        }
+        
+        // LoginBridge fallback for testing/development
+        if (typeof window.LoginBridge === 'undefined') {
+            window.LoginBridge = {
+                notifyLoginSuccess: () => console.log('Login successful notification sent')
+            };
+        }
+        
+        // Get page from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageParam = urlParams.get('page');
+
+        function showLoading(message = "Loading...") {
+            isLoading = true;
+            const root = document.getElementById("root");
+            root.innerHTML = `
+                <div class="loading-container">
+                    <div style="text-align: center;">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">${message}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showError(message, onRetry = null) {
+            lastError = message;
+            const root = document.getElementById("root");
+            const errorHtml = `
+                <div style="min-height: 100vh; background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 50%, #eef2ff 100%); display: flex; align-items: center; justify-content: center; padding: 1rem;">
+                    <div style="background: white; border-radius: 2rem; padding: 2rem; box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1); max-width: 420px; width: 100%; text-align: center;">
+                        <p style="font-size: 3rem; margin-bottom: 1rem;">⚠️</p>
+                        <h2 style="color: rgb(17, 24, 39); margin-bottom: 1rem;">Error</h2>
+                        <p class="error-message" style="margin-bottom: 1rem; color: rgb(107, 114, 128);">${message}</p>
+                        ${onRetry ? `<button class="retry-button" onclick="${onRetry}">Retry</button>` : ''}
+                    </div>
+                </div>
+            `;
+            root.innerHTML = errorHtml;
+        }
+        
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = isError ? 'error-toast' : 'success-toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        function main() {
+            const root = document.getElementById("root");
+            if (!root) {
+                console.error("Root element not found");
+                return;
+            }
+            
+            // Set page based on URL parameter
+            if (pageParam === 'login') {
+                isLoggedIn = false;
+            } else if (pageParam === 'dashboard') {
+                isLoggedIn = true;
+                currentPage = 'dashboard';
+            }
+            
+            try {
+                render(root);
+                setupEventListeners(root);
+            } catch (error) {
+                console.error("Error during initialization:", error);
+                root.innerHTML = `<div style="padding: 2rem; text-align: center; color: rgb(239, 68, 68);"><p>Error loading app</p><p style="font-size: 0.875rem; margin-top: 1rem;">${error.message}</p></div>`;
+            }
+        }
+
+        function render(root) {
+            if (!isLoggedIn) {
+                root.innerHTML = renderLoginPage();
+            } else {
+                root.innerHTML = renderMainApp();
+                // Load dynamic data for dashboard
+                if (currentPage === 'dashboard') {
+                    setTimeout(() => loadDashboardData(), 100);
+                }
+            }
+            setupEventListeners(root);
+        }
+
+        function renderLoginPage() {
+            const showOtpInput = window.otpSent || false;
+            
+            return `
+                <div style="min-height: 100vh; background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 50%, #eef2ff 100%); display: flex; align-items: center; justify-content: center; padding: 1.5rem; overflow: hidden;">
+                    <div style="position: absolute; top: -100px; right: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(20, 184, 166, 0.1) 0%, transparent 70%); border-radius: 50%; z-index: 0;"></div>
+                    <div style="position: absolute; bottom: -150px; left: -150px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 70%); border-radius: 50%; z-index: 0;"></div>
+                    
+                    <div style="max-width: 420px; width: 100%; position: relative; z-index: 1;">
+                        ${!showOtpInput ? `
+                            <!-- Logo Section -->
+                            <div style="text-align: center; margin-bottom: 1.5rem;">
+                                <svg width="70" height="70" viewBox="0 0 80 80" style="margin: 0 auto; margin-bottom: 0.75rem; filter: drop-shadow(0 8px 24px rgba(20, 184, 166, 0.4));">
+                                    <defs>
+                                        <radialGradient id="logoBg" cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" style="stop-color:#20c997;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#14b8a6;stop-opacity:1" />
+                                        </radialGradient>
+                                    </defs>
+                                    <rect x="0" y="0" width="80" height="80" rx="18" fill="url(#logoBg)"/>
+                                    <circle cx="40" cy="40" r="26" fill="none" stroke="#ffffff" stroke-width="5" opacity="1"/>
+                                    <circle cx="40" cy="40" r="24" fill="none" stroke="#f0f9ff" stroke-width="1.5" opacity="0.4"/>
+                                </svg>
+                                <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a; margin-bottom: 0.25rem; letter-spacing: -0.5px;">Wellness</h1>
+                                <p style="font-size: 0.95rem; font-weight: 600; color: #14b8a6;">Your Health Companion</p>
+                            </div>
+                            
+                            <div style="text-align: center; margin-bottom: 1.75rem;">
+                                <h2 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.3;">Track What Matters</h2>
+                                <p style="color: #64748b; font-size: 0.85rem; line-height: 1.5;">Start your journey to smarter wellness with intelligent health tracking.</p>
+                            </div>
+                            
+                            <!-- Login Form -->
+                            <form id="phoneForm" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem;">
+                                <div>
+                                    <label style="display: block; color: #334155; font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.5px;">PHONE NUMBER</label>
+                                    <input type="tel" id="phoneInput" placeholder="Enter 10-digit number" pattern="[0-9]{10}" maxlength="10" required style="width: 100%; padding: 1rem 1.25rem; border: 2px solid #e2e8f0; border-radius: 1rem; font-size: 1rem; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); color: #0f172a; transition: all 0.3s ease; font-weight: 500;">
+                                    <style>
+                                        input[type="tel"]:focus {
+                                            outline: none;
+                                            border-color: #14b8a6;
+                                            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+                                            background: #ffffff;
+                                        }
+                                        input[type="tel"]::placeholder {
+                                            color: #cbd5e1;
+                                        }
+                                    </style>
+                                </div>
+                                
+                                <button type="submit" id="sendOtpBtn" style="padding: 1rem 1.5rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 1rem; font-weight: 700; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3); transition: all 0.3s ease; letter-spacing: 0.5px; text-transform: uppercase;">
+                                    <span id="sendOtpText">Send OTP</span>
+                                </button>
+                                
+                                <button type="button" style="padding: 1rem 1.5rem; background: transparent; color: #14b8a6; border: 2px solid #14b8a6; border-radius: 1rem; font-weight: 700; cursor: pointer; font-size: 1rem; transition: all 0.3s ease; letter-spacing: 0.5px; text-transform: uppercase;">
+                                    Sign Up
+                                </button>
+                                
+                                <p style="text-align: center; color: #94a3b8; font-size: 0.875rem; font-weight: 500; margin-top: 1rem;">Demo: Use any 10-digit number</p>
+                            </form>
+                        ` : `
+                            <!-- Ring Display on OTP Page -->
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <h1 style="font-size: 1.75rem; font-weight: 700; color: #0f172a; margin-bottom: 1rem;">Verify Phone</h1>
+                                <p style="color: #64748b; margin-bottom: 0.5rem;">OTP sent to</p>
+                                <p style="font-weight: 700; color: #14b8a6; font-size: 1.1rem;">${window.phoneNumber}</p>
+                            </div>
+                            
+                            <!-- OTP Inputs -->
+                            <form id="otpForm" style="display: flex; flex-direction: column; gap: 2rem;">
+                                <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                                    ${[1, 2, 3, 4, 5, 6].map(i => `<input type="text" class="otp-input" maxlength="1" style="width: 50px; height: 50px; text-align: center; font-size: 1.5rem; border: 2px solid #e2e8f0; border-radius: 0.75rem; font-weight: 600; background: #ffffff; color: #0f172a; transition: all 0.3s ease;" required>`).join('')}
+                                </div>
+                                <style>
+                                    .otp-input:focus {
+                                        outline: none;
+                                        border-color: #14b8a6;
+                                        box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+                                        background: #f8fafc;
+                                    }
+                                </style>
+                                
+                                <button type="submit" id="verifyOtpBtn" style="padding: 1rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 1rem; font-weight: 700; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3); transition: all 0.3s ease; letter-spacing: 0.5px; text-transform: uppercase;">
+                                    <span id="verifyOtpText">Verify OTP</span>
+                                </button>
+                                
+                                <button type="button" id="resendBtn" style="padding: 0.875rem; background: transparent; color: #14b8a6; border: 2px solid #14b8a6; border-radius: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; font-size: 0.95rem; letter-spacing: 0.5px; text-transform: uppercase;">
+                                    Resend OTP
+                                </button>
+                            </form>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMainApp() {
+            const content = getPageContent(currentPage);
+            
+            return `
+                <div style="min-height: 100vh; background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 50%, #eef2ff 100%); transition: background 0.5s ease;">
+                    <div style="max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; position: relative;">
+                        <div style="flex: 1; padding-bottom: 6rem;">
+                            ${content}
+                        </div>
+                        ${renderNavigation()}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getPageContent(page) {
+            switch(page) {
+                case "dashboard": return renderDashboard();
+                case "sleep": return renderSleepTracker();
+                case "mental": return renderMentalHealth();
+                case "streaks": return renderStreaks();
+                case "chat": return renderAIChat();
+                case "pairing": return renderPairing();
+                case "settings": return renderSettings();
+                case "buyring": return renderBuyRing();
+                default: return renderDashboard();
+            }
+        }
+
+        function renderDashboard() {
+            return `
+                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+                    <div style="margin-bottom: -0.5rem;">
+                        <p style="color: #64748b; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 0.25rem;">WELCOME BACK</p>
+                        <h1 style="font-size: 2.5rem; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin: 0;">Your Status</h1>
+                    </div>
+                    
+                    <!-- Ring Showcase Card -->
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.5rem 0 2rem 0; margin: 0; box-shadow: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                    <p style="color: #10b981; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">CONNECTED DEVICE</p>
+                                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></div>
+                                </div>
+                                <h2 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Wellness Ring</h2>
+                                <p style="color: #10b981; font-size: 0.875rem; font-weight: 600; margin-top: 0.5rem;">Connected & Syncing</p>
+                            </div>
+                            <svg width="100" height="100" viewBox="0 0 100 100" style="filter: drop-shadow(0 4px 12px rgba(20, 184, 166, 0.2));">
+                                <defs>
+                                    <radialGradient id="ringGrad" cx="50%" cy="50%">
+                                        <stop offset="0%" style="stop-color:#14b8a6;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#0891b2;stop-opacity:1" />
+                                    </radialGradient>
+                                </defs>
+                                <!-- Outer Ring -->
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="url(#ringGrad)" stroke-width="8" opacity="0.8"/>
+                                <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(20, 184, 166, 0.3)" stroke-width="2"/>
+                                <!-- Inner Circle -->
+                                <circle cx="50" cy="50" r="28" fill="white" stroke="url(#ringGrad)" stroke-width="2"/>
+                                <!-- Center Dot -->
+                                <circle cx="50" cy="50" r="6" fill="#14b8a6"/>
+                            </svg>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                            <div style="background: transparent; border-radius: 1rem; padding: 1rem; text-align: center; border: none;">
+                                <p style="color: #64748b; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;">BATTERY</p>
+                                <p style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0.25rem 0;">87%</p>
+                            </div>
+                            <div style="background: transparent; border-radius: 1rem; padding: 1rem; text-align: center; border: none;">
+                                <p style="color: #64748b; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;">STATUS</p>
+                                <p style="font-size: 1rem; font-weight: 800; color: #10b981; margin: 0.25rem 0;">Excellent</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <button style="flex: 1; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; padding: 0.75rem 1rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.9rem; cursor: pointer; box-shadow: 0 2px 8px rgba(20, 184, 166, 0.2);" onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">Connect</button>
+                            <button style="flex: 1; background: transparent; color: #64748b; border: 1px solid rgba(20, 184, 166, 0.3); padding: 0.75rem 1rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.9rem; cursor: pointer;" onmouseover="this.style.background='rgba(20, 184, 166, 0.05)';" onmouseout="this.style.background='transparent';">Skip</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Stress Level Card -->
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 2rem; margin-bottom: 0.5rem; box-shadow: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                            <div>
+                                <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 0.5rem;">STRESS ANALYSIS</p>
+                                <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">Relaxed</h2>
+                                <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Optimal State</p>
+                            </div>
+                            <div style="width: 1px; height: 80px; background: rgba(59, 130, 246, 0.2);"></div>
+                            <div style="text-align: right;">
+                                <p style="color: #3b82f6; font-size: 0.875rem; font-weight: 700; letter-spacing: 0.5px;">LEVEL</p>
+                                <p style="font-size: 2rem; font-weight: 800; color: #0f172a; margin: 0.25rem 0;">32/100</p>
+                                <p style="color: #64748b; font-size: 0.75rem;">Good</p>
+                            </div>
+                        </div>
+                        <div style="height: 4px; background: rgba(59, 130, 246, 0.2); border-radius: 2px; overflow: hidden;">
+                            <div style="height: 100%; background: linear-gradient(90deg, #3b82f6 0%, #0ea5e9 100%); width: 32%; border-radius: 2px;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Metrics Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
+                        <!-- Steps -->
+                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
+                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">STEPS</p>
+                            <p style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">8,432</p>
+                            <div style="font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between;">
+                                <span>of 10,000</span>
+                                <span>84%</span>
+                            </div>
+                            <div style="height: 3px; background: rgba(34, 197, 94, 0.2); border-radius: 1.5px; margin-top: 0.5rem; overflow: hidden;">
+                                <div style="height: 100%; background: linear-gradient(90deg, #10b981 0%, #14b8a6 100%); width: 84%;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Heart Rate -->
+                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
+                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">HEART RATE</p>
+                            <p style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">72 <span style="font-size: 1rem;">bpm</span></p>
+                            <p style="font-size: 0.75rem; color: #64748b;">Resting Rate</p>
+                        </div>
+                        
+                        <!-- Calories -->
+                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
+                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">CALORIES</p>
+                            <p style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">524 <span style="font-size: 1rem;">kcal</span></p>
+                            <div style="font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between;">
+                                <span>of 750</span>
+                                <span>70%</span>
+                            </div>
+                            <div style="height: 3px; background: rgba(99, 102, 241, 0.2); border-radius: 1.5px; margin-top: 0.5rem; overflow: hidden;">
+                                <div style="height: 100%; background: linear-gradient(90deg, #6366f1 0%, #14b8a6 100%); width: 70%;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sleep -->
+                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
+                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">SLEEP</p>
+                            <p style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">7h 30m</p>
+                            <p style="font-size: 0.75rem; color: #64748b;">Last Night</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Blood Pressure & Water -->
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
+                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
+                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">BLOOD PRESSURE</p>
+                            <p style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">120/80</p>
+                            <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">mmHg</p>
+                        </div>
+                        
+                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
+                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">WATER INTAKE</p>
+                            <p style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">6/8</p>
+                            <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">cups</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Weekly Emotions Chart -->
+                    <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.75rem; box-shadow: none; margin-bottom: 2rem;">
+                        <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1.5rem; color: #0f172a; letter-spacing: -0.3px;">Weekly Emotions Trend</h2>
+                        
+                        <!-- Chart Container -->
+                        <div style="background: white; border-radius: 1rem; padding: 1.5rem; position: relative;">
+                            <!-- Y-axis labels -->
+                            <div style="position: absolute; left: 0; top: 0; height: 100%; width: 35px; display: flex; flex-direction: column; justify-content: space-between; text-align: right; padding: 1.5rem 0.5rem; font-size: 0.7rem; color: #94a3b8; font-weight: 600;">
+                                <span>100</span>
+                                <span>75</span>
+                                <span>50</span>
+                                <span>25</span>
+                                <span>0</span>
+                            </div>
+                            
+                            <!-- Grid lines -->
+                            <div style="position: absolute; left: 35px; top: 1.5rem; right: 1rem; height: calc(100% - 3rem); display: flex; flex-direction: column; justify-content: space-between; pointer-events: none;">
+                                <div style="border-top: 1px dashed rgba(20, 184, 166, 0.2);"></div>
+                                <div style="border-top: 1px dashed rgba(20, 184, 166, 0.2);"></div>
+                                <div style="border-top: 1px dashed rgba(20, 184, 166, 0.2);"></div>
+                                <div style="border-top: 1px dashed rgba(20, 184, 166, 0.2);"></div>
+                            </div>
+                            
+                            <!-- Chart content -->
+                            <div style="margin-left: 35px; height: 220px; position: relative; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 2.5rem;">
+                                ${[
+                                    {day: 'Mon', value: 65, mood: 'Good'},
+                                    {day: 'Tue', value: 72, mood: 'Great'},
+                                    {day: 'Wed', value: 58, mood: 'Okay'},
+                                    {day: 'Thu', value: 85, mood: 'Excellent'},
+                                    {day: 'Fri', value: 78, mood: 'Great'},
+                                    {day: 'Sat', value: 92, mood: 'Excellent'},
+                                    {day: 'Sun', value: 75, mood: 'Great'}
+                                ].map(d => `
+                                    <div style="position: relative; width: 12%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.5rem;">
+                                        <!-- Line point -->
+                                        <div style="position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #14b8a6; border: 2px solid white; box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3); top: ${100 - d.value}%; z-index: 2;"></div>
+                                        
+                                        <!-- Bar -->
+                                        <div style="width: 100%; background: linear-gradient(135deg, rgba(20, 184, 166, 0.4) 0%, rgba(14, 165, 233, 0.3) 100%); border-radius: 0.25rem 0.25rem 0 0; height: ${d.value}%; position: relative; border: 1px solid rgba(20, 184, 166, 0.3); border-bottom: none; opacity: 0.6;"></div>
+                                        
+                                        <!-- Day label -->
+                                        <span style="font-size: 0.7rem; color: #64748b; font-weight: 600; white-space: nowrap;">${d.day}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <!-- Connection line -->
+                            <svg style="position: absolute; left: 35px; top: 1.5rem; right: 1rem; bottom: 2.5rem; width: calc(100% - 36px - 1rem); height: calc(100% - 3rem); pointer-events: none;">
+                                <polyline points="${
+                                    [65, 72, 58, 85, 78, 92, 75]
+                                    .map((v, i) => {
+                                        const x = (i * 100) / 6;
+                                        const y = 100 - v;
+                                        return `${x}%, ${y}%`;
+                                    })
+                                    .join(' ')
+                                }" fill="none" stroke="#14b8a6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.7;"/>
+                            </svg>
+                        </div>
+                        
+                        <!-- Legend -->
+                        <div style="display: flex; gap: 2rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(14, 165, 233, 0.15);">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background: #14b8a6;"></div>
+                                <span style="font-size: 0.85rem; color: #64748b;">Mood Level</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 24px; height: 4px; background: linear-gradient(135deg, rgba(20, 184, 166, 0.4) 0%, rgba(14, 165, 233, 0.3) 100%); border-radius: 2px;"></div>
+                                <span style="font-size: 0.85rem; color: #64748b;">Daily Value</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Daily Summary -->
+                    <div style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%); border: 1.5px solid rgba(14, 165, 233, 0.2); border-radius: 1.25rem; padding: 1.75rem; box-shadow: 0 4px 16px rgba(14, 165, 233, 0.06);">
+                        <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1.25rem; color: #0f172a; letter-spacing: -0.3px;">Daily Insights</h2>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid rgba(14, 165, 233, 0.15);">
+                                <span style="display: flex; align-items: center; gap: 0.75rem; color: #64748b; font-weight: 500;">
+                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #14b8a6;"></span>
+                                    Active Time
+                                </span>
+                                <span style="font-weight: 700; color: #14b8a6;">45 mins</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid rgba(14, 165, 233, 0.15);">
+                                <span style="display: flex; align-items: center; gap: 0.75rem; color: #64748b; font-weight: 500;">
+                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6;"></span>
+                                    Calories Burned
+                                </span>
+                                <span style="font-weight: 700; color: #3b82f6;">524 kcal</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="display: flex; align-items: center; gap: 0.75rem; color: #64748b; font-weight: 500;">
+                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #0891b2;"></span>
+                                    Meditation Time
+                                </span>
+                                <span style="font-weight: 700; color: #0891b2;">12 mins</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSleepTracker() {
+            return `
+                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+                    <h1 style="font-size: 1.875rem; font-weight: 700; color: #0f172a; margin-bottom: 1.5rem;">Sleep Tracker</h1>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1rem; padding: 1.5rem 0; box-shadow: none; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Last Night Quality</h2>
+                        <div style="display: flex; align-items: center; gap: 1.5rem;">
+                            <div style="flex-shrink: 0;">
+                                <div style="width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(#14b8a6 0deg, #14b8a6 302.4deg, rgba(20, 184, 166, 0.2) 302.4deg); display: flex; align-items: center; justify-content: center;">
+                                    <div style="width: 100px; height: 100px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                        <span style="font-size: 2rem; font-weight: 700; color: #14b8a6;">84%</span>
+                                        <span style="font-size: 0.75rem; color: #64748b;">Good</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="color: #0f172a;">
+                                <p style="margin-bottom: 0.5rem;"><span style="font-weight: 600;">Total Sleep:</span> 7h 30m</p>
+                                <p style="margin-bottom: 0.5rem;"><span style="font-weight: 600;">Deep Sleep:</span> 2h 15m</p>
+                                <p><span style="font-weight: 600;">REM Sleep:</span> 1h 45m</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1rem; padding: 1.5rem 0; box-shadow: none; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Last 7 Days</h2>
+                        <div style="height: 200px; background: linear-gradient(to top, rgba(20, 184, 166, 0.1), rgba(14, 165, 233, 0.1)); border-radius: 0.5rem; display: flex; align-items: flex-end; justify-content: space-around; padding: 1rem; gap: 0.5rem;">
+                            ${[6.5, 7, 6.8, 7.5, 7.2, 7.8, 7.5].map((h, i) => `
+                                <div style="flex: 1; height: ${(h / 8) * 100}%; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); border-radius: 0.25rem; position: relative; cursor: pointer;" title="${h}h">
+                                    <span style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; color: #64748b;">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <p style="text-align: center; color: #64748b; font-size: 0.875rem; margin-top: 2rem;">Average: 7h 24m</p>
+                    </div>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1rem; padding: 1.5rem 0; box-shadow: none; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Statistics</h2>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            <div style="padding: 1rem; background: transparent; border: none; border-radius: 0.75rem;">
+                                <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem;">Best Night</p>
+                                <p style="font-size: 1.5rem; font-weight: 700; color: #0891b2;">8h 15m</p>
+                            </div>
+                            <div style="padding: 1rem; background: transparent; border: none; border-radius: 0.75rem;">
+                                <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem;">Avg Quality</p>
+                                <p style="font-size: 1.5rem; font-weight: 700; color: #10b981;">82%</p>
+                            </div>
+                            <div style="padding: 1rem; background: transparent; border: none; border-radius: 0.75rem;">
+                                <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem;">Deep Sleep Avg</p>
+                                <p style="font-size: 1.5rem; font-weight: 700; color: #3b82f6;">2h 10m</p>
+                            </div>
+                            <div style="padding: 1rem; background: transparent; border: none; border-radius: 0.75rem;">
+                                <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem;">Consistency</p>
+                                <p style="font-size: 1.5rem; font-weight: 700; color: #14b8a6;">95%</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1rem; padding: 1.5rem 0; box-shadow: none;">
+                        <h3 style="font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Tips for Better Sleep</h3>
+                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+                            <li style="display: flex; align-items: center; gap: 0.5rem; color: #0f172a;"><span style="color: #14b8a6; font-weight: 700; font-size: 1.25rem;">•</span> Maintain consistent sleep schedule</li>
+                            <li style="display: flex; align-items: center; gap: 0.5rem; color: #0f172a;"><span style="color: #14b8a6; font-weight: 700; font-size: 1.25rem;">•</span> Avoid screens 1 hour before bed</li>
+                            <li style="display: flex; align-items: center; gap: 0.5rem; color: #0f172a;"><span style="color: #14b8a6; font-weight: 700; font-size: 1.25rem;">•</span> Keep room cool and dark</li>
+                            <li style="display: flex; align-items: center; gap: 0.5rem; color: #0f172a;"><span style="color: #14b8a6; font-weight: 700; font-size: 1.25rem;">•</span> Limit caffeine after 2 PM</li>
+                            <li style="display: flex; align-items: center; gap: 0.5rem; color: #0f172a;"><span style="color: #14b8a6; font-weight: 700; font-size: 1.25rem;">•</span> Exercise regularly but not before bed</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Load and update dashboard data dynamically
+        function loadDashboardData() {
+            try {
+                // Get steps data
+                const stepsStr = window.PageBridge.getSteps();
+                const stepsData = JSON.parse(stepsStr);
+                const stepsValue = stepsData.steps;
+                const stepsPercent = Math.round((stepsValue / stepsData.goal) * 100);
+                
+                // Get calories data
+                const caloriesStr = window.PageBridge.getCalories();
+                const caloriesData = JSON.parse(caloriesStr);
+                const caloriesValue = caloriesData.calories;
+                const caloriesPercent = Math.round((caloriesValue / caloriesData.goal) * 100);
+                
+                // Get heart rate data
+                const heartRateStr = window.PageBridge.getHeartRate();
+                const heartRateData = JSON.parse(heartRateStr);
+                const heartRateValue = heartRateData.bpm;
+                
+                // Update DOM elements
+                const root = document.getElementById("root");
+                if (!root) return;
+                
+                // Update steps
+                const stepsElements = root.querySelectorAll("p");
+                for (let el of stepsElements) {
+                    if (el.textContent.includes("8,432")) {
+                        el.textContent = stepsValue.toLocaleString();
+                    }
+                    if (el.textContent.includes("84%") && el.parentElement.textContent.includes("of 10")) {
+                        el.textContent = stepsPercent + "%";
+                    }
+                }
+                
+                // Update progress bar width for steps
+                const progressBars = root.querySelectorAll("div[style*='width: 84%']");
+                if (progressBars.length > 0) {
+                    progressBars[0].style.width = stepsPercent + "%";
+                }
+                
+                // Update calories
+                const caloriesElements = root.querySelectorAll("p");
+                for (let el of caloriesElements) {
+                    if (el.textContent.includes("524 kcal")) {
+                        el.innerHTML = caloriesValue + ' <span style="font-size: 1rem;">kcal</span>';
+                    }
+                    if (el.textContent.includes("70%") && el.parentElement.textContent.includes("of 750")) {
+                        el.textContent = caloriesPercent + "%";
+                    }
+                }
+                
+                // Update progress bar width for calories
+                const progressBars2 = root.querySelectorAll("div[style*='width: 70%']");
+                if (progressBars2.length > 0) {
+                    progressBars2[0].style.width = caloriesPercent + "%";
+                }
+                
+                // Update heart rate
+                const heartRateElements = root.querySelectorAll("p");
+                for (let el of heartRateElements) {
+                    if (el.textContent.includes("72 bpm")) {
+                        el.innerHTML = heartRateValue + ' <span style="font-size: 1rem;">bpm</span>';
+                    }
+                }
+            } catch(e) {
+                console.log("Error loading dashboard data:", e);
+            }
+        }
+
+        function renderMentalHealth() {
+            return `
+                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+                    <h1 style="font-size: 1.875rem; font-weight: 700; color: #0f172a; margin-bottom: 1.5rem;">Mental Wellness</h1>
+                    
+                    <!-- How are you feeling section -->
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 0 0 2rem 0; box-shadow: none; margin-bottom: 2rem;">
+                        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; color: #0f172a; letter-spacing: -0.3px;">How are you feeling?</h2>
+                        <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1.5rem;">Select an emotion that best describes your current state</p>
+                        
+                        <!-- Emotion Grid - 2x4 Layout -->
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            ${[
+                                {icon: '😊', label: 'Happy', color: '#fbbf24', bgColor: 'rgba(251, 191, 36, 0.1)', borderColor: 'rgba(251, 191, 36, 0.3)'},
+                                {icon: '🍃', label: 'Calm', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)'},
+                                {icon: '⚡', label: 'Excited', color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.3)'},
+                                {icon: '❤️', label: 'Grateful', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)'},
+                                {icon: '⚠️', label: 'Anxious', color: '#f97316', bgColor: 'rgba(249, 115, 22, 0.1)', borderColor: 'rgba(249, 115, 22, 0.3)'},
+                                {icon: '☁️', label: 'Sad', color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)'},
+                                {icon: '😤', label: 'Frustrated', color: '#f97316', bgColor: 'rgba(249, 115, 22, 0.1)', borderColor: 'rgba(249, 115, 22, 0.3)'},
+                                {icon: '☀️', label: 'Peaceful', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)'}
+                            ].map(emotion => `
+                                <button class="emotion-btn" data-emotion="${emotion.label}" style="background: ${emotion.bgColor}; border: 2px solid ${emotion.borderColor}; border-radius: 1.25rem; padding: 1.5rem; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; color: #0f172a; text-decoration: none; user-select: none;">
+                                    <span style="font-size: 2.5rem; line-height: 1;">${emotion.icon}</span>
+                                    <span style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">${emotion.label}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- Ring Health Summary -->
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 2rem 0; box-shadow: none; margin-bottom: 2rem;">
+                        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; color: #0f172a;">Wellness Insights</h2>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                            <div style="background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 2px 8px rgba(14, 165, 233, 0.06);">
+                                <p style="color: #64748b; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.5rem;">AVG MOOD</p>
+                                <p style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">75</p>
+                                <p style="font-size: 0.75rem; color: #10b981; font-weight: 600;">Good</p>
+                            </div>
+                            <div style="background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 2px 8px rgba(14, 165, 233, 0.06);">
+                                <p style="color: #64748b; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.5rem;">STRESS LEVEL</p>
+                                <p style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">32%</p>
+                                <p style="font-size: 0.75rem; color: #10b981; font-weight: 600;">Relaxed</p>
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(14, 165, 233, 0.06);">
+                            <h3 style="font-size: 0.875rem; font-weight: 700; color: #0f172a; margin-bottom: 1rem; letter-spacing: 0.5px;">WELLNESS SCORE</h3>
+                            <div style="height: 8px; background: rgba(20, 184, 166, 0.2); border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; background: linear-gradient(90deg, #14b8a6 0%, #0891b2 100%); width: 75%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.75rem 0; box-shadow: none; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Meditation</h2>
+                        <div id="meditationSessionsList"></div>
+                        <div id="meditationTimerDisplay" style="display: none; text-align: center; padding: 2rem;">
+                            <h3 id="timerSessionName" style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;"></h3>
+                            <div style="background: linear-gradient(135deg, rgba(20, 184, 166, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%); color: #14b8a6; padding: 2rem; border-radius: 1rem; margin-bottom: 1.5rem; border: 1.5px solid rgba(20, 184, 166, 0.3);">
+                                <p id="timerDisplay" style="font-size: 3rem; font-weight: 700; margin: 0;">05:00</p>
+                                <p style="font-size: 0.875rem; opacity: 0.85; margin-top: 0.5rem; color: #64748b;">Time Remaining</p>
+                            </div>
+                            <div id="timerProgressBar" style="height: 8px; background: rgba(20, 184, 166, 0.2); border-radius: 4px; overflow: hidden; margin-bottom: 1.5rem; border: 1px solid rgba(20, 184, 166, 0.3);">
+                                <div id="timerProgress" style="height: 100%; background: linear-gradient(to right, #14b8a6, #0891b2); width: 0%; transition: width 0.3s ease;"></div>
+                            </div>
+                            <div style="display: flex; gap: 1rem; justify-content: center;">
+                                <button id="pauseResumeBtn" style="background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">Pause</button>
+                                <button id="stopTimerBtn" style="background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); color: white; border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.75rem 0; box-shadow: none; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Calming Activities</h2>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            ${[
+                                {name: 'Deep Breathing', icon: '🌬️', color: '#3b82f6'},
+                                {name: 'Progressive Relax', icon: '🧘', color: '#10b981'},
+                                {name: 'Journaling', icon: '📝', color: '#f59e0b'},
+                                {name: 'Nature Walk', icon: '🌿', color: '#14b8a6'}
+                            ].map(a => `
+                                <button style="padding: 1.5rem; background: transparent; border: 1px solid rgba(20, 184, 166, 0.2); border-radius: 1rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; transition: all 0.3s ease; color: #0f172a; text-decoration: none; user-select: none;">
+                                    <span style="font-size: 2rem;">${a.icon}</span>
+                                    <span style="font-weight: 700; font-size: 0.9rem;">${a.name}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.75rem 0; box-shadow: none;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Daily Thoughts</h2>
+                        <textarea id="thoughtInput" placeholder="Write your thoughts for today..." style="width: 100%; min-height: 120px; padding: 1rem; border: 1.5px solid rgba(20, 184, 166, 0.2); border-radius: 0.875rem; font-family: inherit; font-size: 1rem; resize: vertical; background: white; color: #0f172a; transition: all 0.3s ease;"></textarea>
+                        <button id="saveThoughtBtn" style="width: 100%; margin-top: 1rem; padding: 0.75rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 0.875rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; letter-spacing: 0.5px;">Save Thought</button>
+                        <div id="thoughtHistory" style="margin-top: 1.5rem;"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStreaks() {
+            return `
+                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+                    <h1 style="font-size: 1.875rem; font-weight: 700; color: rgb(17, 24, 39); margin-bottom: 1.5rem;">Streaks</h1>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.5rem; box-shadow: none; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Current Longest Streak</h2>
+                        <div style="background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; padding: 2rem; border-radius: 1rem; text-align: center;">
+                            <p style="font-size: 0.875rem; opacity: 0.95; margin-bottom: 0.5rem; font-weight: 600;">🏃 Running</p>
+                            <p style="font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -1px;">23</p>
+                            <p style="font-size: 0.875rem; opacity: 0.95; font-weight: 600;">days in a row</p>
+                        </div>
+                    </div>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.5rem; box-shadow: none; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Active Streaks</h2>
+                        ${[{title: '🏃 Running', days: 15}, {title: '💧 Water Intake', days: 23}, {title: '🧘 Meditation', days: 8}, {title: '💪 Gym', days: 12}].map(s => `
+                            <div style="padding: 1rem; border: 1.5px solid rgba(20, 184, 166, 0.2); border-radius: 0.875rem; margin-bottom: 1rem; background: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                    <span style="font-weight: 600; color: #0f172a;">${s.title}</span>
+                                    <span style="background: linear-gradient(135deg, #14b8a6, #0891b2); color: white; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.875rem; font-weight: 700;">${s.days} days</span>
+                                </div>
+                                <div style="height: 8px; background: rgba(20, 184, 166, 0.2); border-radius: 4px; overflow: hidden;">
+                                    <div style="height: 100%; background: linear-gradient(to right, #14b8a6, #0891b2); width: ${(s.days / 30) * 100}%;"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.5rem; box-shadow: none; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Your Badges</h2>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                            ${[
+                                {name: '7-Day Streak', icon: '🥉', color: 'rgb(184, 134, 11)'},
+                                {name: '30-Day Master', icon: '🥈', color: 'rgb(192, 192, 192)'},
+                                {name: '100-Day Legend', icon: '🥇', color: 'rgb(255, 215, 0)'},
+                                {name: 'Water Warrior', icon: '💧', color: 'rgb(59, 130, 246)'},
+                                {name: 'Fitness Champion', icon: '🏆', color: 'rgb(251, 146, 60)'},
+                                {name: 'Consistency King', icon: '👑', color: '#14b8a6'}
+                            ].map(b => `
+                                <div style="padding: 1rem; background: linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(14, 165, 233, 0.1) 100%); border: 1.5px solid rgba(20, 184, 166, 0.2); border-radius: 0.875rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                                    <span style="font-size: 2.5rem;">${b.icon}</span>
+                                    <p style="font-size: 0.875rem; font-weight: 600; color: #0f172a;">${b.name}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.5rem; box-shadow: none; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Milestones</h2>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            ${[
+                                {milestone: '7 Day Streak', progress: 15, goal: 7, color: '#10b981'},
+                                {milestone: '30 Day Streak', progress: 23, goal: 30, color: '#14b8a6'},
+                                {milestone: '100 Day Streak', progress: 43, goal: 100, color: '#0891b2'},
+                                {milestone: '365 Day Streak', progress: 127, goal: 365, color: '#3b82f6'}
+                            ].map(m => `
+                                <div style="padding: 1rem; border: 1.5px solid rgba(20, 184, 166, 0.2); border-radius: 0.875rem; background: white;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <span style="font-weight: 600; color: #0f172a;">${m.milestone}</span>
+                                        <span style="color: #64748b; font-size: 0.875rem; font-weight: 600;">${m.progress}/${m.goal}</span>
+                                    </div>
+                                    <div style="height: 8px; background: rgba(20, 184, 166, 0.2); border-radius: 4px; overflow: hidden;">
+                                        <div style="height: 100%; background: ${m.color}; width: ${(m.progress / m.goal) * 100}%;"></div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.5rem; box-shadow: none;">
+                        <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Rewards Unlocked</h2>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            ${[
+                                {reward: 'First Streak', description: 'Complete 7 day streak', icon: '🎉'},
+                                {reward: 'Persistence', description: 'Complete 30 day streak', icon: '💪'},
+                                {reward: 'Dedication', description: 'Complete 100 day streak', icon: '⭐'},
+                                {reward: 'Champion', description: 'Complete 365 day streak', icon: '🏆'}
+                            ].map(r => `
+                                <div style="padding: 1rem; background: transparent; border-radius: 0.875rem; border: none;">
+                                    <p style="font-size: 2rem; margin-bottom: 0.5rem;">${r.icon}</p>
+                                    <p style="font-weight: 700; color: #0f172a; margin-bottom: 0.25rem; font-size: 0.95rem;">${r.reward}</p>
+                                    <p style="font-size: 0.75rem; color: #64748b;">${r.description}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAIChat() {
+            return `
+                <div style="padding: 1.5rem; padding-bottom: 8rem; display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto;">
+                    <h1 style="font-size: 1.875rem; font-weight: 700; color: rgb(60, 40, 80); margin-bottom: 0.5rem;">Wellness Coach</h1>
+                    <p style="font-size: 0.875rem; color: rgb(120, 100, 140); margin-bottom: 1.5rem;">Your personal wellness companion</p>
+                    
+                    <div id="chatMessages" style="flex: 1; overflow-y: auto; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; scroll-behavior: smooth; padding-right: 0.5rem;">
+                        <div style="display: flex; justify-content: flex-start;">
+                            <div style="background: linear-gradient(135deg, rgb(240, 230, 250) 0%, rgb(230, 245, 250) 100%); padding: 1rem 1.25rem; border-radius: 1.25rem; max-width: 85%; border-radius: 1.25rem 1.25rem 1.25rem 0.25rem; box-shadow: 0 2px 4px rgba(200, 160, 220, 0.1); border: 1px solid rgb(230, 220, 240);">
+                                <p style="color: rgb(60, 40, 80); margin: 0; font-size: 0.95rem; line-height: 1.4;">Hi there. I'm your wellness coach. I'm here to help you with fitness tips, healthy habits, and wellness guidance. What's on your mind?</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                        <button class="quick-response-btn" data-query="motivation" style="padding: 0.75rem; background: linear-gradient(135deg, rgb(220, 190, 240) 0%, rgb(210, 180, 230) 100%); color: rgb(80, 40, 120); border: none; border-radius: 0.75rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Give me motivation</button>
+                        <button class="quick-response-btn" data-query="workout" style="padding: 0.75rem; background: linear-gradient(135deg, rgb(200, 220, 240) 0%, rgb(190, 210, 235) 100%); color: rgb(40, 80, 120); border: none; border-radius: 0.75rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Workout tips</button>
+                        <button class="quick-response-btn" data-query="nutrition" style="padding: 0.75rem; background: linear-gradient(135deg, rgb(240, 220, 180) 0%, rgb(230, 210, 160) 100%); color: rgb(100, 60, 20); border: none; border-radius: 0.75rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Nutrition advice</button>
+                        <button class="quick-response-btn" data-query="sleep" style="padding: 0.75rem; background: linear-gradient(135deg, rgb(220, 230, 240) 0%, rgb(210, 220, 235) 100%); color: rgb(60, 80, 120); border: none; border-radius: 0.75rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Better sleep</button>
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.75rem;">
+                        <input type="text" id="chatInput" placeholder="Ask me anything..." style="flex: 1; padding: 0.75rem 1rem; border: 2px solid rgb(230, 220, 240); border-radius: 0.75rem; font-size: 1rem; font-family: inherit; transition: border-color 0.2s; background: white; color: rgb(60, 40, 80);" />
+                        <button id="sendChatBtn" style="background: linear-gradient(135deg, rgb(220, 190, 240) 0%, rgb(210, 180, 230) 100%); color: rgb(80, 40, 120); border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; font-size: 1.25rem;">→</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPairing() {
+            return `
+                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <svg width="80" height="80" viewBox="0 0 80 80" style="margin: 0 auto; margin-bottom: 1rem;">
+                            <circle cx="40" cy="40" r="35" fill="none" stroke="#14b8a6" stroke-width="3"/>
+                            <circle cx="40" cy="40" r="30" fill="none" stroke="#0891b2" stroke-width="2" opacity="0.5"/>
+                            <g transform="translate(40, 40)">
+                                <path d="M-15,-10 L-5,0 L-15,10 M5,-10 L15,0 L5,10" stroke="#14b8a6" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                            </g>
+                        </svg>
+                        <h1 style="font-size: 1.875rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">Pair Your Smart Ring</h1>
+                        <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5;">Connect your fitness tracker for real-time health data</p>
+                    </div>
+                    
+                    <button style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 0.875rem; font-weight: 700; font-size: 1rem; cursor: pointer; margin-bottom: 2rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        Scanning...
+                    </button>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 0.875rem; font-weight: 700; color: #0f172a; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px;">Available Devices</h2>
+                        
+                        <div style="background: linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%); border: 1.5px solid rgba(20, 184, 166, 0.2); border-radius: 1rem; padding: 1rem; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <p style="font-weight: 700; color: #0f172a; margin-bottom: 0.25rem;">Fitness Ring Pro</p>
+                                    <p style="font-size: 0.75rem; color: #64748b; font-family: monospace;">AA:BB:CC:DD:EE:F1</p>
+                                </div>
+                                <p style="font-size: 0.875rem; font-weight: 700; color: #14b8a6;">-45 dBm</p>
+                            </div>
+                        </div>
+                        
+                        <div style="background: linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%); border: 1.5px solid rgba(20, 184, 166, 0.2); border-radius: 1rem; padding: 1rem; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <p style="font-weight: 700; color: #0f172a; margin-bottom: 0.25rem;">Smart Band X</p>
+                                    <p style="font-size: 0.75rem; color: #64748b; font-family: monospace;">AA:BB:CC:DD:EE:F2</p>
+                                </div>
+                                <p style="font-size: 0.875rem; font-weight: 700; color: #f97316;">-60 dBm</p>
+                            </div>
+                        </div>
+                        
+                        <div style="background: linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%); border: 1.5px solid rgba(20, 184, 166, 0.2); border-radius: 1rem; padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <p style="font-weight: 700; color: #0f172a; margin-bottom: 0.25rem;">Health Watch</p>
+                                    <p style="font-size: 0.75rem; color: #64748b; font-family: monospace;">AA:BB:CC:DD:EE:F3</p>
+                                </div>
+                                <p style="font-size: 0.875rem; font-weight: 700; color: #10b981;">-55 dBm</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <button style="padding: 0.875rem; background: #f3f4f6; color: #374151; border: none; border-radius: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease;">Back</button>
+                        <button style="padding: 0.875rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease;">Pair Device</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSettings() {
+            return `
+                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+                    <h1 style="font-size: 1.875rem; font-weight: 700; color: rgb(17, 24, 39); margin-bottom: 1.5rem;">Settings</h1>
+                    
+                    <div style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: rgb(107, 114, 128); margin-bottom: 1rem;">Personal Information</h2>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgb(229, 231, 235);">
+                            <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">👤</div>
+                            <div>
+                                <p style="font-size: 1.125rem; font-weight: 600; color: rgb(17, 24, 39);" id="displayName">John Doe</p>
+                                <p style="font-size: 0.875rem; color: rgb(107, 114, 128);" id="displayEmail">john@example.com</p>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div>
+                                <label style="font-size: 0.875rem; font-weight: 600; color: rgb(107, 114, 128); margin-bottom: 0.5rem; display: block;">Full Name</label>
+                                <input type="text" id="fullNameInput" value="John Doe" style="width: 100%; padding: 0.75rem; border: 1px solid rgb(229, 231, 235); border-radius: 0.5rem; font-size: 1rem; font-family: inherit;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.875rem; font-weight: 600; color: rgb(107, 114, 128); margin-bottom: 0.5rem; display: block;">Email</label>
+                                <input type="email" id="emailInput" value="john@example.com" style="width: 100%; padding: 0.75rem; border: 1px solid rgb(229, 231, 235); border-radius: 0.5rem; font-size: 1rem; font-family: inherit;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.875rem; font-weight: 600; color: rgb(107, 114, 128); margin-bottom: 0.5rem; display: block;">Age</label>
+                                <input type="number" id="ageInput" value="28" min="13" max="120" style="width: 100%; padding: 0.75rem; border: 1px solid rgb(229, 231, 235); border-radius: 0.5rem; font-size: 1rem; font-family: inherit;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.875rem; font-weight: 600; color: rgb(107, 114, 128); margin-bottom: 0.5rem; display: block;">Height (cm)</label>
+                                <input type="number" id="heightInput" value="175" min="100" max="250" style="width: 100%; padding: 0.75rem; border: 1px solid rgb(229, 231, 235); border-radius: 0.5rem; font-size: 1rem; font-family: inherit;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.875rem; font-weight: 600; color: rgb(107, 114, 128); margin-bottom: 0.5rem; display: block;">Weight (kg)</label>
+                                <input type="number" id="weightInput" value="70" min="30" max="200" step="0.1" style="width: 100%; padding: 0.75rem; border: 1px solid rgb(229, 231, 235); border-radius: 0.5rem; font-size: 1rem; font-family: inherit;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.875rem; font-weight: 600; color: rgb(107, 114, 128); margin-bottom: 0.5rem; display: block;">Fitness Goal</label>
+                                <select id="goalInput" style="width: 100%; padding: 0.75rem; border: 1px solid rgb(229, 231, 235); border-radius: 0.5rem; font-size: 1rem; font-family: inherit;">
+                                    <option value="weight-loss">Weight Loss</option>
+                                    <option value="muscle-gain" selected>Build Muscle</option>
+                                    <option value="maintain">Maintain Health</option>
+                                    <option value="endurance">Improve Endurance</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button id="saveProfileBtn" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; margin-bottom: 1rem;">Save Profile</button>
+                    </div>
+                    
+                    <div style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: rgb(107, 114, 128); margin-bottom: 1rem;">Display</h2>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgb(229, 231, 235);">
+                            <label style="font-weight: 500; cursor: pointer;">Dark Mode</label>
+                            <input type="checkbox" id="darkModeToggle" ${isDarkMode ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer;">
+                        </div>
+                    </div>
+                    
+                    <div style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: rgb(107, 114, 128); margin-bottom: 0.75rem;">Smart Ring</h2>
+                        <p style="font-size: 0.875rem; color: rgb(107, 114, 128); margin-bottom: 1rem;">Upgrade to our Wellness Smart Ring for advanced health tracking and insights.</p>
+                        <button id="buyRingBtn" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 0.5rem; font-weight: 600; font-size: 0.95rem; cursor: pointer; box-shadow: 0 2px 8px rgba(20, 184, 166, 0.2);">Buy Ring</button>
+                    </div>
+                    
+                    <div style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+                        <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: rgb(107, 114, 128); margin-bottom: 1rem;">Account</h2>
+                        <button style="width: 100%; padding: 0.75rem; text-align: left; border: 1px solid rgb(229, 231, 235); background: white; border-radius: 0.5rem; margin-bottom: 0.75rem;">� Change Password</button>
+                        <button style="width: 100%; padding: 0.75rem; text-align: left; border: 1px solid rgb(229, 231, 235); background: white; border-radius: 0.5rem; margin-bottom: 0.75rem;">� Notifications</button>
+                        <button id="signOutBtn" style="width: 100%; padding: 0.75rem; text-align: left; border: 1px solid rgb(229, 231, 235); background: white; border-radius: 0.5rem; color: rgb(239, 68, 68);">🚪 Sign Out</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBuyRing() {
+            return `
+                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+                    <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+                        <button id="backBtn" style="background: none; border: none; color: #14b8a6; font-size: 1.5rem; cursor: pointer; padding: 0.5rem; margin-right: 0.5rem;">←</button>
+                        <h1 style="font-size: 1.875rem; font-weight: 700; color: rgb(17, 24, 39); margin: 0;">Wellness Ring</h1>
+                    </div>
+                    
+                    <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.6;">Advanced health companion that tracks your heart rate, sleep patterns, stress levels, activity, and wellness metrics. Real-time insights for a healthier lifestyle.</p>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                        <!-- Silver Ring -->
+                        <div style="background: white; border-radius: 1.5rem; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border: 2px solid #e2e8f0; text-align: center;">
+                            <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #f0f0f0 0%, #d8dce1 100%); border-radius: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));">
+                                    <defs>
+                                        <linearGradient id="silverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" style="stop-color:#e5e5e5;stop-opacity:1" />
+                                            <stop offset="50%" style="stop-color:#c0c0c0;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#a8a8a8;stop-opacity:1" />
+                                        </linearGradient>
+                                    </defs>
+                                    <!-- Ring body -->
+                                    <circle cx="70" cy="70" r="60" fill="none" stroke="url(#silverGradient)" stroke-width="18" opacity="0.9"/>
+                                    <!-- Highlights -->
+                                    <circle cx="70" cy="70" r="58" fill="none" stroke="#f5f5f5" stroke-width="3" opacity="0.6"/>
+                                    <!-- Display area -->
+                                    <rect x="45" y="35" width="50" height="20" rx="4" fill="#2c2c2c" opacity="0.9"/>
+                                    <!-- LED indicators -->
+                                    <circle cx="55" cy="45" r="2.5" fill="#4ade80" opacity="1"/>
+                                    <circle cx="70" cy="45" r="2.5" fill="#4ade80" opacity="1"/>
+                                    <circle cx="85" cy="45" r="2.5" fill="#4ade80" opacity="0.6"/>
+                                </svg>
+                            </div>
+                            <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Silver</h3>
+                            <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1rem;">Premium Metallic Finish</p>
+                            <p style="font-size: 1.5rem; font-weight: 800; color: #14b8a6; margin-bottom: 1.5rem;">₹12,000</p>
+                            <button style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 0.75rem; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(20, 184, 166, 0.2);">Buy</button>
+                        </div>
+                        <!-- Black Ring -->
+                        <div style="background: white; border-radius: 1.5rem; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border: 2px solid #e2e8f0; text-align: center;">
+                            <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%); border-radius: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));">
+                                    <defs>
+                                        <linearGradient id="blackGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" style="stop-color:#2a2a2a;stop-opacity:1" />
+                                            <stop offset="50%" style="stop-color:#0a0a0a;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+                                        </linearGradient>
+                                    </defs>
+                                    <!-- Ring body -->
+                                    <circle cx="70" cy="70" r="60" fill="none" stroke="url(#blackGradient)" stroke-width="18" opacity="0.95"/>
+                                    <!-- Highlights -->
+                                    <circle cx="70" cy="70" r="58" fill="none" stroke="#555555" stroke-width="3" opacity="0.4"/>
+                                    <!-- Display area -->
+                                    <rect x="45" y="35" width="50" height="20" rx="4" fill="#1a1a1a" opacity="0.95"/>
+                                    <!-- LED indicators -->
+                                    <circle cx="55" cy="45" r="2.5" fill="#10b981" opacity="1"/>
+                                    <circle cx="70" cy="45" r="2.5" fill="#10b981" opacity="1"/>
+                                    <circle cx="85" cy="45" r="2.5" fill="#10b981" opacity="0.6"/>
+                                </svg>
+                            </div>
+                            <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Black</h3>
+                            <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1rem;">Sleek & Elegant</p>
+                            <p style="font-size: 1.5rem; font-weight: 800; color: #14b8a6; margin-bottom: 1.5rem;">₹12,000</p>
+                            <button style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 0.75rem; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(20, 184, 166, 0.2);">Buy</button>
+                        </div>
+                    </div>
+                    
+                    <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #bae6fd; border-radius: 1rem; padding: 1.5rem;">
+                        <h3 style="color: #0369a1; font-weight: 700; margin-bottom: 0.75rem;">Why Choose Wellness Ring?</h3>
+                        <ul style="color: #0369a1; font-size: 0.9rem; line-height: 1.8; margin: 0; padding-left: 1.5rem;">
+                            <li>24/7 heart rate monitoring with high accuracy</li>
+                            <li>Sleep tracking with detailed insights</li>
+                            <li>Stress level detection and alerts</li>
+                            <li>Activity tracking and workout modes</li>
+                            <li>Battery life up to 7 days</li>
+                            <li>Water resistant for swimming & shower</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderNavigation() {
+            const navItems = [
+                {id: 'dashboard', label: 'Dashboard'},
+                {id: 'sleep', label: 'Sleep'},
+                {id: 'mental', label: 'Wellness'},
+                {id: 'streaks', label: 'Streaks'},
+                {id: 'chat', label: 'Coach'},
+                {id: 'settings', label: 'Settings'}
+            ];
+            
+            const navHtml = navItems.map(item => {
+                const isActive = currentPage === item.id;
+                const bgColor = isActive ? 'linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, rgba(14, 165, 233, 0.15) 100%)' : 'transparent';
+                const borderColor = isActive ? '#14b8a6' : 'transparent';
+                const textColor = isActive ? '#0f172a' : '#0f172a';
+                return `<button class="nav-btn ${isActive ? 'active' : ''}" data-page="${item.id}" style="flex: 1; padding: 0.875rem 0.5rem; border: none; background: ${bgColor}; border-top: 2px solid ${borderColor}; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; color: ${textColor}; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; opacity: ${isActive ? '1' : '0.7'};">${item.label}</span></button>`;
+            }).join('');
+            
+            return `
+                <nav style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 100%); border-top: 1px solid rgba(20, 184, 166, 0.1); box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06); z-index: 999;">
+                    <div style="max-width: 480px; margin: 0 auto; display: flex;">
+                        ${navHtml}
+                    </div>
+                </nav>
+            `;
+        }
+
+        function setupEventListeners(root) {
+            // OTP form submission with API call
+            const phoneForm = root.querySelector('#phoneForm');
+            if (phoneForm) {
+                phoneForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const phoneInput = root.querySelector('#phoneInput');
+                    const phone = phoneInput.value;
+                    
+                    showLoading('Sending OTP...');
+                    
+                    try {
+                        // Call backend API
+                        const result = PageBridge.sendOtp(phone);
+                        
+                        window.phoneNumber = phone;
+                        window.otpSent = true;
+                        showToast('OTP sent successfully!');
+                        
+                        // Re-render login page with OTP input
+                        const rootEl = document.getElementById("root");
+                        rootEl.innerHTML = renderLoginPage();
+                        setupEventListeners(rootEl);
+                    } catch (error) {
+                        showError('Failed to send OTP. Please try again.', 'main()');
+                        showToast('Error: ' + error.message, true);
+                    }
+                });
+            }
+            
+            // OTP verification with API call
+            const otpForm = root.querySelector('#otpForm');
+            if (otpForm) {
+                // Auto-move focus between OTP inputs
+                const otpInputs = root.querySelectorAll('.otp-input');
+                otpInputs.forEach((input, index) => {
+                    input.addEventListener('input', (e) => {
+                        if (e.target.value && index < otpInputs.length - 1) {
+                            otpInputs[index + 1].focus();
+                        }
+                    });
+                    input.addEventListener('keyback', (e) => {
+                        if (!e.target.value && index > 0) {
+                            otpInputs[index - 1].focus();
+                        }
+                    });
+                });
+                
+                otpForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const otpInputs = root.querySelectorAll('.otp-input');
+                    const otp = Array.from(otpInputs).map(input => input.value).join('');
+                    
+                    if (otp.length !== 6) {
+                        showToast('Please enter 6-digit OTP', true);
+                        return;
+                    }
+                    
+                    showLoading('Verifying OTP...');
+                    
+                    try {
+                        // Call backend API with OTP
+                        const result = PageBridge.loginWithOtp(window.phoneNumber, otp);
+                        
+                        showToast('Login successful!');
+                        isLoggedIn = true;
+                        
+                        // Notify Kotlin side
+                        LoginBridge.notifyLoginSuccess();
+                    } catch (error) {
+                        showError('Invalid OTP. Please try again.', 'main()');
+                        showToast('Invalid OTP', true);
+                    }
+                });
+                
+                // Resend OTP
+                const resendBtn = root.querySelector('#resendBtn');
+                if (resendBtn) {
+                    resendBtn.addEventListener('click', async () => {
+                        showLoading('Resending OTP...');
+                        try {
+                            PageBridge.sendOtp(window.phoneNumber);
+                            showToast('OTP resent successfully!');
+                            // Re-render
+                            const root = document.getElementById("root");
+                            root.innerHTML = renderLoginPage();
+                            setupEventListeners(root);
+                        } catch (error) {
+                            showToast('Failed to resend OTP', true);
+                        }
+                    });
+                }
+            }
+            
+            // Navigation buttons
+            root.querySelectorAll(".nav-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    currentPage = btn.getAttribute("data-page");
+                    render(root);
+                });
+            });
+            
+            // Dark mode toggle
+            const darkModeToggle = root.querySelector("#darkModeToggle");
+            if (darkModeToggle) {
+                darkModeToggle.addEventListener("change", () => {
+                    isDarkMode = darkModeToggle.checked;
+                    render(root);
+                });
+            }
+
+            // Sign out button
+            const signOutBtn = root.querySelector("#signOutBtn");
+            if (signOutBtn) {
+                signOutBtn.addEventListener("click", () => {
+                    isLoggedIn = false;
+                    currentPage = "dashboard";
+                    window.otpSent = false;
+                    render(root);
+                });
+            }
+            
+            // Mood buttons
+            root.querySelectorAll(".mood-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const mood = btn.getAttribute("data-mood");
+                    root.querySelectorAll(".mood-btn").forEach(b => {
+                        b.style.backgroundColor = "white";
+                        b.style.borderColor = "rgb(229, 231, 235)";
+                    });
+                    btn.style.backgroundColor = "rgba(168, 85, 247, 0.15)";
+                    btn.style.borderColor = "#14b8a6";
+                    alert(`Mood saved: ${mood}`);
+                });
+            });
+            
+            // Save thought
+            const saveThoughtBtn = root.querySelector("#saveThoughtBtn");
+            if (saveThoughtBtn) {
+                saveThoughtBtn.addEventListener("click", () => {
+                    const thoughtInput = root.querySelector("#thoughtInput");
+                    const thought = thoughtInput.value;
+                    if (thought.trim()) {
+                        const thoughtHistory = root.querySelector("#thoughtHistory");
+                        const thoughtEl = document.createElement("div");
+                        thoughtEl.style.cssText = "padding: 1rem; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 0.75rem; margin-bottom: 0.75rem;";
+                        thoughtEl.innerHTML = `
+                            <p style="font-size: 0.75rem; color: rgb(107, 114, 128); margin-bottom: 0.5rem;">Today, ${new Date().toLocaleString()}</p>
+                            <p style="color: rgb(17, 24, 39);">${thought}</p>
+                        `;
+                        thoughtHistory.prepend(thoughtEl);
+                        thoughtInput.value = "";
+                        alert("Thought saved! 💭");
+                    }
+                });
+            }
+
+            // Save profile button
+            const saveProfileBtn = root.querySelector("#saveProfileBtn");
+            if (saveProfileBtn) {
+                saveProfileBtn.addEventListener("click", () => {
+                    const fullName = root.querySelector("#fullNameInput").value;
+                    const email = root.querySelector("#emailInput").value;
+                    const age = root.querySelector("#ageInput").value;
+                    const height = root.querySelector("#heightInput").value;
+                    const weight = root.querySelector("#weightInput").value;
+                    const goal = root.querySelector("#goalInput").value;
+
+                    if (fullName && email && age && height && weight) {
+                        // Store in window object for persistence
+                        window.userProfile = {
+                            name: fullName,
+                            email: email,
+                            age: age,
+                            height: height,
+                            weight: weight,
+                            goal: goal
+                        };
+                        alert("Profile updated successfully! ✅");
+                        render(root);
+                    } else {
+                        alert("Please fill in all required fields");
+                    }
+                });
+            }
+            
+            // Meditation Sessions
+            initializeMeditationUI(root);
+            attachMeditationEventListeners();
+            
+            // AI Chat Event Listeners
+            const sendChatBtn = root.querySelector("#sendChatBtn");
+            const chatInput = root.querySelector("#chatInput");
+            
+            if (sendChatBtn) {
+                sendChatBtn.addEventListener("click", sendChatMessage);
+            }
+            
+            if (chatInput) {
+                chatInput.addEventListener("keypress", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        sendChatMessage();
+                    }
+                });
+                
+                // Focus input when page loads
+                setTimeout(() => {
+                    chatInput.focus();
+                }, 100);
+            }
+            
+            // Quick response buttons
+            root.querySelectorAll(".quick-response-btn").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const query = btn.getAttribute("data-query");
+                    const chatInput = root.querySelector("#chatInput");
+                    
+                    if (chatInput) {
+                        const queryTexts = {
+                            'motivation': 'Give me motivation!',
+                            'workout': 'What are some good workout tips?',
+                            'nutrition': 'Tell me about healthy nutrition',
+                            'sleep': 'How can I sleep better?'
+                        };
+                        
+                        chatInput.value = queryTexts[query] || query;
+                        sendChatMessage();
+                    }
+                });
+            });
+            
+            // Buy Ring button
+            const buyRingBtn = root.querySelector("#buyRingBtn");
+            if (buyRingBtn) {
+                buyRingBtn.addEventListener("click", () => {
+                    currentPage = "buyring";
+                    render(root);
+                });
+            }
+            
+            // Back button in Buy Ring page
+            const backBtn = root.querySelector("#backBtn");
+            if (backBtn) {
+                backBtn.addEventListener("click", () => {
+                    currentPage = "dashboard";
+                    render(root);
+                });
+            }
+        }
+        
+        // Meditation Timer Variables
+        let meditationState = {
+            active: null,
+            isPaused: false,
+            timerInterval: null
+        };
+        
+        const meditationSessions = [
+            { id: 'morning_calm', title: 'Morning Calm', duration: '5 min', durationSeconds: 300, icon: '🌅' },
+            { id: 'breathing_exercise', title: 'Breathing Exercise', duration: '10 min', durationSeconds: 600, icon: '🌬️' },
+            { id: 'sleep_meditation', title: 'Sleep Meditation', duration: '15 min', durationSeconds: 900, icon: '🌙' }
+        ];
+        
+        function initializeMeditationUI(root) {
+            const sessionsList = root.querySelector("#meditationSessionsList");
+            if (!sessionsList) return;
+            
+            // Clear and render sessions
+            sessionsList.innerHTML = meditationSessions.map(session => `
+                <div class="meditation-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-size: 2rem;">${session.icon}</span>
+                        <div>
+                            <p style="font-weight: 600; color: rgb(17, 24, 39);">${session.title}</p>
+                            <p style="font-size: 0.875rem; color: rgb(107, 114, 128);">${session.duration}</p>
+                        </div>
+                    </div>
+                    <button class="meditation-start-btn" data-session-id="${session.id}" onclick="startMeditationSession('${session.id}', '${session.title}', ${session.durationSeconds})">Start</button>
+                </div>
+            `).join('');
+        }
+        
+        function startMeditationSession(sessionId, title, durationSeconds) {
+            // Notify Kotlin about meditation start
+            if (window.PageBridge && window.PageBridge.startMeditation) {
+                window.PageBridge.startMeditation(sessionId);
+            }
+            
+            // Show timer UI
+            meditationState.active = {
+                id: sessionId,
+                title: title,
+                durationSeconds: durationSeconds,
+                remainingSeconds: durationSeconds,
+                startTime: Date.now()
+            };
+            meditationState.isPaused = false;
+            
+            const sessionsList = document.querySelector("#meditationSessionsList");
+            const timerDisplay = document.querySelector("#meditationTimerDisplay");
+            
+            if (sessionsList) sessionsList.style.display = "none";
+            if (timerDisplay) timerDisplay.style.display = "block";
+            
+            // Update UI
+            document.querySelector("#timerSessionName").textContent = title;
+            updateMeditationTimer();
+            startMeditationCountdown();
+        }
+        
+        function startMeditationCountdown() {
+            if (meditationState.timerInterval) {
+                clearInterval(meditationState.timerInterval);
+            }
+            
+            meditationState.timerInterval = setInterval(() => {
+                if (meditationState.isPaused) {
+                    return;
+                }
+                
+                if (meditationState.active.remainingSeconds > 0) {
+                    meditationState.active.remainingSeconds--;
+                    updateMeditationTimer();
+                } else {
+                    // Timer completed
+                    completeMeditationSession();
+                }
+            }, 1000);
+        }
+        
+        function updateMeditationTimer() {
+            const session = meditationState.active;
+            if (!session) return;
+            
+            const minutes = Math.floor(session.remainingSeconds / 60);
+            const seconds = session.remainingSeconds % 60;
+            const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            const timerDisplay = document.querySelector("#timerDisplay");
+            if (timerDisplay) {
+                timerDisplay.textContent = timeStr;
+            }
+            
+            const progress = (session.durationSeconds - session.remainingSeconds) / session.durationSeconds;
+            const progressBar = document.querySelector("#timerProgress");
+            if (progressBar) {
+                progressBar.style.width = (progress * 100) + "%";
+            }
+        }
+        
+        function pauseResumeMeditation() {
+            meditationState.isPaused = !meditationState.isPaused;
+            const btn = document.querySelector("#pauseResumeBtn");
+            if (btn) {
+                btn.textContent = meditationState.isPaused ? "Resume" : "Pause";
+                btn.style.background = meditationState.isPaused ? 
+                    "linear-gradient(135deg, rgb(34, 197, 94) 0%, rgb(22, 163, 74) 100%)" : 
+                    "linear-gradient(135deg, #14b8a6 0%, #0891b2 100%)";
+            }
+            
+            if (!meditationState.isPaused) {
+                startMeditationCountdown();
+            }
+        }
+        
+        function stopMeditationSession() {
+            clearInterval(meditationState.timerInterval);
+            
+            // Notify Kotlin about meditation stop
+            if (window.PageBridge && window.PageBridge.stopMeditation) {
+                window.PageBridge.stopMeditation();
+            }
+            
+            meditationState.active = null;
+            meditationState.isPaused = false;
+            
+            const sessionsList = document.querySelector("#meditationSessionsList");
+            const timerDisplay = document.querySelector("#meditationTimerDisplay");
+            
+            if (sessionsList) sessionsList.style.display = "block";
+            if (timerDisplay) timerDisplay.style.display = "none";
+            
+            showToast("Meditation session stopped", false);
+        }
+        
+        function completeMeditationSession() {
+            clearInterval(meditationState.timerInterval);
+            
+            const session = meditationState.active;
+            
+            // Notify Kotlin about completion
+            if (window.PageBridge && window.PageBridge.onMeditationComplete) {
+                window.PageBridge.onMeditationComplete(session.id, session.durationSeconds);
+            }
+            
+            meditationState.active = null;
+            meditationState.isPaused = false;
+            
+            // Show completion message
+            showToast(`🎉 Great job! You completed ${session.title}!`, false);
+            
+            // Reset UI after 2 seconds
+            setTimeout(() => {
+                const sessionsList = document.querySelector("#meditationSessionsList");
+                const timerDisplay = document.querySelector("#meditationTimerDisplay");
+                
+                if (sessionsList) sessionsList.style.display = "block";
+                if (timerDisplay) timerDisplay.style.display = "none";
+            }, 2000);
+        }
+        
+        // Attach event listeners for timer buttons
+        function attachMeditationEventListeners() {
+            const pauseResumeBtn = document.querySelector("#pauseResumeBtn");
+            const stopTimerBtn = document.querySelector("#stopTimerBtn");
+            
+            if (pauseResumeBtn) {
+                pauseResumeBtn.onclick = pauseResumeMeditation;
+            }
+            if (stopTimerBtn) {
+                stopTimerBtn.onclick = stopMeditationSession;
+            }
+        }
+        
+        // ===== AI CHAT API INTEGRATION =====
+        
+        // Positive wellness responses database
+        const wellnessResponses = {
+            motivation: {
+                responses: [
+                    "🚀 Remember, every step forward is a victory! You've got this! The hardest part is starting - you've already done that!",
+                    "💪 You are stronger than you think! Every workout brings you closer to your goals. Keep pushing!",
+                    "🔥 Don't stop when you're tired, stop when you're DONE! You're capable of amazing things!",
+                    "⭐ Progress over perfection! Every day is a chance to be better than yesterday. Keep going!",
+                    "🎯 Your body is capable of amazing things. Believe in yourself and watch what you can achieve!"
+                ],
+                emoji: '💪'
+            },
+            workout: {
+                responses: [
+                    "🏋️ Pro tip: Start with a 5-min warm-up, mix cardio and strength training, and don't forget to cool down! Consistency matters more than intensity.",
+                    "💪 For effective workouts: Find what you LOVE, stay hydrated, and listen to your body. Rest days are just as important as workout days!",
+                    "🔥 Quick workout formula: 5 min warm-up + 30 min main exercise + 5 min cool-down. Perfect! What's your favorite type of exercise?",
+                    "⚡ Pro moves: Focus on form over speed, track your progress, and increase intensity gradually. Your future self will thank you!",
+                    "🎯 The best workout is the one you'll actually do! Mix it up: cardio one day, strength the next, yoga for flexibility!"
+                ],
+                emoji: '🏋️'
+            },
+            nutrition: {
+                responses: [
+                    "🥗 Smart eating tips: Eat the rainbow (colorful foods), stay hydrated (8 glasses daily), and prep meals ahead of time!",
+                    "🍎 Remember: Protein for muscles, whole grains for energy, fruits & veggies for nutrients. Balance is key!",
+                    "💧 Hydration hack: Drink a glass of water before meals - it helps with digestion and prevents overeating. You've got this!",
+                    "🥤 Energy boost: Combine protein + carbs + healthy fats. An apple with almond butter? Perfect snack!",
+                    "🎯 Nutrition wins: Make 80% of your meals healthy, enjoy 20% for treats. Consistency beats perfection!"
+                ],
+                emoji: '🥗'
+            },
+            sleep: {
+                responses: [
+                    "😴 Sweet sleep formula: Consistent bedtime, cool dark room, no screens 1 hour before bed, and try meditation!",
+                    "🌙 Sleep hacks: Keep your room at 65-68°F, try deep breathing, and avoid caffeine after 2 PM. Sweet dreams incoming!",
+                    "💤 You deserve quality rest! A consistent sleep schedule trains your body for better sleep. Start tonight!",
+                    "✨ Bedroom makeover: Blackout curtains, white noise, comfortable pillows = better sleep quality guaranteed!",
+                    "🛌 Wind-down routine wins: Warm milk, herbal tea, gentle stretching, or meditation. Your sleep quality will improve dramatically!"
+                ],
+                emoji: '😴'
+            },
+            stress: {
+                responses: [
+                    "🧘 Stress relief: Try 5 min of deep breathing, a short meditation, or a quick walk. Your mind will thank you!",
+                    "💚 Remember: Progress isn't linear. Be kind to yourself. Taking breaks is STRENGTH, not weakness!",
+                    "🌿 Anxiety antidote: Ground yourself - name 5 things you see, 4 you feel, 3 you hear, 2 you smell, 1 you taste!",
+                    "✨ Stress-busting: Exercise releases endorphins, journaling clears your mind, and talking helps! Which works for you?",
+                    "🎯 You've overcome every difficult day so far. This one's no different. You're more resilient than you know!"
+                ],
+                emoji: '🧘'
+            },
+            default: {
+                responses: [
+                    "😊 That's awesome! I'm here to support you. Tell me more about your goals!",
+                    "🌟 I love your enthusiasm! Keep up that positive energy!",
+                    "💯 You're doing great! Remember to celebrate your wins, no matter how small!",
+                    "🎉 Your dedication is inspiring! Keep pushing toward your goals!",
+                    "✨ You've got the power to achieve anything you set your mind to!"
+                ],
+                emoji: '⭐'
+            }
+        };
+        
+        // Chat history
+        let chatHistory = [];
+        
+        // AI Chat API - Get response based on query
+        async function getAIResponse(userMessage) {
+            const lowerMessage = userMessage.toLowerCase();
+            let category = 'default';
+            
+            // Categorize the message
+            if (lowerMessage.includes('motiv') || lowerMessage.includes('encourage') || lowerMessage.includes('inspire')) {
+                category = 'motivation';
+            } else if (lowerMessage.includes('workout') || lowerMessage.includes('exercise') || lowerMessage.includes('train') || lowerMessage.includes('gym')) {
+                category = 'workout';
+            } else if (lowerMessage.includes('nutrition') || lowerMessage.includes('diet') || lowerMessage.includes('food') || lowerMessage.includes('eat') || lowerMessage.includes('meal')) {
+                category = 'nutrition';
+            } else if (lowerMessage.includes('sleep') || lowerMessage.includes('rest') || lowerMessage.includes('tired') || lowerMessage.includes('insomnia')) {
+                category = 'sleep';
+            } else if (lowerMessage.includes('stress') || lowerMessage.includes('anxiety') || lowerMessage.includes('anxious') || lowerMessage.includes('worry') || lowerMessage.includes('relax')) {
+                category = 'stress';
+            }
+            
+            // Get response from database
+            const responses = wellnessResponses[category].responses;
+            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+            
+            return {
+                message: randomResponse,
+                category: category,
+                emoji: wellnessResponses[category].emoji
+            };
+        }
+        
+        // Send chat message
+        async function sendChatMessage() {
+            const chatInput = document.querySelector("#chatInput");
+            const chatMessages = document.querySelector("#chatMessages");
+            
+            if (!chatInput || !chatMessages) return;
+            
+            const userMessage = chatInput.value.trim();
+            if (!userMessage) return;
+            
+            // Add user message to chat
+            const userMsgEl = document.createElement("div");
+            userMsgEl.style.cssText = "display: flex; justify-content: flex-end;";
+            userMsgEl.innerHTML = `
+                <div style="background: linear-gradient(135deg, rgb(220, 190, 240) 0%, rgb(210, 180, 230) 100%); color: rgb(80, 40, 120); padding: 1rem 1.25rem; border-radius: 1.25rem; max-width: 85%; border-radius: 0.25rem 1.25rem 1.25rem 1.25rem; box-shadow: 0 2px 4px rgba(200, 160, 220, 0.15);">
+                    <p style="margin: 0; font-size: 0.95rem; line-height: 1.4;">${escapeHtml(userMessage)}</p>
+                </div>
+            `;
+            chatMessages.appendChild(userMsgEl);
+            chatInput.value = "";
+            
+            // Show typing indicator
+            const typingEl = document.createElement("div");
+            typingEl.style.cssText = "display: flex; justify-content: flex-start;";
+            typingEl.innerHTML = `
+                <div style="background: rgb(240, 230, 250); color: rgb(120, 100, 140); padding: 1rem 1.25rem; border-radius: 1.25rem; border-radius: 1.25rem 1.25rem 1.25rem 0.25rem; border: 1px solid rgb(230, 220, 240);">
+                    <div class="typing-indicator">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(typingEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Get AI response
+            setTimeout(async () => {
+                const response = await getAIResponse(userMessage);
+                
+                // Remove typing indicator
+                typingEl.remove();
+                
+                // Add AI response
+                const aiMsgEl = document.createElement("div");
+                aiMsgEl.style.cssText = "display: flex; justify-content: flex-start;";
+                aiMsgEl.innerHTML = `
+                    <div style="background: linear-gradient(135deg, rgb(240, 230, 250) 0%, rgb(230, 245, 250) 100%); color: rgb(60, 40, 80); padding: 1rem 1.25rem; border-radius: 1.25rem; max-width: 85%; border-radius: 1.25rem 1.25rem 1.25rem 0.25rem; box-shadow: 0 2px 4px rgba(200, 160, 220, 0.1); border: 1px solid rgb(230, 220, 240);">
+                        <p style="margin: 0; font-size: 0.95rem; line-height: 1.4;">${response.message}</p>
+                    </div>
+                `;
+                chatMessages.appendChild(aiMsgEl);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Store in history
+                chatHistory.push({
+                    user: userMessage,
+                    ai: response.message,
+                    category: response.category,
+                    timestamp: new Date()
+                });
+            }, 800);
+        }
+        
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Add typing indicator animation
+        const style = document.createElement('style');
+        style.textContent = `
+            .typing-indicator {
+                display: flex;
+                gap: 0.4rem;
+                padding: 0.5rem 0;
+            }
+            .typing-indicator span {
+                width: 8px;
+                height: 8px;
+                background: rgb(200, 160, 220);
+                border-radius: 50%;
+                animation: typing 1.4s infinite;
+            }
+            .typing-indicator span:nth-child(2) {
+                animation-delay: 0.2s;
+            }
+            .typing-indicator span:nth-child(3) {
+                animation-delay: 0.4s;
+            }
+            @keyframes typing {
+                0%, 60%, 100% {
+                    opacity: 0.5;
+                    transform: translateY(0);
+                }
+                30% {
+                    opacity: 1;
+                    transform: translateY(-10px);
+                }
+            }
+            
+            @media (max-width: 480px) {
+                #chatMessages {
+                    padding-right: 0 !important;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize the app
+        document.addEventListener("DOMContentLoaded", main);
+    </script>
+</body>
+</html>
