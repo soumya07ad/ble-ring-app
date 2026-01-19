@@ -608,15 +608,30 @@ class NativeGattManager private constructor(private val context: Context) {
 
     private fun parseEfe3Data(value: ByteArray) {
         // EFE3 DATA FORMAT (20 bytes):
-        // [0] = flag/type (0x0F for status packet)
-        // [1-5] = timestamp? (year, month, day, hour, minute, second?)
-        // [6] = unknown (43 = constant in logs)
-        // [7] = changes over time (counter? seconds?)
-        // [8] = ★ REAL BATTERY PERCENTAGE ★
-        // [9-19] = other data (steps, HR, etc. - TBD)
+        // There are TWO packet types:
+        // 
+        // TYPE 1: Status packet (byte[0] = 0x0F = 15)
+        //   [0] = 0x0F (15) - status packet flag
+        //   [1] = 6 (constant for status packets)
+        //   [2] = year (26 = 2026)
+        //   [3] = month (1 = January)
+        //   [4] = day (19)
+        //   [5] = hour (17)
+        //   [6] = minute (24)
+        //   [7] = second (4)
+        //   [8] = ★ REAL BATTERY PERCENTAGE ★
+        //   [12] = some counter (steps?)
+        //   [15] = another counter
+        //
+        // TYPE 2: Other packet (byte[0] = 0xF0 = 240) - IGNORE for battery!
         
-        if (value.size >= 9) {
-            // ★ REAL BATTERY at byte[8] ★
+        if (value.size < 9) return
+        
+        val packetType = value[0].toInt() and 0xFF
+        val packetSubType = value[1].toInt() and 0xFF
+        
+        // Only process STATUS packets (type 0x0F with subtype 6)
+        if (packetType == 0x0F && packetSubType == 6) {
             val realBattery = value[8].toInt() and 0xFF
             
             if (realBattery in 1..100) {
@@ -630,17 +645,24 @@ class NativeGattManager private constructor(private val context: Context) {
                     lastUpdate = System.currentTimeMillis()
                 )
             }
-        }
-        
-        // Log all bytes for future analysis
-        if (value.size >= 15) {
-            Log.d(TAG, "EFE3 Analysis:")
-            Log.d(TAG, "  byte[0] = ${value[0].toInt() and 0xFF} (type/flag)")
-            Log.d(TAG, "  byte[6] = ${value[6].toInt() and 0xFF} (constant?)")
-            Log.d(TAG, "  byte[7] = ${value[7].toInt() and 0xFF} (counter?)")
-            Log.d(TAG, "  byte[8] = ${value[8].toInt() and 0xFF} (BATTERY)")
-            Log.d(TAG, "  byte[11] = ${value[11].toInt() and 0xFF}")
-            Log.d(TAG, "  byte[12] = ${value[12].toInt() and 0xFF}")
+            
+            // Log timestamp for debugging
+            val year = 2000 + (value[2].toInt() and 0xFF)
+            val month = value[3].toInt() and 0xFF
+            val day = value[4].toInt() and 0xFF
+            val hour = value[5].toInt() and 0xFF
+            val minute = value[6].toInt() and 0xFF
+            val second = value[7].toInt() and 0xFF
+            Log.d(TAG, "EFE3 Status: $year-$month-$day $hour:$minute:$second, Battery: $realBattery%")
+            
+            // byte[12] might be steps or some activity counter
+            val counter1 = value[12].toInt() and 0xFF
+            val counter2 = value[15].toInt() and 0xFF
+            Log.d(TAG, "EFE3 Counters: byte[12]=$counter1, byte[15]=$counter2")
+            
+        } else {
+            // Ignore non-status packets for battery, but log their type
+            Log.d(TAG, "EFE3 packet type=$packetType (0x${packetType.toString(16).uppercase()}), ignoring for battery")
         }
     }
 
