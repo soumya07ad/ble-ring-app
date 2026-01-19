@@ -2,7 +2,7 @@ package com.fitness.app.data.repository
 
 import android.content.Context
 import com.fitness.app.ble.BleDevice
-import com.fitness.app.ble.BleManager
+import com.fitness.app.ble.NativeGattManager
 import com.fitness.app.ble.ConnectionState
 import com.fitness.app.ble.RingData
 import com.fitness.app.ble.ScanState
@@ -24,7 +24,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Implementation of IRingRepository
- * Wraps the existing BleManager to provide a clean interface
+ * Now uses NativeGattManager (pure native GATT, no SDK)
  * 
  * This preserves the existing BLE functionality while providing
  * a clean MVVM-compatible interface
@@ -35,9 +35,9 @@ class RingRepositoryImpl(
     
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
-    // Use existing BleManager singleton
-    private val bleManager: BleManager by lazy { 
-        BleManager.getInstance(context)
+    // Use NativeGattManager singleton (pure native GATT, no SDK!)
+    private val gattManager: NativeGattManager by lazy { 
+        NativeGattManager.getInstance(context)
     }
     
     // Domain state flows
@@ -58,26 +58,26 @@ class RingRepositoryImpl(
     }
     
     /**
-     * Observe BleManager states and map to domain states
+     * Observe NativeGattManager states and map to domain states
      */
     private fun observeBleManagerStates() {
         scope.launch {
             // Observe connection state
-            bleManager.connectionState.collect { state ->
+            gattManager.connectionState.collect { state ->
                 _connectionStatus.value = mapConnectionState(state)
             }
         }
         
         scope.launch {
             // Observe scan state
-            bleManager.scanState.collect { state ->
+            gattManager.scanState.collect { state ->
                 _scanStatus.value = mapScanState(state)
             }
         }
         
         scope.launch {
             // Observe ring data
-            bleManager.ringData.collect { data ->
+            gattManager.ringData.collect { data ->
                 _ringData.value = mapRingData(data)
             }
         }
@@ -94,8 +94,8 @@ class RingRepositoryImpl(
                 connectedRing?.let { ConnectionStatus.Connected(it) } 
                     ?: ConnectionStatus.Connected(
                         Ring(
-                            macAddress = bleManager.connectedMacAddress,
-                            name = bleManager.connectedDeviceName,
+                            macAddress = gattManager.connectedMacAddress,
+                            name = gattManager.connectedDeviceName,
                             isConnected = true
                         )
                     )
@@ -137,22 +137,22 @@ class RingRepositoryImpl(
     }
     
     override fun initialize() {
-        // BleManager.initialize() internally calls registerConnectionListener()
-        bleManager.initialize()
+        // Initialize pure native GATT manager
+        gattManager.initialize()
     }
     
     override suspend fun startScan(durationSeconds: Int): Result<List<Ring>> {
         return try {
             _scanStatus.value = ScanStatus.Scanning
-            bleManager.startScan()
+            gattManager.startScan(durationSeconds)
             
             // Wait for scan duration
             delay(durationSeconds * 1000L)
             
             // Stop scan and get results
-            bleManager.stopScan()
+            gattManager.stopScan()
             
-            val devices = when (val state = bleManager.scanState.value) {
+            val devices = when (val state = gattManager.scanState.value) {
                 is ScanState.DevicesFound -> state.devices.map { it.toDomain() }
                 else -> emptyList()
             }
@@ -166,7 +166,7 @@ class RingRepositoryImpl(
     }
     
     override fun stopScan() {
-        bleManager.stopScan()
+        gattManager.stopScan()
         _scanStatus.value = ScanStatus.Idle
     }
     
@@ -181,13 +181,13 @@ class RingRepositoryImpl(
             connectedRing = ring
             _connectionStatus.value = ConnectionStatus.Connecting
             
-            bleManager.connectDevice(macAddress = macAddress, deviceName = deviceName)
+            gattManager.connectDevice(macAddress = macAddress, deviceName = deviceName)
             
             // Wait for connection (max 15 seconds)
             val connected = withTimeoutOrNull(15000L) {
-                while (bleManager.connectionState.value !is ConnectionState.Connected) {
-                    if (bleManager.connectionState.value is ConnectionState.Error ||
-                        bleManager.connectionState.value is ConnectionState.Timeout) {
+                while (gattManager.connectionState.value !is ConnectionState.Connected) {
+                    if (gattManager.connectionState.value is ConnectionState.Error ||
+                        gattManager.connectionState.value is ConnectionState.Timeout) {
                         return@withTimeoutOrNull false
                     }
                     delay(100)
@@ -200,7 +200,7 @@ class RingRepositoryImpl(
                 Result.success(connectedRing!!)
             } else {
                 connectedRing = null
-                val errorMsg = when (val state = bleManager.connectionState.value) {
+                val errorMsg = when (val state = gattManager.connectionState.value) {
                     is ConnectionState.Error -> state.message
                     is ConnectionState.Timeout -> "Connection timed out"
                     else -> "Connection failed"
@@ -215,7 +215,7 @@ class RingRepositoryImpl(
     
     override suspend fun disconnect(): Result<Unit> {
         return try {
-            bleManager.disconnect()
+            gattManager.disconnect()
             connectedRing = null
             _connectionStatus.value = ConnectionStatus.Disconnected
             Result.success(Unit)
@@ -234,7 +234,7 @@ class RingRepositoryImpl(
     }
     
     override fun isConnected(): Boolean {
-        return bleManager.connectionState.value is ConnectionState.Connected
+        return gattManager.connectionState.value is ConnectionState.Connected
     }
     
     override fun getConnectedRing(): Ring? = connectedRing

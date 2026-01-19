@@ -1,0 +1,625 @@
+package com.fitness.app.ble
+
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
+import android.bluetooth.le.BluetoothLeScanner
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.widget.Toast
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import java.util.UUID
+
+/**
+ * Pure Native GATT BLE Manager - NO SDK DEPENDENCY
+ * 
+ * This implementation uses only Android's native BLE APIs, completely bypassing
+ * the YCBT SDK which doesn't work properly with the R9 ring.
+ * 
+ * ## Key Features
+ * - Pure native Android BLE (no SDK)
+ * - Enables notifications for real-time data
+ * - No conflicting GATT connections
+ * - Should stay connected indefinitely
+ * 
+ * @author DKGS Labs
+ * @version 2.0.0 - Pure Native GATT
+ */
+class NativeGattManager private constructor(private val context: Context) {
+
+    private val _scanState = MutableStateFlow<ScanState>(ScanState.Idle)
+    val scanState: StateFlow<ScanState> = _scanState.asStateFlow()
+
+    private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
+    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+
+    private val _ringData = MutableStateFlow(RingData())
+    val ringData: StateFlow<RingData> = _ringData.asStateFlow()
+    
+    internal var connectedMacAddress: String = ""
+    internal var connectedDeviceName: String = ""
+    
+    private val discoveredDevices = mutableMapOf<String, BleDevice>()
+    private var isInitialized = false
+    
+    private var bluetoothLeScanner: BluetoothLeScanner? = null
+    private var nativeScanCallback: ScanCallback? = null
+    private var bluetoothGatt: BluetoothGatt? = null
+    private var isConnecting = false
+    
+    companion object {
+        private const val TAG = "NativeGattManager"
+        private const val DEFAULT_SCAN_DURATION = 8
+        
+        // Standard BLE UUIDs
+        private val BATTERY_SERVICE_UUID = UUID.fromString("0000180F-0000-1000-8000-00805f9b34fb")
+        private val BATTERY_LEVEL_UUID = UUID.fromString("00002A19-0000-1000-8000-00805f9b34fb")
+        
+        // Device Info Service
+        private val DEVICE_INFO_SERVICE_UUID = UUID.fromString("0000180A-0000-1000-8000-00805f9b34fb")
+        
+        // Custom Ring Services (YC-specific)
+        private val CUSTOM_SERVICE_EFE0 = UUID.fromString("f000efe0-0451-4000-0000-00000000b000")
+        private val CUSTOM_CHAR_EFE1 = UUID.fromString("f000efe1-0451-4000-0000-00000000b000")  // Write
+        private val CUSTOM_CHAR_EFE3 = UUID.fromString("f000efe3-0451-4000-0000-00000000b000")  // Read/Notify
+        
+        // FEE7 Service (handshake/battery)
+        private val SERVICE_FEE7 = UUID.fromString("0000FEE7-0000-1000-8000-00805f9b34fb")
+        private val CHAR_FEA1 = UUID.fromString("0000FEA1-0000-1000-8000-00805f9b34fb")  // Notify - likely battery/health
+        private val CHAR_FEA2 = UUID.fromString("0000FEA2-0000-1000-8000-00805f9b34fb")  // Indicate
+        private val CHAR_FEC7 = UUID.fromString("0000FEC7-0000-1000-8000-00805f9b34fb")  // Write
+        private val CHAR_FEC8 = UUID.fromString("0000FEC8-0000-1000-8000-00805f9b34fb")  // Indicate
+        
+        // Client Characteristic Configuration Descriptor (for enabling notifications)
+        private val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+
+        @Volatile
+        private var instance: NativeGattManager? = null
+
+        fun getInstance(context: Context): NativeGattManager {
+            return instance ?: synchronized(this) {
+                instance ?: NativeGattManager(context.applicationContext).also { instance = it }
+            }
+        }
+    }
+
+    /**
+     * Initialize - Just check Bluetooth is available
+     * NO SDK initialization!
+     */
+    fun initialize() {
+        if (isInitialized) {
+            Log.d(TAG, "Already initialized")
+            return
+        }
+
+        val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+        if (bluetoothManager?.adapter == null) {
+            Log.e(TAG, "Bluetooth not available")
+            return
+        }
+
+        isInitialized = true
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "✓ PURE NATIVE GATT MANAGER INITIALIZED")
+        Log.i(TAG, "✓ NO SDK - 100% Native Android BLE")
+        Log.i(TAG, "═══════════════════════════════════")
+    }
+
+    /**
+     * Start BLE scan using native Android scanner
+     */
+    @SuppressLint("MissingPermission")
+    fun startScan(scanDuration: Int = DEFAULT_SCAN_DURATION) {
+        if (!isInitialized) {
+            Log.e(TAG, "Not initialized")
+            _scanState.value = ScanState.Error("Not initialized")
+            return
+        }
+
+        val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+        bluetoothLeScanner = bluetoothManager?.adapter?.bluetoothLeScanner
+
+        if (bluetoothLeScanner == null) {
+            Log.e(TAG, "BluetoothLeScanner not available")
+            _scanState.value = ScanState.Error("Bluetooth not available")
+            return
+        }
+
+        discoveredDevices.clear()
+        _scanState.value = ScanState.Scanning
+
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "🔍 STARTING NATIVE BLE SCAN")
+        Log.i(TAG, "Duration: ${scanDuration}s")
+        Log.i(TAG, "═══════════════════════════════════")
+
+        nativeScanCallback = object : ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult) {
+                processScanResult(result)
+            }
+
+            override fun onBatchScanResults(results: List<ScanResult>) {
+                results.forEach { processScanResult(it) }
+            }
+
+            override fun onScanFailed(errorCode: Int) {
+                Log.e(TAG, "Scan failed: $errorCode")
+                _scanState.value = ScanState.Error("Scan failed: $errorCode")
+            }
+        }
+
+        try {
+            val settings = ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .build()
+
+            bluetoothLeScanner?.startScan(emptyList(), settings, nativeScanCallback)
+            Log.i(TAG, "✓ Scan started")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start scan: ${e.message}")
+            _scanState.value = ScanState.Error("Failed to start scan")
+            return
+        }
+
+        // Stop scan after duration
+        Handler(Looper.getMainLooper()).postDelayed({
+            stopScan()
+            val devices = discoveredDevices.values.toList()
+            Log.i(TAG, "Scan complete. Found ${devices.size} devices")
+            _scanState.value = if (devices.isEmpty()) {
+                ScanState.Error("No devices found")
+            } else {
+                ScanState.DevicesFound(devices)
+            }
+        }, scanDuration * 1000L)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun processScanResult(result: ScanResult) {
+        val device = result.device
+        val macAddress = device.address
+        val deviceName = result.scanRecord?.deviceName ?: device.name ?: "Unknown"
+        val rssi = result.rssi
+
+        if (discoveredDevices.containsKey(macAddress)) {
+            discoveredDevices[macAddress] = BleDevice(deviceName, macAddress, rssi)
+            return
+        }
+
+        Log.d(TAG, "📱 Found: $deviceName ($macAddress) RSSI: $rssi")
+        discoveredDevices[macAddress] = BleDevice(deviceName, macAddress, rssi)
+        _scanState.value = ScanState.DevicesFound(discoveredDevices.values.toList())
+    }
+
+    @SuppressLint("MissingPermission")
+    fun stopScan() {
+        nativeScanCallback?.let {
+            try {
+                bluetoothLeScanner?.stopScan(it)
+                Log.d(TAG, "Scan stopped")
+            } catch (e: Exception) {
+                Log.w(TAG, "Error stopping scan: ${e.message}")
+            }
+        }
+        nativeScanCallback = null
+    }
+
+    /**
+     * Connect to device using PURE NATIVE GATT
+     * No SDK involvement at all!
+     */
+    @SuppressLint("MissingPermission")
+    fun connectDevice(macAddress: String, deviceName: String? = null) {
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "🔌 CONNECTING VIA PURE NATIVE GATT")
+        Log.i(TAG, "MAC: $macAddress")
+        Log.i(TAG, "═══════════════════════════════════")
+
+        if (!isInitialized) {
+            Log.e(TAG, "Not initialized")
+            _connectionState.value = ConnectionState.Error("Not initialized")
+            return
+        }
+
+        if (isConnecting) {
+            Log.w(TAG, "Already connecting")
+            return
+        }
+
+        stopScan()
+        isConnecting = true
+        connectedMacAddress = macAddress
+        connectedDeviceName = deviceName ?: "Ring"
+        _connectionState.value = ConnectionState.Connecting
+        _ringData.value = RingData() // Reset
+
+        val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+        val bluetoothAdapter = bluetoothManager?.adapter
+
+        if (bluetoothAdapter == null) {
+            Log.e(TAG, "BluetoothAdapter not available")
+            _connectionState.value = ConnectionState.Error("Bluetooth not available")
+            isConnecting = false
+            return
+        }
+
+        try {
+            val device = bluetoothAdapter.getRemoteDevice(macAddress)
+            
+            // Close existing connection
+            bluetoothGatt?.close()
+            bluetoothGatt = null
+
+            // Connect using native GATT
+            bluetoothGatt = device.connectGatt(
+                context,
+                false,  // autoConnect = false for faster connection
+                gattCallback,
+                BluetoothDevice.TRANSPORT_LE
+            )
+
+            Log.i(TAG, "✓ Native GATT connection initiated...")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Connection error: ${e.message}")
+            _connectionState.value = ConnectionState.Error("Connection failed: ${e.message}")
+            isConnecting = false
+        }
+    }
+
+    /**
+     * Native GATT Callback - Handles all BLE events
+     */
+    private val gattCallback = object : BluetoothGattCallback() {
+        
+        @SuppressLint("MissingPermission")
+        override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+            Log.i(TAG, "═══════════════════════════════════")
+            Log.i(TAG, "CONNECTION STATE: status=$status, newState=$newState")
+            Log.i(TAG, "═══════════════════════════════════")
+
+            when (newState) {
+                BluetoothProfile.STATE_CONNECTED -> {
+                    Log.i(TAG, "✓✓✓ CONNECTED! Discovering services...")
+                    isConnecting = false
+                    _connectionState.value = ConnectionState.Connected
+                    
+                    // Update ring data with device info
+                    _ringData.value = _ringData.value.copy(
+                        deviceName = connectedDeviceName,
+                        macAddress = connectedMacAddress,
+                        lastUpdate = System.currentTimeMillis()
+                    )
+                    
+                    // Show toast
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(context, "Ring Connected!", Toast.LENGTH_SHORT).show()
+                    }
+                    
+                    // Discover services
+                    gatt?.discoverServices()
+                }
+                
+                BluetoothProfile.STATE_DISCONNECTED -> {
+                    Log.w(TAG, "✗ DISCONNECTED")
+                    isConnecting = false
+                    _connectionState.value = ConnectionState.Disconnected
+                    
+                    bluetoothGatt?.close()
+                    bluetoothGatt = null
+                }
+            }
+        }
+
+        @SuppressLint("MissingPermission")
+        override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+            Log.i(TAG, "═══════════════════════════════════")
+            Log.i(TAG, "📋 SERVICES DISCOVERED! Status: $status")
+            Log.i(TAG, "═══════════════════════════════════")
+
+            if (status != BluetoothGatt.GATT_SUCCESS || gatt == null) {
+                Log.e(TAG, "Service discovery failed")
+                return
+            }
+
+            // Log all services
+            gatt.services.forEach { service ->
+                val isCustom = service.uuid.toString().contains("efe0", true) || 
+                               service.uuid.toString().contains("fee7", true)
+                Log.d(TAG, "Service: ${service.uuid}${if(isCustom) " ★CUSTOM★" else ""}")
+                
+                service.characteristics.forEach { char ->
+                    val props = char.properties
+                    val propStr = buildString {
+                        if (props and BluetoothGattCharacteristic.PROPERTY_READ != 0) append("READ ")
+                        if (props and BluetoothGattCharacteristic.PROPERTY_WRITE != 0) append("WRITE ")
+                        if (props and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0) append("NOTIFY ")
+                        if (props and BluetoothGattCharacteristic.PROPERTY_INDICATE != 0) append("INDICATE ")
+                    }
+                    Log.d(TAG, "  Char: ${char.uuid} [$propStr]")
+                }
+            }
+
+            // Start reading and enabling notifications
+            Handler(Looper.getMainLooper()).post {
+                startDataRetrieval(gatt)
+            }
+        }
+        
+        @Deprecated("Deprecated in Java")
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt?,
+            characteristic: BluetoothGattCharacteristic?,
+            status: Int
+        ) {
+            if (status == BluetoothGatt.GATT_SUCCESS && characteristic != null) {
+                handleCharacteristicData(characteristic.uuid, characteristic.value)
+            }
+        }
+
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray,
+            status: Int
+        ) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                handleCharacteristicData(characteristic.uuid, value)
+            }
+        }
+
+        @Deprecated("Deprecated in Java")
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt?,
+            characteristic: BluetoothGattCharacteristic?
+        ) {
+            if (characteristic != null) {
+                Log.i(TAG, "📨 NOTIFICATION RECEIVED!")
+                handleCharacteristicData(characteristic.uuid, characteristic.value)
+            }
+        }
+
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray
+        ) {
+            Log.i(TAG, "📨 NOTIFICATION RECEIVED!")
+            handleCharacteristicData(characteristic.uuid, value)
+        }
+
+        override fun onDescriptorWrite(
+            gatt: BluetoothGatt?,
+            descriptor: BluetoothGattDescriptor?,
+            status: Int
+        ) {
+            Log.d(TAG, "Descriptor write: ${descriptor?.uuid}, status=$status")
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i(TAG, "✓ Notifications enabled for ${descriptor?.characteristic?.uuid}")
+            }
+        }
+    }
+
+    /**
+     * Start reading data and enabling notifications
+     */
+    @SuppressLint("MissingPermission")
+    private fun startDataRetrieval(gatt: BluetoothGatt) {
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "📊 STARTING DATA RETRIEVAL")
+        Log.i(TAG, "═══════════════════════════════════")
+
+        val operationQueue = mutableListOf<() -> Unit>()
+        
+        // 1. Read battery
+        gatt.getService(BATTERY_SERVICE_UUID)?.getCharacteristic(BATTERY_LEVEL_UUID)?.let { char ->
+            operationQueue.add { 
+                Log.d(TAG, "Reading battery...")
+                gatt.readCharacteristic(char) 
+            }
+        }
+        
+        // 2. Enable notifications on FEA1 (likely real battery/health data)
+        gatt.getService(SERVICE_FEE7)?.getCharacteristic(CHAR_FEA1)?.let { char ->
+            if (char.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0) {
+                operationQueue.add {
+                    Log.d(TAG, "Enabling FEA1 notifications...")
+                    enableNotifications(gatt, char)
+                }
+            }
+        }
+        
+        // 3. Enable notifications on EFE3 (custom health data)
+        gatt.getService(CUSTOM_SERVICE_EFE0)?.getCharacteristic(CUSTOM_CHAR_EFE3)?.let { char ->
+            if (char.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0) {
+                operationQueue.add {
+                    Log.d(TAG, "Enabling EFE3 notifications...")
+                    enableNotifications(gatt, char)
+                }
+            }
+        }
+        
+        // 4. Enable indication on FEA2
+        gatt.getService(SERVICE_FEE7)?.getCharacteristic(CHAR_FEA2)?.let { char ->
+            if (char.properties and BluetoothGattCharacteristic.PROPERTY_INDICATE != 0) {
+                operationQueue.add {
+                    Log.d(TAG, "Enabling FEA2 indications...")
+                    enableNotifications(gatt, char)
+                }
+            }
+        }
+        
+        // 5. Read FEA1 directly
+        gatt.getService(SERVICE_FEE7)?.getCharacteristic(CHAR_FEA1)?.let { char ->
+            if (char.properties and BluetoothGattCharacteristic.PROPERTY_READ != 0) {
+                operationQueue.add {
+                    Log.d(TAG, "Reading FEA1...")
+                    gatt.readCharacteristic(char)
+                }
+            }
+        }
+
+        // Execute operations with delays (BLE requires sequential operations)
+        operationQueue.forEachIndexed { index, operation ->
+            Handler(Looper.getMainLooper()).postDelayed({
+                operation()
+            }, 500L * (index + 1))
+        }
+
+        Log.i(TAG, "✓ Queued ${operationQueue.size} operations")
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun enableNotifications(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+        try {
+            gatt.setCharacteristicNotification(characteristic, true)
+            
+            val descriptor = characteristic.getDescriptor(CCCD_UUID)
+            if (descriptor != null) {
+                val value = if (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_INDICATE != 0) {
+                    BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+                } else {
+                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                }
+                
+                @Suppress("DEPRECATION")
+                descriptor.value = value
+                gatt.writeDescriptor(descriptor)
+                
+                Log.d(TAG, "✓ Notification descriptor written for ${characteristic.uuid}")
+            } else {
+                Log.w(TAG, "No CCCD descriptor for ${characteristic.uuid}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error enabling notifications: ${e.message}")
+        }
+    }
+
+    /**
+     * Handle incoming characteristic data
+     */
+    private fun handleCharacteristicData(uuid: UUID, value: ByteArray?) {
+        if (value == null || value.isEmpty()) return
+
+        val hexString = value.joinToString("") { "%02X".format(it) }
+        val intArray = value.map { it.toInt() and 0xFF }
+
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "📦 DATA RECEIVED")
+        Log.i(TAG, "UUID: $uuid")
+        Log.i(TAG, "Hex: $hexString")
+        Log.i(TAG, "Int: $intArray")
+        Log.i(TAG, "═══════════════════════════════════")
+
+        val uuidString = uuid.toString().lowercase()
+
+        when {
+            // Standard Battery Level (2A19)
+            uuidString.contains("2a19") -> {
+                val battery = value[0].toInt() and 0xFF
+                Log.i(TAG, "🔋 BATTERY (2A19): $battery%")
+                if (battery in 1..100) {
+                    _ringData.value = _ringData.value.copy(
+                        battery = battery,
+                        lastUpdate = System.currentTimeMillis()
+                    )
+                }
+            }
+            
+            // FEA1 - Likely contains real battery or health data
+            uuidString.contains("fea1") -> {
+                Log.i(TAG, "📊 FEA1 DATA RECEIVED!")
+                parseFea1Data(value)
+            }
+            
+            // EFE3 - Custom health data
+            uuidString.contains("efe3") -> {
+                Log.i(TAG, "📊 EFE3 DATA RECEIVED!")
+                parseEfe3Data(value)
+            }
+            
+            // FEC8/FEC9 - Device info
+            uuidString.contains("fec8") || uuidString.contains("fec9") -> {
+                Log.d(TAG, "Device info: $hexString")
+            }
+        }
+
+        // Check for potential battery values (look for 72 for debugging)
+        value.forEachIndexed { index, byte ->
+            val intVal = byte.toInt() and 0xFF
+            if (intVal in 60..80) {
+                Log.w(TAG, "⚡ POTENTIAL BATTERY at index $index: $intVal%")
+            }
+        }
+    }
+
+    private fun parseFea1Data(value: ByteArray) {
+        // Parse FEA1 data - format unknown, log everything
+        if (value.size >= 5) {
+            // Try different byte positions for battery
+            for (i in 0 until minOf(5, value.size)) {
+                val potentialBattery = value[i].toInt() and 0xFF
+                if (potentialBattery in 1..100) {
+                    Log.i(TAG, "🔋 FEA1 byte[$i] = $potentialBattery% (potential battery)")
+                }
+            }
+        }
+    }
+
+    private fun parseEfe3Data(value: ByteArray) {
+        // Parse EFE3 data - format unknown, log everything
+        if (value.isNotEmpty()) {
+            // Check for heart rate values (typically 40-200)
+            value.forEachIndexed { index, byte ->
+                val intVal = byte.toInt() and 0xFF
+                if (intVal in 40..200) {
+                    Log.i(TAG, "❤️ EFE3 byte[$index] = $intVal (potential HR)")
+                }
+            }
+        }
+    }
+
+    /**
+     * Disconnect from ring
+     */
+    @SuppressLint("MissingPermission")
+    fun disconnect() {
+        Log.d(TAG, "Disconnecting...")
+        bluetoothGatt?.disconnect()
+        bluetoothGatt?.close()
+        bluetoothGatt = null
+        _connectionState.value = ConnectionState.Disconnected
+    }
+
+    /**
+     * Check if connected
+     */
+    fun isConnected(): Boolean {
+        return _connectionState.value == ConnectionState.Connected
+    }
+
+    /**
+     * Manually read battery
+     */
+    @SuppressLint("MissingPermission")
+    fun refreshBattery() {
+        val gatt = bluetoothGatt ?: return
+        gatt.getService(BATTERY_SERVICE_UUID)?.getCharacteristic(BATTERY_LEVEL_UUID)?.let { char ->
+            gatt.readCharacteristic(char)
+        }
+    }
+}
