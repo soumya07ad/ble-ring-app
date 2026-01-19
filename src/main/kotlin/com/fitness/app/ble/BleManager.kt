@@ -160,9 +160,16 @@ class BleManager private constructor(private val context: Context) {
             YCBTClient.initClient(context, true)
             
             // CRITICAL FIX: Disable auto-reconnect to prevent 15-second disconnect loop
-            // This allows the connection to reach state 10 (ReadWriteOK)
-            YCBTClient.setReconnect(false)
-            Log.i(TAG, "✓ Auto-reconnect DISABLED - connection will stay stable")
+            // Using reflection because setReconnect() may not be public in all SDK versions
+            try {
+                val setReconnectMethod = YCBTClient::class.java.getMethod("setReconnect", Boolean::class.javaPrimitiveType)
+                setReconnectMethod.invoke(null, false)
+                Log.i(TAG, "✓ Auto-reconnect DISABLED via reflection - connection will stay stable")
+            } catch (e: NoSuchMethodException) {
+                Log.w(TAG, "⚠️ setReconnect() method not found in SDK - auto-reconnect may still occur")
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ Failed to disable auto-reconnect: ${e.message}")
+            }
             
             // Register global connection state listener
             registerConnectionListener()
