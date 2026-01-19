@@ -639,79 +639,72 @@ class NativeGattManager private constructor(private val context: Context) {
 
     private fun parseEfe3Data(value: ByteArray) {
         // EFE3 DATA FORMAT (20 bytes):
-        // There are TWO packet types:
-        // 
-        // TYPE 1: Status packet (byte[0] = 0x0F = 15)
-        //   [0] = 0x0F (15) - status packet flag
-        //   [1] = 6 (constant for status packets)
-        //   [2] = year (26 = 2026)
-        //   [3] = month (1 = January)
-        //   [4] = day (19)
-        //   [5] = hour (17)
-        //   [6] = minute (24)
-        //   [7] = second (4)
-        //   [8] = ★ REAL BATTERY PERCENTAGE ★
-        //   [12] = some counter (steps?)
-        //   [15] = another counter
-        //
-        // TYPE 2: Other packet (byte[0] = 0xF0 = 240) - IGNORE for battery!
+        // Multiple packet subtypes with byte[0] = 0x0F (15):
+        // - byte[1] = 6 (0x06): Status packet with timestamp + battery at byte[8]
+        // - byte[1] = 133 (0x85): Another type - need to analyze for battery
+        // - byte[0] = 240 (0xF0): Different packet type
         
         if (value.size < 9) return
         
         val packetType = value[0].toInt() and 0xFF
         val packetSubType = value[1].toInt() and 0xFF
         
-        // Only process STATUS packets (type 0x0F with subtype 6)
-        if (packetType == 0x0F && packetSubType == 6) {
-            val realBattery = value[8].toInt() and 0xFF
+        // Look for battery in ALL packets with type 0x0F
+        if (packetType == 0x0F) {
             
-            if (realBattery in 1..100) {
-                Log.i(TAG, "═══════════════════════════════════")
-                Log.i(TAG, "🔋🔋🔋 REAL BATTERY: $realBattery% 🔋🔋🔋")
-                Log.i(TAG, "═══════════════════════════════════")
-                
-                // Update the ring data with REAL battery
-                _ringData.value = _ringData.value.copy(
-                    battery = realBattery,
-                    lastUpdate = System.currentTimeMillis()
-                )
+            // Log all single byte values for analysis
+            Log.i(TAG, "═══════════════════════════════════")
+            Log.i(TAG, "🔍 EFE3 ANALYSIS (type=${packetType}, subtype=${packetSubType})")
+            Log.i(TAG, "═══════════════════════════════════")
+            
+            // Print all bytes that could be battery (values 50-100)
+            for (i in 0 until minOf(value.size, 12)) {
+                val byteVal = value[i].toInt() and 0xFF
+                if (byteVal in 50..100) {
+                    Log.i(TAG, "🔋 POTENTIAL BATTERY: byte[$i] = $byteVal%")
+                }
             }
             
-            // Parse timestamp
-            val year = 2000 + (value[2].toInt() and 0xFF)
-            val month = value[3].toInt() and 0xFF
-            val day = value[4].toInt() and 0xFF
-            val hour = value[5].toInt() and 0xFF
-            val minute = value[6].toInt() and 0xFF
-            val second = value[7].toInt() and 0xFF
-            Log.d(TAG, "EFE3 Timestamp: $year-$month-$day $hour:$minute:$second")
-            
-            // ═══════════════════════════════════════════════════════════
-            // STEPS ANALYSIS - trying to find steps in bytes 9-19
-            // Steps could be a 16-bit value (2 bytes, little-endian)
-            // ═══════════════════════════════════════════════════════════
-            
-            // Try various 16-bit combinations (little-endian)
-            val bytes9_10 = (value[9].toInt() and 0xFF) or ((value[10].toInt() and 0xFF) shl 8)
-            val bytes10_11 = (value[10].toInt() and 0xFF) or ((value[11].toInt() and 0xFF) shl 8)
-            val bytes11_12 = (value[11].toInt() and 0xFF) or ((value[12].toInt() and 0xFF) shl 8)
-            val bytes12_13 = (value[12].toInt() and 0xFF) or ((value[13].toInt() and 0xFF) shl 8)
-            val bytes14_15 = (value[14].toInt() and 0xFF) or ((value[15].toInt() and 0xFF) shl 8)
-            
-            Log.i(TAG, "═══════════════════════════════════")
-            Log.i(TAG, "👟 STEPS ANALYSIS - Check Chinese app for steps!")
-            Log.i(TAG, "═══════════════════════════════════")
-            Log.i(TAG, "bytes[9,10] as 16-bit: $bytes9_10")
-            Log.i(TAG, "bytes[10,11] as 16-bit: $bytes10_11")
-            Log.i(TAG, "bytes[11,12] as 16-bit: $bytes11_12")
-            Log.i(TAG, "bytes[12,13] as 16-bit: $bytes12_13")
-            Log.i(TAG, "bytes[14,15] as 16-bit: $bytes14_15")
-            Log.i(TAG, "Single bytes: [9]=${value[9].toInt() and 0xFF}, [10]=${value[10].toInt() and 0xFF}, [11]=${value[11].toInt() and 0xFF}, [12]=${value[12].toInt() and 0xFF}")
+            // For subtype 6 (status packet with timestamp)
+            if (packetSubType == 6) {
+                val realBattery = value[8].toInt() and 0xFF
+                
+                if (realBattery in 1..100) {
+                    Log.i(TAG, "🔋🔋🔋 BATTERY (type 6): $realBattery% 🔋🔋🔋")
+                    _ringData.value = _ringData.value.copy(
+                        battery = realBattery,
+                        lastUpdate = System.currentTimeMillis()
+                    )
+                }
+            }
+            // For subtype 133 (0x85) - try byte[8] too
+            else if (packetSubType == 0x85) {
+                val potentialBattery8 = value[8].toInt() and 0xFF
+                val potentialBattery5 = value[5].toInt() and 0xFF
+                val potentialBattery3 = value[3].toInt() and 0xFF
+                
+                Log.i(TAG, "🔍 Type 0x85: byte[3]=$potentialBattery3, byte[5]=$potentialBattery5, byte[8]=$potentialBattery8")
+                
+                // Try byte[5] as battery (seems more likely based on position)
+                if (potentialBattery5 in 50..100) {
+                    Log.i(TAG, "🔋🔋🔋 TRYING BATTERY (type 0x85 byte[5]): $potentialBattery5% 🔋🔋🔋")
+                    _ringData.value = _ringData.value.copy(
+                        battery = potentialBattery5,
+                        lastUpdate = System.currentTimeMillis()
+                    )
+                } else if (potentialBattery8 in 50..100) {
+                    Log.i(TAG, "🔋🔋🔋 TRYING BATTERY (type 0x85 byte[8]): $potentialBattery8% 🔋🔋🔋")
+                    _ringData.value = _ringData.value.copy(
+                        battery = potentialBattery8,
+                        lastUpdate = System.currentTimeMillis()
+                    )
+                }
+            }
             Log.i(TAG, "═══════════════════════════════════")
             
         } else {
-            // Ignore non-status packets for battery, but log their type
-            Log.d(TAG, "EFE3 packet type=$packetType (0x${packetType.toString(16).uppercase()}), ignoring for battery")
+            // Log type 0xF0 packets too
+            Log.d(TAG, "EFE3 packet type=0x${packetType.toString(16).uppercase()} (not 0x0F), ignoring")
         }
     }
 
