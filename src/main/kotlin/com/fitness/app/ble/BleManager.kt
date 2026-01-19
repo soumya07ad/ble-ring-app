@@ -1287,19 +1287,30 @@ class BleManager private constructor(private val context: Context) {
                     
                     // State 7 (0x07) = ServicesDiscovered
                     7, 0x07 -> {
-                        Log.i(TAG, "📋 STATE 7: Services discovered - waiting for state 8...")
+                        Log.i(TAG, "📋 STATE 7: Services discovered - initiating SDK handshake...")
                         _connectionState.value = ConnectionState.Connected
+                        cancelConnectionTimeout()
+                        isConnecting = false
                         
-                        // FALLBACK: If state 10 doesn't arrive in 5 seconds, try anyway
+                        // CRITICAL: Send SDK handshake IMMEDIATELY to unlock ring
+                        // The demo app sends these commands right after connection
+                        // This may help the ring progress to state 8, 9, 10
+                        Handler(Looper.getMainLooper()).post {
+                            sendSdkHandshake()
+                        }
+                        
+                        // Connect native GATT for direct data reading (backup)
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            if (connectedMacAddress.isNotEmpty()) {
+                                Log.i(TAG, "🔌 Connecting native GATT for direct data access...")
+                                connectNativeGatt(connectedMacAddress)
+                            }
+                        }, 1000)
+                        
+                        // FALLBACK: If state 10 doesn't arrive in 5 seconds, proceed anyway
                         Handler(Looper.getMainLooper()).postDelayed({
                             if (!dataRetrievalStarted && _connectionState.value == ConnectionState.Connected) {
-                                Log.w(TAG, "⚠️ State 10 timeout - attempting commands at state 7...")
-                                
-                                // Connect native GATT as backup
-                                if (connectedMacAddress.isNotEmpty()) {
-                                    connectNativeGatt(connectedMacAddress)
-                                }
-                                
+                                Log.w(TAG, "⚠️ State 10 timeout - proceeding with data retrieval at state 7...")
                                 onConnectionSuccess(connectedMacAddress, connectedDeviceName)
                             }
                         }, 5000)  // Wait 5 seconds for state 10
@@ -1316,7 +1327,7 @@ class BleManager private constructor(private val context: Context) {
                         Log.i(TAG, "⏳ STATE 5: Connecting...")
                     }
                     
-                    // State 4 (0x04) = Disconnecting
+                     // State 4 (0x04) = Disconnecting
                     4, 0x04 -> {
                         Log.i(TAG, "🔌 STATE 4: Disconnecting...")
                         dataRetrievalStarted = false
@@ -1349,6 +1360,118 @@ class BleManager private constructor(private val context: Context) {
                 }
             }
         })
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // SDK HANDSHAKE - Send initialization commands to unlock ring
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Send SDK handshake commands to help ring progress from state 7 to state 10
+     * The demo app sends these commands immediately after connection.
+     * This may trigger the SDK to complete characteristic discovery and notification setup.
+     */
+    private fun sendSdkHandshake() {
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "🤝 SENDING SDK HANDSHAKE")
+        Log.i(TAG, "═══════════════════════════════════")
+        
+        try {
+            // STEP 1: Set language (English = 0x00)
+            // Demo app does this FIRST after connection
+            Log.i(TAG, "🤝 Step 1: Setting language (English)...")
+            YCBTClient.settingLanguage(0x00, object : BleDataResponse {
+                override fun onDataResponse(code: Int, ratio: Float, resultMap: HashMap<*, *>?) {
+                    Log.i(TAG, "🤝 settingLanguage response: code=$code")
+                    if (code == 0) {
+                        Log.i(TAG, "✓ Language set successfully")
+                    }
+                }
+            })
+            
+            // STEP 2: Send phone time sync (after 300ms delay)
+            Handler(Looper.getMainLooper()).postDelayed({
+                Log.i(TAG, "🤝 Step 2: Syncing phone time...")
+                try {
+                    val calendar = java.util.Calendar.getInstance()
+                    val year = calendar.get(java.util.Calendar.YEAR)
+                    val month = calendar.get(java.util.Calendar.MONTH) + 1
+                    val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                    val hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+                    val minute = calendar.get(java.util.Calendar.MINUTE)
+                    val second = calendar.get(java.util.Calendar.SECOND)
+                    
+                    // Try different time sync methods
+                    try {
+                        // Method 1: settingTime (if exists)
+                        val method = YCBTClient::class.java.getMethod(
+                            "settingTime",
+                            Int::class.java, Int::class.java, Int::class.java,
+                            Int::class.java, Int::class.java, Int::class.java,
+                            BleDataResponse::class.java
+                        )
+                        method.invoke(null, year, month, day, hour, minute, second, object : BleDataResponse {
+                            override fun onDataResponse(code: Int, ratio: Float, resultMap: HashMap<*, *>?) {
+                                Log.i(TAG, "🤝 settingTime response: code=$code")
+                            }
+                        })
+                        Log.i(TAG, "✓ Time sync command sent")
+                    } catch (e: NoSuchMethodException) {
+                        Log.w(TAG, "settingTime method not found, skipping...")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Time sync failed: ${e.message}")
+                }
+            }, 300)
+            
+            // STEP 3: Send phone model (after 600ms delay)
+            Handler(Looper.getMainLooper()).postDelayed({
+                Log.i(TAG, "🤝 Step 3: Sending phone model...")
+                YCBTClient.appMobileModel(android.os.Build.MODEL, object : BleDataResponse {
+                    override fun onDataResponse(code: Int, ratio: Float, resultMap: HashMap<*, *>?) {
+                        Log.i(TAG, "🤝 appMobileModel response: code=$code")
+                        if (code == 0) {
+                            Log.i(TAG, "✓ Phone model sent successfully")
+                        }
+                    }
+                })
+            }, 600)
+            
+            // STEP 4: Request device info (after 1000ms delay)
+            // This may trigger the ring to complete state progression
+            Handler(Looper.getMainLooper()).postDelayed({
+                Log.i(TAG, "🤝 Step 4: Requesting device info...")
+                YCBTClient.getDeviceInfo(object : BleDataResponse {
+                    override fun onDataResponse(code: Int, ratio: Float, resultMap: HashMap<*, *>?) {
+                        Log.i(TAG, "🤝 getDeviceInfo response: code=$code")
+                        if (code == 0 && resultMap != null) {
+                            Log.i(TAG, "✓✓✓ DEVICE INFO RECEIVED! ✓✓✓")
+                            Log.i(TAG, "Response: $resultMap")
+                            parseAndUpdateDeviceInfo(resultMap)
+                        }
+                    }
+                })
+            }, 1000)
+            
+            // STEP 5: Enable heart rate monitoring (after 1500ms delay)
+            Handler(Looper.getMainLooper()).postDelayed({
+                Log.i(TAG, "🤝 Step 5: Enabling heart rate monitoring...")
+                try {
+                    YCBTClient.settingHeartMonitor(0x01, 10, object : BleDataResponse {
+                        override fun onDataResponse(code: Int, ratio: Float, resultMap: HashMap<*, *>?) {
+                            Log.i(TAG, "🤝 settingHeartMonitor response: code=$code")
+                        }
+                    })
+                } catch (e: Exception) {
+                    Log.w(TAG, "settingHeartMonitor failed: ${e.message}")
+                }
+            }, 1500)
+            
+            Log.i(TAG, "🤝 Handshake commands queued successfully")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ SDK Handshake error: ${e.message}", e)
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
