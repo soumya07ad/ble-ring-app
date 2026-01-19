@@ -451,13 +451,14 @@ class NativeGattManager private constructor(private val context: Context) {
 
         val operationQueue = mutableListOf<() -> Unit>()
         
-        // 1. Read battery
-        gatt.getService(BATTERY_SERVICE_UUID)?.getCharacteristic(BATTERY_LEVEL_UUID)?.let { char ->
-            operationQueue.add { 
-                Log.d(TAG, "Reading battery...")
-                gatt.readCharacteristic(char) 
-            }
-        }
+        // DISABLED: Standard battery service (2A19) returns wrong 100%
+        // Real battery comes from EFE3 status packets (byte[8])
+        // gatt.getService(BATTERY_SERVICE_UUID)?.getCharacteristic(BATTERY_LEVEL_UUID)?.let { char ->
+        //     operationQueue.add { 
+        //         Log.d(TAG, "Reading battery...")
+        //         gatt.readCharacteristic(char) 
+        //     }
+        // }
         
         // 2. Enable notifications on FEA1 (likely real battery/health data)
         gatt.getService(SERVICE_FEE7)?.getCharacteristic(CHAR_FEA1)?.let { char ->
@@ -554,16 +555,12 @@ class NativeGattManager private constructor(private val context: Context) {
         val uuidString = uuid.toString().lowercase()
 
         when {
-            // Standard Battery Level (2A19)
+            // DISABLED: Standard Battery Level (2A19) returns wrong 100%
+            // Real battery comes from EFE3 status packets
             uuidString.contains("2a19") -> {
                 val battery = value[0].toInt() and 0xFF
-                Log.i(TAG, "🔋 BATTERY (2A19): $battery%")
-                if (battery in 1..100) {
-                    _ringData.value = _ringData.value.copy(
-                        battery = battery,
-                        lastUpdate = System.currentTimeMillis()
-                    )
-                }
+                Log.d(TAG, "🔋 IGNORED: 2A19 battery = $battery% (wrong, using EFE3 instead)")
+                // Don't update ringData - we use EFE3 for real battery
             }
             
             // FEA1 - Likely contains real battery or health data
