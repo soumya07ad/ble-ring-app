@@ -156,11 +156,13 @@ class BleManager private constructor(private val context: Context) {
         }
 
         try {
-            // SDK initialization with auto-reconnect enabled
-            // NOTE: Auto-reconnect cannot be disabled in this SDK version, parameter is ignored
+            // SDK initialization
             YCBTClient.initClient(context, true)
             
-            Log.d(TAG, "SDK initialized (auto-reconnect behavior managed by SDK)")
+            // CRITICAL FIX: Disable auto-reconnect to prevent 15-second disconnect loop
+            // This allows the connection to reach state 10 (ReadWriteOK)
+            YCBTClient.setReconnect(false)
+            Log.i(TAG, "✓ Auto-reconnect DISABLED - connection will stay stable")
             
             // Register global connection state listener
             registerConnectionListener()
@@ -1244,65 +1246,105 @@ class BleManager private constructor(private val context: Context) {
     private fun registerConnectionListener() {
         YCBTClient.registerBleStateChange(object : BleConnectResponse {
             override fun onConnectResponse(code: Int) {
-                Log.d(TAG, "Global state change: code=$code")
+                // ENHANCED LOGGING: Show hex and decimal for all states
+                Log.i(TAG, "═══════════════════════════════════")
+                Log.i(TAG, "BLE STATE CHANGE: $code (0x${code.toString(16).uppercase()})")
+                Log.i(TAG, "═══════════════════════════════════")
+                
                 when (code) {
-                    Constants.BLEState.ReadWriteOK -> {
-                        // State 10 = ReadWriteOK (rarely/never arrives for R9 ring)
-                        // Keep handler in case it does arrive for other devices
+                    // State 10 (0x0a) = ReadWriteOK - THIS IS THE TARGET STATE!
+                    Constants.BLEState.ReadWriteOK, 10, 0x0a -> {
                         cancelConnectionTimeout()
                         isConnecting = false
                         _connectionState.value = ConnectionState.Connected
-                        Log.i(TAG, "═══════════════════════════════════")
-                        Log.i(TAG, "✓ SDK READY (State 10: ReadWriteOK)")
-                        Log.i(TAG, "═══════════════════════════════════")
+                        Log.i(TAG, "🎉🎉🎉 STATE 10 REACHED - ReadWriteOK! 🎉🎉🎉")
+                        Log.i(TAG, "SDK is now ready for commands!")
                         
-                        // Send commands immediately
-                        onConnectionSuccess(connectedMacAddress, connectedDeviceName)
-                    }
-                    7 -> {
-                        // State 7 = ServicesDiscovered
-                        // REALITY: State 10 never arrives for R9 ring, must send commands at State 7
-                        cancelConnectionTimeout()
-                        isConnecting = false
-                        _connectionState.value = ConnectionState.Connected
-                        Log.i(TAG, "═══════════════════════════════════")
-                        Log.i(TAG, "✓ BLE CONNECTED (State 7)")
-                        Log.i(TAG, "═══════════════════════════════════")
+                        // Connect native GATT for direct battery reading
+                        if (connectedMacAddress.isNotEmpty()) {
+                            connectNativeGatt(connectedMacAddress)
+                        }
                         
-                        // Send battery command immediately at State 7
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            if (_connectionState.value == ConnectionState.Connected) {
-                                Log.i(TAG, "🔋 Reading battery at State 7...")
-                                refreshBatteryViaSdk()
-                            }
-                        }, 500)
-                        
-                        // Also send other data commands
+                        // NOW send commands - SDK is fully ready
                         Handler(Looper.getMainLooper()).postDelayed({
                             if (!dataRetrievalStarted && _connectionState.value == ConnectionState.Connected) {
                                 onConnectionSuccess(connectedMacAddress, connectedDeviceName)
                             }
-                        }, 1000)
+                        }, 200)  // Short delay, SDK is ready
                     }
-                    6 -> {
-                        // State 6 = Connected, discovering services
+                    
+                    // State 9 (0x09) = CharacteristicNotification enabled
+                    9, 0x09 -> {
+                        Log.i(TAG, "📡 STATE 9: Notifications enabled - waiting for state 10...")
                         _connectionState.value = ConnectionState.Connected
-                        Log.d(TAG, "Global: Device connected (state 6)")
                     }
-                    Constants.BLEState.Disconnect, 2, 3 -> {
-                        // Disconnect states
-                        _connectionState.value = ConnectionState.Disconnected
-                        dataRetrievalStarted = false  // Reset so we can try again on reconnect
-                        Log.d(TAG, "Global: Device disconnected (state $code)")
+                    
+                    // State 8 (0x08) = CharacteristicDiscovered
+                    8, 0x08 -> {
+                        Log.i(TAG, "🔍 STATE 8: Characteristics discovered - waiting for state 9...")
+                        _connectionState.value = ConnectionState.Connected
                     }
-                    4, 5 -> {
-                        // Intermediate states - SDK is reconnecting
-                        // Reset flag so we can retry commands on the new connection
+                    
+                    // State 7 (0x07) = ServicesDiscovered
+                    7, 0x07 -> {
+                        Log.i(TAG, "📋 STATE 7: Services discovered - waiting for state 8...")
+                        _connectionState.value = ConnectionState.Connected
+                        
+                        // FALLBACK: If state 10 doesn't arrive in 5 seconds, try anyway
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            if (!dataRetrievalStarted && _connectionState.value == ConnectionState.Connected) {
+                                Log.w(TAG, "⚠️ State 10 timeout - attempting commands at state 7...")
+                                
+                                // Connect native GATT as backup
+                                if (connectedMacAddress.isNotEmpty()) {
+                                    connectNativeGatt(connectedMacAddress)
+                                }
+                                
+                                onConnectionSuccess(connectedMacAddress, connectedDeviceName)
+                            }
+                        }, 5000)  // Wait 5 seconds for state 10
+                    }
+                    
+                    // State 6 (0x06) = Connected
+                    6, 0x06 -> {
+                        Log.i(TAG, "🔗 STATE 6: BLE connected - waiting for services...")
+                        _connectionState.value = ConnectionState.Connected
+                    }
+                    
+                    // State 5 (0x05) = Connecting
+                    5, 0x05 -> {
+                        Log.i(TAG, "⏳ STATE 5: Connecting...")
+                    }
+                    
+                    // State 4 (0x04) = Disconnecting
+                    4, 0x04 -> {
+                        Log.i(TAG, "🔌 STATE 4: Disconnecting...")
                         dataRetrievalStarted = false
-                        Log.d(TAG, "Global: Intermediate state $code - reset dataRetrievalStarted")
                     }
+                    
+                    // State 3 (0x03) = Disconnect
+                    Constants.BLEState.Disconnect, 3, 0x03 -> {
+                        Log.i(TAG, "❌ STATE 3: Disconnected")
+                        _connectionState.value = ConnectionState.Disconnected
+                        dataRetrievalStarted = false
+                    }
+                    
+                    // State 2 (0x02) = NotOpen (Bluetooth off?)
+                    2, 0x02 -> {
+                        Log.w(TAG, "⚠️ STATE 2: NotOpen - is Bluetooth enabled?")
+                        _connectionState.value = ConnectionState.Disconnected
+                        dataRetrievalStarted = false
+                    }
+                    
+                    // State 1 (0x01) = Timeout
+                    1, 0x01 -> {
+                        Log.e(TAG, "⏰ STATE 1: Connection timeout!")
+                        _connectionState.value = ConnectionState.Timeout
+                        dataRetrievalStarted = false
+                    }
+                    
                     else -> {
-                        Log.w(TAG, "Global: Unknown state code: $code")
+                        Log.w(TAG, "❓ Unknown state: $code (0x${code.toString(16)})")
                     }
                 }
             }
