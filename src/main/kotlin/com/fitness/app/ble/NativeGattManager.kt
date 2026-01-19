@@ -594,14 +594,48 @@ class NativeGattManager private constructor(private val context: Context) {
     }
 
     private fun parseFea1Data(value: ByteArray) {
-        // Parse FEA1 data - format unknown, log everything
-        if (value.size >= 5) {
-            // Try different byte positions for battery
-            for (i in 0 until minOf(5, value.size)) {
-                val potentialBattery = value[i].toInt() and 0xFF
-                if (potentialBattery in 1..100) {
-                    Log.i(TAG, "🔋 FEA1 byte[$i] = $potentialBattery% (potential battery)")
+        // FEA1 DATA FORMAT (10 bytes):
+        // [0] = 7 (type/flag - constant)
+        // [1] = ★ STEPS COUNT ★
+        // [2] = 0
+        // [3] = 0
+        // [4] = 63 (unknown, possibly distance or calories related?)
+        // [5-9] = other data (0, 0, 2, 0, 0)
+        
+        if (value.size < 2) return
+        
+        val packetType = value[0].toInt() and 0xFF
+        
+        // Only parse if packet type is 7 (status packet)
+        if (packetType == 7) {
+            // ★ STEPS at byte[1] ★
+            // Note: If steps > 255, it might be 16-bit (bytes[1,2])
+            val steps = if (value.size >= 3) {
+                // Try 16-bit first (little-endian) for steps > 255
+                val steps16bit = (value[1].toInt() and 0xFF) or ((value[2].toInt() and 0xFF) shl 8)
+                if (steps16bit > 0 && value[2].toInt() != 0) {
+                    steps16bit  // Use 16-bit if high byte is non-zero
+                } else {
+                    value[1].toInt() and 0xFF  // Use single byte
                 }
+            } else {
+                value[1].toInt() and 0xFF
+            }
+            
+            Log.i(TAG, "═══════════════════════════════════")
+            Log.i(TAG, "👟👟� STEPS: $steps 👟👟👟")
+            Log.i(TAG, "═══════════════════════════════════")
+            
+            // Update the ring data with steps
+            _ringData.value = _ringData.value.copy(
+                steps = steps,
+                lastUpdate = System.currentTimeMillis()
+            )
+            
+            // Log other bytes for future analysis
+            if (value.size >= 5) {
+                val byte4 = value[4].toInt() and 0xFF
+                Log.d(TAG, "FEA1: type=$packetType, steps=$steps, byte[4]=$byte4")
             }
         }
     }
