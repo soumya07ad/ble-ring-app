@@ -59,6 +59,8 @@ class NativeGattManager private constructor(private val context: Context) {
     private var nativeScanCallback: ScanCallback? = null
     private var bluetoothGatt: BluetoothGatt? = null
     private var isConnecting = false
+    private var connectionRetryCount = 0
+    private val MAX_RETRIES = 3
     
     companion object {
         private const val TAG = "NativeGattManager"
@@ -296,6 +298,7 @@ class NativeGattManager private constructor(private val context: Context) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     Log.i(TAG, "✓✓✓ CONNECTED! Discovering services...")
                     isConnecting = false
+                    connectionRetryCount = 0  // Reset retry counter on success
                     _connectionState.value = ConnectionState.Connected
                     
                     // Update ring data with device info
@@ -315,12 +318,35 @@ class NativeGattManager private constructor(private val context: Context) {
                 }
                 
                 BluetoothProfile.STATE_DISCONNECTED -> {
-                    Log.w(TAG, "✗ DISCONNECTED")
+                    Log.w(TAG, "✗ DISCONNECTED (status=$status)")
                     isConnecting = false
-                    _connectionState.value = ConnectionState.Disconnected
                     
                     bluetoothGatt?.close()
                     bluetoothGatt = null
+                    
+                    // Handle status 133 (GATT_ERROR) - retry connection
+                    if (status == 133 && connectionRetryCount < MAX_RETRIES) {
+                        connectionRetryCount++
+                        Log.w(TAG, "⚠️ Status 133 error - retry $connectionRetryCount/$MAX_RETRIES in 2 seconds...")
+                        
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            if (connectedMacAddress.isNotEmpty()) {
+                                Log.i(TAG, "🔄 Retrying connection to $connectedMacAddress...")
+                                connectDevice(connectedMacAddress, connectedDeviceName)
+                            }
+                        }, 2000L * connectionRetryCount)  // Increasing delay
+                    } else {
+                        // Give up or normal disconnect
+                        connectionRetryCount = 0
+                        _connectionState.value = ConnectionState.Disconnected
+                        
+                        if (status == 133) {
+                            Log.e(TAG, "❌ Connection failed after $MAX_RETRIES retries. Try toggling Bluetooth.")
+                            Handler(Looper.getMainLooper()).post {
+                                Toast.makeText(context, "Connection failed. Toggle Bluetooth and try again.", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
                 }
             }
         }
