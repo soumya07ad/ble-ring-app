@@ -646,19 +646,37 @@ class NativeGattManager private constructor(private val context: Context) {
                 )
             }
             
-            // Log timestamp for debugging
+            // Parse timestamp
             val year = 2000 + (value[2].toInt() and 0xFF)
             val month = value[3].toInt() and 0xFF
             val day = value[4].toInt() and 0xFF
             val hour = value[5].toInt() and 0xFF
             val minute = value[6].toInt() and 0xFF
             val second = value[7].toInt() and 0xFF
-            Log.d(TAG, "EFE3 Status: $year-$month-$day $hour:$minute:$second, Battery: $realBattery%")
+            Log.d(TAG, "EFE3 Timestamp: $year-$month-$day $hour:$minute:$second")
             
-            // byte[12] might be steps or some activity counter
-            val counter1 = value[12].toInt() and 0xFF
-            val counter2 = value[15].toInt() and 0xFF
-            Log.d(TAG, "EFE3 Counters: byte[12]=$counter1, byte[15]=$counter2")
+            // ═══════════════════════════════════════════════════════════
+            // STEPS ANALYSIS - trying to find steps in bytes 9-19
+            // Steps could be a 16-bit value (2 bytes, little-endian)
+            // ═══════════════════════════════════════════════════════════
+            
+            // Try various 16-bit combinations (little-endian)
+            val bytes9_10 = (value[9].toInt() and 0xFF) or ((value[10].toInt() and 0xFF) shl 8)
+            val bytes10_11 = (value[10].toInt() and 0xFF) or ((value[11].toInt() and 0xFF) shl 8)
+            val bytes11_12 = (value[11].toInt() and 0xFF) or ((value[12].toInt() and 0xFF) shl 8)
+            val bytes12_13 = (value[12].toInt() and 0xFF) or ((value[13].toInt() and 0xFF) shl 8)
+            val bytes14_15 = (value[14].toInt() and 0xFF) or ((value[15].toInt() and 0xFF) shl 8)
+            
+            Log.i(TAG, "═══════════════════════════════════")
+            Log.i(TAG, "👟 STEPS ANALYSIS - Check Chinese app for steps!")
+            Log.i(TAG, "═══════════════════════════════════")
+            Log.i(TAG, "bytes[9,10] as 16-bit: $bytes9_10")
+            Log.i(TAG, "bytes[10,11] as 16-bit: $bytes10_11")
+            Log.i(TAG, "bytes[11,12] as 16-bit: $bytes11_12")
+            Log.i(TAG, "bytes[12,13] as 16-bit: $bytes12_13")
+            Log.i(TAG, "bytes[14,15] as 16-bit: $bytes14_15")
+            Log.i(TAG, "Single bytes: [9]=${value[9].toInt() and 0xFF}, [10]=${value[10].toInt() and 0xFF}, [11]=${value[11].toInt() and 0xFF}, [12]=${value[12].toInt() and 0xFF}")
+            Log.i(TAG, "═══════════════════════════════════")
             
         } else {
             // Ignore non-status packets for battery, but log their type
