@@ -581,15 +581,40 @@ class NativeGattManager private constructor(private val context: Context) {
     }
 
     private fun parseEfe3Data(value: ByteArray) {
-        // Parse EFE3 data - format unknown, log everything
-        if (value.isNotEmpty()) {
-            // Check for heart rate values (typically 40-200)
-            value.forEachIndexed { index, byte ->
-                val intVal = byte.toInt() and 0xFF
-                if (intVal in 40..200) {
-                    Log.i(TAG, "❤️ EFE3 byte[$index] = $intVal (potential HR)")
-                }
+        // EFE3 DATA FORMAT (20 bytes):
+        // [0] = flag/type (0x0F for status packet)
+        // [1-5] = timestamp? (year, month, day, hour, minute, second?)
+        // [6] = unknown (43 = constant in logs)
+        // [7] = changes over time (counter? seconds?)
+        // [8] = ★ REAL BATTERY PERCENTAGE ★
+        // [9-19] = other data (steps, HR, etc. - TBD)
+        
+        if (value.size >= 9) {
+            // ★ REAL BATTERY at byte[8] ★
+            val realBattery = value[8].toInt() and 0xFF
+            
+            if (realBattery in 1..100) {
+                Log.i(TAG, "═══════════════════════════════════")
+                Log.i(TAG, "🔋🔋🔋 REAL BATTERY: $realBattery% 🔋🔋🔋")
+                Log.i(TAG, "═══════════════════════════════════")
+                
+                // Update the ring data with REAL battery
+                _ringData.value = _ringData.value.copy(
+                    battery = realBattery,
+                    lastUpdate = System.currentTimeMillis()
+                )
             }
+        }
+        
+        // Log all bytes for future analysis
+        if (value.size >= 15) {
+            Log.d(TAG, "EFE3 Analysis:")
+            Log.d(TAG, "  byte[0] = ${value[0].toInt() and 0xFF} (type/flag)")
+            Log.d(TAG, "  byte[6] = ${value[6].toInt() and 0xFF} (constant?)")
+            Log.d(TAG, "  byte[7] = ${value[7].toInt() and 0xFF} (counter?)")
+            Log.d(TAG, "  byte[8] = ${value[8].toInt() and 0xFF} (BATTERY)")
+            Log.d(TAG, "  byte[11] = ${value[11].toInt() and 0xFF}")
+            Log.d(TAG, "  byte[12] = ${value[12].toInt() and 0xFF}")
         }
     }
 
