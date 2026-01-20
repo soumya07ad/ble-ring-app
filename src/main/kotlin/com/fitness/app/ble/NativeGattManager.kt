@@ -731,11 +731,7 @@ class NativeGattManager private constructor(private val context: Context) {
             0x0F -> {
                 when (packetSubType) {
                     0x06 -> {
-                        // Status packet format:
-                        // [15, 6, Year, Month, Day, Hour, Minute, Second, Battery, 0, 0, ?, HR?, ...]
-                        // byte[8] = Battery (confirmed)
-                        // byte[12] = Possibly last measured HR
-                        
+                        // Status packet with battery at byte[8]
                         val battery = value[8].toInt() and 0xFF
                         if (battery in 1..100) {
                             Log.i(TAG, "🔋🔋🔋 BATTERY (type 0x06): $battery% 🔋🔋🔋")
@@ -743,19 +739,6 @@ class NativeGattManager private constructor(private val context: Context) {
                                 battery = battery,
                                 lastUpdate = System.currentTimeMillis()
                             )
-                        }
-                        
-                        // Check byte[12] for potential HR value
-                        if (value.size > 12) {
-                            val potentialHR = value[12].toInt() and 0xFF
-                            if (potentialHR in 40..200) {
-                                Log.i(TAG, "❤️❤️❤️ HEART RATE from status packet: $potentialHR bpm ❤️❤️❤️")
-                                _ringData.value = _ringData.value.copy(
-                                    heartRate = potentialHR,
-                                    heartRateMeasuring = false,
-                                    lastUpdate = System.currentTimeMillis()
-                                )
-                            }
                         }
                     }
                     0x85 -> {
