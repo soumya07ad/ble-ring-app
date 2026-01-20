@@ -66,7 +66,7 @@ fun BatteryCard(batteryLevel: Int?) {
 }
 
 @Composable
-fun HeartRateCard(heartRate: Int?) {
+fun HeartRateCard(heartRate: Int?, isMeasuring: Boolean = false) {
     val hr = heartRate ?: 0
     
     val infiniteTransition = rememberInfiniteTransition(label = "heartbeat")
@@ -74,7 +74,7 @@ fun HeartRateCard(heartRate: Int?) {
         initialValue = 1f,
         targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = EaseInOutCubic),
+            animation = tween(if (isMeasuring) 400 else 800, easing = EaseInOutCubic),
             repeatMode = RepeatMode.Reverse
         ),
         label = "heartScale"
@@ -83,16 +83,22 @@ fun HeartRateCard(heartRate: Int?) {
     PremiumDataCard(
         icon = Icons.Default.Favorite,
         iconTint = ErrorRed,
-        iconScale = if (hr > 0) heartScale else 1f,
+        iconScale = if (hr > 0 || isMeasuring) heartScale else 1f,
         label = "HEART RATE",
-        value = if (heartRate != null && hr > 0) "$hr bpm" else "—",
+        value = when {
+            isMeasuring && hr == 0 -> "..."
+            heartRate != null && hr > 0 -> "$hr bpm"
+            else -> "—"
+        },
         status = when {
-            heartRate == null || hr == 0 -> "Measuring..."
+            isMeasuring -> "Measuring..."
+            heartRate == null || hr == 0 -> "Tap to measure"
             hr < 60 -> "Low"
             hr in 60..100 -> "Normal"
             else -> "Elevated"
         },
         statusColor = when {
+            isMeasuring -> WarningAmber
             heartRate == null || hr == 0 -> TextSecondary
             hr < 60 -> AccentCyan
             hr in 60..100 -> SuccessGreen

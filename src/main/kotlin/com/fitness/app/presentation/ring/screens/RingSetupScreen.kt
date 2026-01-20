@@ -106,7 +106,8 @@ fun RingSetupScreen(
                     ConnectedContent(
                         uiState = uiState,
                         onDisconnect = { viewModel.disconnect() },
-                        onDone = onSetupComplete
+                        onDone = onSetupComplete,
+                        onMeasureHeartRate = { viewModel.startHeartRateMeasurement() }
                     )
                 }
                 uiState.isConnecting -> {
@@ -510,7 +511,8 @@ private fun ConnectingContent() {
 private fun ConnectedContent(
     uiState: RingUiState,
     onDisconnect: () -> Unit,
-    onDone: () -> Unit
+    onDone: () -> Unit,
+    onMeasureHeartRate: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Success card
@@ -573,7 +575,38 @@ private fun ConnectedContent(
         // Data cards
         BatteryCard(batteryLevel = uiState.batteryLevel)
         Spacer(modifier = Modifier.height(12.dp))
-        HeartRateCard(heartRate = uiState.heartRate)
+        
+        // Heart Rate Card with Measure button
+        HeartRateCard(
+            heartRate = uiState.heartRate,
+            isMeasuring = uiState.ringData?.heartRateMeasuring == true
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Measure Heart Rate button
+        Button(
+            onClick = onMeasureHeartRate,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ErrorRed.copy(alpha = 0.8f)
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (uiState.ringData?.heartRateMeasuring == true) "Measuring..." else "Measure Heart Rate",
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.White
+            )
+        }
+        
         Spacer(modifier = Modifier.height(12.dp))
         StepsCard(steps = uiState.steps)
         
