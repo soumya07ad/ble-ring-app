@@ -324,10 +324,14 @@ class NativeGattManager private constructor(private val context: Context) {
                     bluetoothGatt?.close()
                     bluetoothGatt = null
                     
-                    // Handle status 133 (GATT_ERROR) - retry connection
-                    if (status == 133 && connectionRetryCount < MAX_RETRIES) {
+                    // Handle retryable GATT errors:
+                    // - status 8 = GATT_CONN_TIMEOUT (connection timeout)
+                    // - status 133 = GATT_ERROR (generic error)
+                    val isRetryableError = status == 8 || status == 133
+                    
+                    if (isRetryableError && connectionRetryCount < MAX_RETRIES) {
                         connectionRetryCount++
-                        Log.w(TAG, "⚠️ Status 133 error - retry $connectionRetryCount/$MAX_RETRIES in 2 seconds...")
+                        Log.w(TAG, "⚠️ GATT error (status=$status) - retry $connectionRetryCount/$MAX_RETRIES in 2 seconds...")
                         
                         Handler(Looper.getMainLooper()).postDelayed({
                             if (connectedMacAddress.isNotEmpty()) {
@@ -340,10 +344,10 @@ class NativeGattManager private constructor(private val context: Context) {
                         connectionRetryCount = 0
                         _connectionState.value = ConnectionState.Disconnected
                         
-                        if (status == 133) {
+                        if (isRetryableError) {
                             Log.e(TAG, "❌ Connection failed after $MAX_RETRIES retries. Try toggling Bluetooth.")
                             Handler(Looper.getMainLooper()).post {
-                                Toast.makeText(context, "Connection failed. Toggle Bluetooth and try again.", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Connection failed. Toggle Bluetooth and retry.", Toast.LENGTH_LONG).show()
                             }
                         }
                     }
@@ -677,28 +681,14 @@ class NativeGattManager private constructor(private val context: Context) {
                     )
                 }
             }
-            // For subtype 133 (0x85) - try byte[8] too
+            // For subtype 133 (0x85) - log only, DO NOT update battery (wrong data!)
             else if (packetSubType == 0x85) {
                 val potentialBattery8 = value[8].toInt() and 0xFF
                 val potentialBattery5 = value[5].toInt() and 0xFF
                 val potentialBattery3 = value[3].toInt() and 0xFF
                 
-                Log.i(TAG, "🔍 Type 0x85: byte[3]=$potentialBattery3, byte[5]=$potentialBattery5, byte[8]=$potentialBattery8")
-                
-                // Try byte[5] as battery (seems more likely based on position)
-                if (potentialBattery5 in 50..100) {
-                    Log.i(TAG, "🔋🔋🔋 TRYING BATTERY (type 0x85 byte[5]): $potentialBattery5% 🔋🔋🔋")
-                    _ringData.value = _ringData.value.copy(
-                        battery = potentialBattery5,
-                        lastUpdate = System.currentTimeMillis()
-                    )
-                } else if (potentialBattery8 in 50..100) {
-                    Log.i(TAG, "🔋🔋🔋 TRYING BATTERY (type 0x85 byte[8]): $potentialBattery8% 🔋🔋🔋")
-                    _ringData.value = _ringData.value.copy(
-                        battery = potentialBattery8,
-                        lastUpdate = System.currentTimeMillis()
-                    )
-                }
+                // DISABLED: These values are NOT real battery, they are some other data
+                Log.d(TAG, "� Type 0x85 (IGNORED for battery): byte[3]=$potentialBattery3, byte[5]=$potentialBattery5, byte[8]=$potentialBattery8")
             }
             Log.i(TAG, "═══════════════════════════════════")
             
