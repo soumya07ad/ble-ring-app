@@ -704,19 +704,20 @@ class NativeGattManager private constructor(private val context: Context) {
                 }
             }
             0xF0 -> {
-                // Type 0xF0 packet - also has data, check for battery
-                // Example: [240, 18, 4, 85, 24, 85, 0, 0, 85, 0, 1, 0, 0, 0, 0, 12, 250, 0, 0, 5]
-                // byte[4] = 24 could be interesting (close to steps?)
-                // byte[15] = 12, byte[16] = 250 - could be something
+                // Type 0xF0 packet - secondary data
                 val byte4 = value[4].toInt() and 0xFF
-                val byte10 = value[10].toInt() and 0xFF
-                Log.d(TAG, "🔍 Type 0xF0: byte[4]=$byte4, byte[10]=$byte10")
-                
-                // Look for any value that could be battery (60-100)
-                if (value.size > 4 && byte4 in 60..100 && _ringData.value.battery == null) {
-                    Log.i(TAG, "🔋 TRYING byte[4]=$byte4 as battery from 0xF0")
+                Log.d(TAG, "🔍 Type 0xF0: byte[4]=$byte4")
+            }
+            0x88 -> {
+                // Type 0x88 packet - CONTAINS REAL BATTERY at byte[8]!
+                // Example: [136, 240, 1, 0, 12, 167, 1, 16, 69, 0, 0, 0, 83, 80, 0, 0, 14, 69, 0, 0]
+                //                                      ^^
+                //                                   byte[8] = 69% (real battery)
+                val battery = value[8].toInt() and 0xFF
+                if (battery in 1..100) {
+                    Log.i(TAG, "🔋🔋� BATTERY (type 0x88): $battery% 🔋🔋🔋")
                     _ringData.value = _ringData.value.copy(
-                        battery = byte4,
+                        battery = battery,
                         lastUpdate = System.currentTimeMillis()
                     )
                 }
@@ -726,6 +727,17 @@ class NativeGattManager private constructor(private val context: Context) {
                 Log.d(TAG, "🔍 Type 0x81 - ACK packet")
             }
             else -> {
+                // Check if any unknown packet has battery at byte[8]
+                if (value.size > 8) {
+                    val potentialBattery = value[8].toInt() and 0xFF
+                    if (potentialBattery in 60..100 && _ringData.value.battery == null) {
+                        Log.i(TAG, "🔋 Found battery in unknown packet type 0x${packetType.toString(16).uppercase()}: byte[8]=$potentialBattery")
+                        _ringData.value = _ringData.value.copy(
+                            battery = potentialBattery,
+                            lastUpdate = System.currentTimeMillis()
+                        )
+                    }
+                }
                 Log.d(TAG, "🔍 Unknown packet type 0x${packetType.toString(16).uppercase()}")
             }
         }
