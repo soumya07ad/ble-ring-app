@@ -643,59 +643,94 @@ class NativeGattManager private constructor(private val context: Context) {
 
     private fun parseEfe3Data(value: ByteArray) {
         // EFE3 DATA FORMAT (20 bytes):
-        // Multiple packet subtypes with byte[0] = 0x0F (15):
-        // - byte[1] = 6 (0x06): Status packet with timestamp + battery at byte[8]
-        // - byte[1] = 133 (0x85): Another type - need to analyze for battery
-        // - byte[0] = 240 (0xF0): Different packet type
+        // Multiple packet types:
+        // - type 0x0F, subtype 0x06: Status packet with timestamp + battery at byte[8]
+        // - type 0x0F, subtype 0x85: Unknown data (contains 85 values)
+        // - type 0x0F, subtype 0xF1: May contain HR or other measurements
+        // - type 0xF0: Contains data (possibly battery?)
+        // - type 0x81: Acknowledgment packet
         
         if (value.size < 9) return
         
         val packetType = value[0].toInt() and 0xFF
         val packetSubType = value[1].toInt() and 0xFF
         
-        // Look for battery in ALL packets with type 0x0F
-        if (packetType == 0x0F) {
-            
-            // Log all single byte values for analysis
-            Log.i(TAG, "═══════════════════════════════════")
-            Log.i(TAG, "🔍 EFE3 ANALYSIS (type=${packetType}, subtype=${packetSubType})")
-            Log.i(TAG, "═══════════════════════════════════")
-            
-            // Print all bytes that could be battery (values 50-100)
-            for (i in 0 until minOf(value.size, 12)) {
-                val byteVal = value[i].toInt() and 0xFF
-                if (byteVal in 50..100) {
-                    Log.i(TAG, "🔋 POTENTIAL BATTERY: byte[$i] = $byteVal%")
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "� EFE3 PACKET: type=0x${packetType.toString(16).uppercase()}, subtype=0x${packetSubType.toString(16).uppercase()}")
+        Log.i(TAG, "═══════════════════════════════════")
+        
+        // Print all bytes for analysis
+        val allBytes = value.take(15).mapIndexed { i, b -> "[$i]=${b.toInt() and 0xFF}" }.joinToString(", ")
+        Log.d(TAG, "All bytes: $allBytes")
+        
+        // Print potential battery values (50-100)
+        for (i in 0 until minOf(value.size, 15)) {
+            val byteVal = value[i].toInt() and 0xFF
+            if (byteVal in 60..100) {
+                Log.i(TAG, "🔋 POTENTIAL BATTERY: byte[$i] = $byteVal%")
+            }
+        }
+        
+        when (packetType) {
+            0x0F -> {
+                when (packetSubType) {
+                    0x06 -> {
+                        // Status packet with battery at byte[8]
+                        val battery = value[8].toInt() and 0xFF
+                        if (battery in 1..100) {
+                            Log.i(TAG, "🔋🔋🔋 BATTERY (type 0x06): $battery% 🔋🔋🔋")
+                            _ringData.value = _ringData.value.copy(
+                                battery = battery,
+                                lastUpdate = System.currentTimeMillis()
+                            )
+                        }
+                    }
+                    0x85 -> {
+                        // This packet shows 85 in multiple positions - NOT battery
+                        Log.d(TAG, "🔍 Type 0x85 packet (ignored for battery)")
+                    }
+                    0xF1 -> {
+                        // This might be HR or other measurement data
+                        // Packet: [15, 241, 15, 14, 5, 15, 213, 15, 213, ...]
+                        Log.i(TAG, "❤️ Type 0xF1 - POTENTIAL HR/MEASUREMENT DATA!")
+                        val potentialHR1 = value[2].toInt() and 0xFF  // byte[2] = 15
+                        val potentialHR2 = value[3].toInt() and 0xFF  // byte[3] = 14
+                        val potentialHR3 = value[4].toInt() and 0xFF  // byte[4] = 5
+                        Log.i(TAG, "❤️ Potential values: byte[2]=$potentialHR1, byte[3]=$potentialHR2, byte[4]=$potentialHR3")
+                    }
+                    else -> {
+                        Log.d(TAG, "🔍 Type 0x0F subtype 0x${packetSubType.toString(16).uppercase()} - unknown")
+                    }
                 }
             }
-            
-            // For subtype 6 (status packet with timestamp)
-            if (packetSubType == 6) {
-                val realBattery = value[8].toInt() and 0xFF
+            0xF0 -> {
+                // Type 0xF0 packet - also has data, check for battery
+                // Example: [240, 18, 4, 85, 24, 85, 0, 0, 85, 0, 1, 0, 0, 0, 0, 12, 250, 0, 0, 5]
+                // byte[4] = 24 could be interesting (close to steps?)
+                // byte[15] = 12, byte[16] = 250 - could be something
+                val byte4 = value[4].toInt() and 0xFF
+                val byte10 = value[10].toInt() and 0xFF
+                Log.d(TAG, "🔍 Type 0xF0: byte[4]=$byte4, byte[10]=$byte10")
                 
-                if (realBattery in 1..100) {
-                    Log.i(TAG, "🔋🔋🔋 BATTERY (type 6): $realBattery% 🔋🔋🔋")
+                // Look for any value that could be battery (60-100)
+                if (value.size > 4 && byte4 in 60..100 && _ringData.value.battery == null) {
+                    Log.i(TAG, "🔋 TRYING byte[4]=$byte4 as battery from 0xF0")
                     _ringData.value = _ringData.value.copy(
-                        battery = realBattery,
+                        battery = byte4,
                         lastUpdate = System.currentTimeMillis()
                     )
                 }
             }
-            // For subtype 133 (0x85) - log only, DO NOT update battery (wrong data!)
-            else if (packetSubType == 0x85) {
-                val potentialBattery8 = value[8].toInt() and 0xFF
-                val potentialBattery5 = value[5].toInt() and 0xFF
-                val potentialBattery3 = value[3].toInt() and 0xFF
-                
-                // DISABLED: These values are NOT real battery, they are some other data
-                Log.d(TAG, "� Type 0x85 (IGNORED for battery): byte[3]=$potentialBattery3, byte[5]=$potentialBattery5, byte[8]=$potentialBattery8")
+            0x81 -> {
+                // Acknowledgment packet
+                Log.d(TAG, "🔍 Type 0x81 - ACK packet")
             }
-            Log.i(TAG, "═══════════════════════════════════")
-            
-        } else {
-            // Log type 0xF0 packets too
-            Log.d(TAG, "EFE3 packet type=0x${packetType.toString(16).uppercase()} (not 0x0F), ignoring")
+            else -> {
+                Log.d(TAG, "🔍 Unknown packet type 0x${packetType.toString(16).uppercase()}")
+            }
         }
+        
+        Log.i(TAG, "═══════════════════════════════════")
     }
 
     /**
