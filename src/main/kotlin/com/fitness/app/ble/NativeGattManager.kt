@@ -579,6 +579,12 @@ class NativeGattManager private constructor(private val context: Context) {
                 parseEfe3Data(value)
             }
             
+            // FEA2 - Heart Rate and real-time health data
+            uuidString.contains("fea2") -> {
+                Log.i(TAG, "❤️ FEA2 DATA RECEIVED - POTENTIAL HR!")
+                parseFea2Data(value)
+            }
+            
             // FEC8/FEC9 - Device info
             uuidString.contains("fec8") || uuidString.contains("fec9") -> {
                 Log.d(TAG, "Device info: $hexString")
@@ -639,6 +645,56 @@ class NativeGattManager private constructor(private val context: Context) {
                 Log.d(TAG, "FEA1: type=$packetType, steps=$steps, byte[4]=$byte4")
             }
         }
+    }
+    
+    /**
+     * Parse FEA2 data - Heart Rate / Real-time health data
+     */
+    private fun parseFea2Data(value: ByteArray) {
+        if (value.isEmpty()) return
+        
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "❤️ FEA2 HEART RATE PACKET ANALYSIS")
+        Log.i(TAG, "═══════════════════════════════════")
+        
+        // Log all bytes for analysis
+        val allBytes = value.take(20).mapIndexed { i, b -> "[$i]=${b.toInt() and 0xFF}" }.joinToString(", ")
+        Log.i(TAG, "All bytes: $allBytes")
+        
+        // Look for potential HR values (40-200 typical HR range)
+        for (i in 0 until minOf(value.size, 15)) {
+            val byteVal = value[i].toInt() and 0xFF
+            if (byteVal in 40..200) {
+                Log.i(TAG, "❤️ POTENTIAL HR: byte[$i] = $byteVal bpm")
+            }
+        }
+        
+        // Try common positions for HR data
+        // Position 0 or 1 is most common for HR
+        val packetType = value[0].toInt() and 0xFF
+        val potentialHR1 = if (value.size > 1) value[1].toInt() and 0xFF else 0
+        val potentialHR2 = if (value.size > 2) value[2].toInt() and 0xFF else 0
+        
+        Log.i(TAG, "packet type=${packetType}, byte[1]=$potentialHR1, byte[2]=$potentialHR2")
+        
+        // If this looks like an HR packet (values in valid HR range 40-200)
+        val hrValue = when {
+            potentialHR1 in 40..200 -> potentialHR1
+            potentialHR2 in 40..200 -> potentialHR2
+            packetType in 40..200 -> packetType  // Sometimes HR is at byte[0]
+            else -> 0
+        }
+        
+        if (hrValue > 0) {
+            Log.i(TAG, "❤️❤️❤️ HEART RATE FOUND: $hrValue bpm ❤️❤️❤️")
+            _ringData.value = _ringData.value.copy(
+                heartRate = hrValue,
+                heartRateMeasuring = false,  // Measurement complete
+                lastUpdate = System.currentTimeMillis()
+            )
+        }
+        
+        Log.i(TAG, "═══════════════════════════════════")
     }
 
     private fun parseEfe3Data(value: ByteArray) {
