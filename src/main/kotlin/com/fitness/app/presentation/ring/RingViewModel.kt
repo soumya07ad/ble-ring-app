@@ -241,14 +241,14 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
      * Start heart rate measurement
      */
     fun startHeartRateMeasurement() {
-        container.ringRepository.startHeartRateMeasurement()
+        container.nativeGattManager.startHeartRateMeasurement()
     }
     
     /**
      * Stop heart rate measurement
      */
     fun stopHeartRateMeasurement() {
-        container.ringRepository.stopHeartRateMeasurement()
+        container.nativeGattManager.stopHeartRateMeasurement()
     }
     
     // ==================== UI State Updates ====================
