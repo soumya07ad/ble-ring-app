@@ -727,4 +727,103 @@ class NativeGattManager private constructor(private val context: Context) {
             gatt.readCharacteristic(char)
         }
     }
+
+    /**
+     * Start heart rate measurement
+     * Writes command to FEC7 or EFE1 to trigger HR measurement
+     */
+    @SuppressLint("MissingPermission")
+    fun startHeartRateMeasurement() {
+        val gatt = bluetoothGatt ?: run {
+            Log.w(TAG, "Cannot start HR measurement - not connected")
+            return
+        }
+        
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "❤️ STARTING HEART RATE MEASUREMENT")
+        Log.i(TAG, "═══════════════════════════════════")
+        
+        // Try writing to FEC7 (common command characteristic)
+        // Common HR measurement commands for fitness devices
+        val hrCommands = listOf(
+            byteArrayOf(0x01),                    // Simple start command
+            byteArrayOf(0x11),                    // Start HR measurement (some devices)
+            byteArrayOf(0x15, 0x01),             // Start HR (YC SDK pattern)
+            byteArrayOf(0x15, 0x02, 0x00),       // Another HR command pattern
+            byteArrayOf(0x05, 0x01),             // Alternative start command
+            byteArrayOf(0x16, 0x01)              // Real-time HR start
+        )
+        
+        // Try FEC7 first (Write characteristic on FEE7 service)
+        gatt.getService(SERVICE_FEE7)?.getCharacteristic(CHAR_FEC7)?.let { char ->
+            if (char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0 ||
+                char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0) {
+                
+                // Try the first few commands with delays
+                hrCommands.take(3).forEachIndexed { index, cmd ->
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        Log.i(TAG, "❤️ Sending HR command to FEC7: ${cmd.joinToString { String.format("%02X", it) }}")
+                        char.value = cmd
+                        char.writeType = if (char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0) {
+                            BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                        } else {
+                            BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                        }
+                        gatt.writeCharacteristic(char)
+                    }, 1000L * index)
+                }
+            } else {
+                Log.d(TAG, "FEC7 does not support write")
+            }
+        } ?: Log.d(TAG, "FEC7 characteristic not found")
+        
+        // Also try EFE1 (Write characteristic on EFE0 service)
+        gatt.getService(CUSTOM_SERVICE_EFE0)?.getCharacteristic(CUSTOM_CHAR_EFE1)?.let { char ->
+            if (char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0 ||
+                char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0) {
+                
+                Handler(Looper.getMainLooper()).postDelayed({
+                    val cmd = byteArrayOf(0x15, 0x01)  // Common YC SDK HR command
+                    Log.i(TAG, "❤️ Sending HR command to EFE1: ${cmd.joinToString { String.format("%02X", it) }}")
+                    char.value = cmd
+                    char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                    gatt.writeCharacteristic(char)
+                }, 4000L)  // After FEC7 commands
+            }
+        }
+        
+        // Update UI to show measuring
+        _ringData.value = _ringData.value.copy(
+            heartRateMeasuring = true,
+            lastUpdate = System.currentTimeMillis()
+        )
+        
+        // Reset measuring flag after 30 seconds
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (_ringData.value.heartRateMeasuring) {
+                _ringData.value = _ringData.value.copy(heartRateMeasuring = false)
+                Log.w(TAG, "❤️ HR measurement timed out")
+            }
+        }, 30000L)
+    }
+
+    /**
+     * Stop heart rate measurement
+     */
+    @SuppressLint("MissingPermission")
+    fun stopHeartRateMeasurement() {
+        val gatt = bluetoothGatt ?: return
+        
+        Log.i(TAG, "❤️ STOPPING HEART RATE MEASUREMENT")
+        
+        // Send stop command
+        val stopCmd = byteArrayOf(0x15, 0x00)  // Stop HR measurement
+        
+        gatt.getService(SERVICE_FEE7)?.getCharacteristic(CHAR_FEC7)?.let { char ->
+            char.value = stopCmd
+            gatt.writeCharacteristic(char)
+        }
+        
+        _ringData.value = _ringData.value.copy(heartRateMeasuring = false)
+    }
 }

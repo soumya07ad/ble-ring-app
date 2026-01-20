@@ -7,6 +7,7 @@ package com.fitness.app.domain.model
 data class RingHealthData(
     val battery: Int? = null,    // null = unknown, 0-100 = actual percentage
     val heartRate: Int = 0,
+    val heartRateMeasuring: Boolean = false,  // true when measuring HR
     val steps: Int = 0,
     val distance: Int = 0,       // meters
     val calories: Int = 0,       // kcal

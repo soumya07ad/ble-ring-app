@@ -239,6 +239,20 @@ class RingRepositoryImpl(
     
     override fun getConnectedRing(): Ring? = connectedRing
     
+    /**
+     * Start heart rate measurement
+     */
+    fun startHeartRateMeasurement() {
+        gattManager.startHeartRateMeasurement()
+    }
+    
+    /**
+     * Stop heart rate measurement
+     */
+    fun stopHeartRateMeasurement() {
+        gattManager.stopHeartRateMeasurement()
+    }
+    
     companion object {
         @Volatile
         private var INSTANCE: RingRepositoryImpl? = null
