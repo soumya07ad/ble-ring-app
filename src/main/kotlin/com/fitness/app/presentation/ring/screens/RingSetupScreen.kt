@@ -638,6 +638,11 @@ private fun ConnectedContent(
                 )
             }
             
+            // Stress Level
+            item {
+                StressCard(stress = uiState.ringData?.stress ?: 0)
+            }
+            
             // Steps
             item {
                 StepsCard(steps = uiState.steps)
@@ -817,6 +822,70 @@ private fun SpO2Card(spO2: Int, isMeasuring: Boolean) {
     }
 }
 
+@Composable
+private fun StressCard(stress: Int) {
+    val stressColor = when {
+        stress <= 30 -> SuccessGreen
+        stress <= 60 -> WarningAmber
+        else -> ErrorRed
+    }
+    val stressLabel = when {
+        stress <= 30 -> "Low"
+        stress <= 60 -> "Medium"
+        else -> "High"
+    }
+    
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = GlassWhite
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(stressColor.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Face,
+                    contentDescription = null,
+                    tint = stressColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Stress Level",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (stress > 0) "$stress" else "--",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (stress > 0) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stressLabel,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = stressColor,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun ManualEntryContent(

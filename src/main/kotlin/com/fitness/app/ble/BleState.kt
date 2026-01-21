@@ -80,6 +80,7 @@ data class RingData(
     val bloodPressureMeasuring: Boolean = false,
     val spO2: Int = 0,          // blood oxygen %
     val spO2Measuring: Boolean = false,
+    val stress: Int = 0,         // stress level (0-100)
     val steps: Int = 0,
     val distance: Int = 0,       // meters
     val calories: Int = 0,       // kcal

@@ -751,6 +751,18 @@ class NativeGattManager private constructor(private val context: Context) {
                             )
                         }
                         
+                        // Check for stress level at byte[2]
+                        if (value.size > 2) {
+                            val stress = value[2].toInt() and 0xFF
+                            if (stress in 0..100) {
+                                Log.i(TAG, "😰 STRESS LEVEL (byte[2]): $stress")
+                                _ringData.value = _ringData.value.copy(
+                                    stress = stress,
+                                    lastUpdate = System.currentTimeMillis()
+                                )
+                            }
+                        }
+                        
                         // Check for HR at byte[12] (stored/last measured HR)
                         if (value.size > 12) {
                             val storedHR = value[12].toInt() and 0xFF
