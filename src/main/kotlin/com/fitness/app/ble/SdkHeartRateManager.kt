@@ -52,7 +52,7 @@ class SdkHeartRateManager {
                     Log.i(TAG, "═══════════════════════════════════")
                     
                     when (dataType) {
-                        Constants.DATATYPE.Real_UploadHeartRate -> {
+                        Constants.DATATYPE.Real_UploadHeart -> {
                             // Heart rate data received
                             val hr = dataMap?.get("heartValue") as? Int
                                 ?: dataMap?.get("heart") as? Int
