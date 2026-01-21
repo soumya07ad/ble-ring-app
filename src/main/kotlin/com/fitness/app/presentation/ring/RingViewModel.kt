@@ -83,9 +83,9 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
                 if (hr != null) {
                     // Update ringData with SDK HR value
                     _uiState.update { currentState ->
-                        currentState.copy(
-                            ringData = currentState.ringData?.copy(heartRate = hr)
-                        )
+                        currentState.ringData?.let { data ->
+                            currentState.copy(ringData = data.copy(heartRate = hr))
+                        } ?: currentState
                     }
                 }
             }
@@ -95,9 +95,9 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             container.sdkHeartRateManager.isMeasuring.collect { measuring ->
                 _uiState.update { currentState ->
-                    currentState.copy(
-                        ringData = currentState.ringData?.copy(heartRateMeasuring = measuring)
-                    )
+                    currentState.ringData?.let { data ->
+                        currentState.copy(ringData = data.copy(heartRateMeasuring = measuring))
+                    } ?: currentState
                 }
             }
         }
