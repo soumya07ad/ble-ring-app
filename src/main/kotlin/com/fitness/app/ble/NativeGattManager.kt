@@ -749,20 +749,67 @@ class NativeGattManager private constructor(private val context: Context) {
                             )
                         }
                     }
+                    0x15, 0x16 -> {
+                        // ❤️ REAL-TIME HEART RATE PACKET!
+                        // Format: [0x0F, 0x15/0x16, HR_value, ...]
+                        Log.i(TAG, "❤️❤️❤️ REAL-TIME HR PACKET DETECTED (0x${packetSubType.toString(16)}) ❤️❤️❤️")
+                        
+                        // HR is typically at byte[2] or byte[3]
+                        for (i in 2 until minOf(value.size, 8)) {
+                            val hr = value[i].toInt() and 0xFF
+                            if (hr in 40..200) {
+                                Log.i(TAG, "❤️❤️❤️ HEART RATE: $hr bpm ❤️❤️❤️")
+                                _ringData.value = _ringData.value.copy(
+                                    heartRate = hr,
+                                    heartRateMeasuring = false,
+                                    lastUpdate = System.currentTimeMillis()
+                                )
+                                Handler(Looper.getMainLooper()).post {
+                                    Toast.makeText(context, "Heart Rate: $hr bpm", Toast.LENGTH_SHORT).show()
+                                }
+                                break  // Found valid HR, stop searching
+                            }
+                        }
+                    }
                     0x85 -> {
                         // This packet shows 85 in multiple positions - NOT battery
                         Log.d(TAG, "🔍 Type 0x85 packet (ignored for battery)")
                     }
                     0xF1 -> {
                         // This might be HR or other measurement data
-                        // Packet: [15, 241, 15, 14, 5, 15, 213, 15, 213, ...]
+                        // Packet: [15, 241, HR?, ...]
                         Log.i(TAG, "❤️ Type 0xF1 - POTENTIAL HR/MEASUREMENT DATA!")
-                        val potentialHR1 = value[2].toInt() and 0xFF  // byte[2] = 15
-                        val potentialHR2 = value[3].toInt() and 0xFF  // byte[3] = 14
-                        val potentialHR3 = value[4].toInt() and 0xFF  // byte[4] = 5
-                        Log.i(TAG, "❤️ Potential values: byte[2]=$potentialHR1, byte[3]=$potentialHR2, byte[4]=$potentialHR3")
+                        
+                        // Look for valid HR value in positions 2-6
+                        for (i in 2 until minOf(value.size, 7)) {
+                            val hr = value[i].toInt() and 0xFF
+                            if (hr in 40..200) {
+                                Log.i(TAG, "❤️❤️❤️ HEART RATE FROM 0xF1: $hr bpm ❤️❤️❤️")
+                                _ringData.value = _ringData.value.copy(
+                                    heartRate = hr,
+                                    heartRateMeasuring = false,
+                                    lastUpdate = System.currentTimeMillis()
+                                )
+                                break
+                            }
+                        }
                     }
                     else -> {
+                        // Check if any 0x0F subtype packet contains HR
+                        if (_ringData.value.heartRateMeasuring) {
+                            for (i in 2 until minOf(value.size, 10)) {
+                                val hr = value[i].toInt() and 0xFF
+                                if (hr in 40..200) {
+                                    Log.i(TAG, "❤️ DETECTED HR in 0x0F/0x${packetSubType.toString(16)}: byte[$i]=$hr bpm")
+                                    _ringData.value = _ringData.value.copy(
+                                        heartRate = hr,
+                                        heartRateMeasuring = false,
+                                        lastUpdate = System.currentTimeMillis()
+                                    )
+                                    break
+                                }
+                            }
+                        }
                         Log.d(TAG, "🔍 Type 0x0F subtype 0x${packetSubType.toString(16).uppercase()} - unknown")
                     }
                 }

@@ -207,18 +207,18 @@ class RingRepositoryImpl(
     override fun getConnectedRing(): Ring? = connectedRing
     
     /**
-     * Start heart rate measurement
-     * (Currently disabled in Native mode)
+     * Start heart rate measurement via Native GATT
+     * Sends command to EFE1/FEC7 and listens for HR data on FEA2/EFE3
      */
     override fun startHeartRateMeasurement() {
-        // nativeManager.startHeartRateMeasurement() // Not implemented in native yet
+        nativeManager.startHeartRateMeasurement()
     }
     
     /**
      * Stop heart rate measurement
      */
     override fun stopHeartRateMeasurement() {
-        // nativeManager.stopHeartRateMeasurement() // Not implemented in native yet
+        nativeManager.stopHeartRateMeasurement()
     }
     
     companion object {
