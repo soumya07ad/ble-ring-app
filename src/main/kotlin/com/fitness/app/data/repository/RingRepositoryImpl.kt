@@ -74,6 +74,15 @@ class RingRepositoryImpl(
                 _ringData.value = mapRingData(data)
             }
         }
+        
+        // Observe scan results
+        scope.launch {
+            sdkManager.scanResults.collect { devices ->
+                if (_scanStatus.value is ScanStatus.Scanning && devices.isNotEmpty()) {
+                    _scanStatus.value = ScanStatus.DevicesFound(devices)
+                }
+            }
+        }
     }
     
     /**
@@ -114,15 +123,32 @@ class RingRepositoryImpl(
     }
     
     override suspend fun startScan(durationSeconds: Int): Result<List<Ring>> {
-        // SDK doesn't have scan like native GATT
-        // For now, we'll just return empty or use a known MAC address
-        _scanStatus.value = ScanStatus.Scanning
-        delay(durationSeconds * 1000L)
-        _scanStatus.value = ScanStatus.Idle
-        return Result.success(emptyList())
+        return try {
+            _scanStatus.value = ScanStatus.Scanning
+            
+            // Start SDK scan
+            sdkManager.startScan(durationSeconds)
+            
+            // Wait for duration or results
+            delay(durationSeconds * 1000L)
+            
+            // Get final results
+            val devices = sdkManager.scanResults.value
+            _scanStatus.value = if (devices.isNotEmpty()) {
+                ScanStatus.DevicesFound(devices)
+            } else {
+                ScanStatus.Idle
+            }
+            
+            Result.success(devices)
+        } catch (e: Exception) {
+            _scanStatus.value = ScanStatus.Error(e.message ?: "Scan failed")
+            Result.error("Scan failed: ${e.message}", e)
+        }
     }
     
     override fun stopScan() {
+        sdkManager.stopScan()
         _scanStatus.value = ScanStatus.Idle
     }
     

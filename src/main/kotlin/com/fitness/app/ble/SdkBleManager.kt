@@ -75,6 +75,49 @@ class SdkBleManager private constructor(private val context: Context) {
         Log.i(TAG, "✓ SDK BLE Manager initialized")
     }
     
+    // Scan results
+    private val _scanResults = MutableStateFlow<List<Ring>>(emptyList())
+    val scanResults: StateFlow<List<Ring>> = _scanResults.asStateFlow()
+    
+    /**
+     * Start scanning for devices
+     */
+    fun startScan(durationSeconds: Int) {
+        Log.i(TAG, "SDK Start Scan")
+        _scanResults.value = emptyList()
+        val foundDevices = mutableListOf<Ring>()
+        
+        YCBTClient.startScanBle({ code, device, rssi, scanRecord ->
+            if (code == 0 && device != null) {
+                val name = device.name ?: "Unknown Ring"
+                val mac = device.address
+                
+                // Filter for our ring (optional: based on name or service UUIDs in previous logs)
+                Log.d(TAG, "Found: $name ($mac) RSSI: $rssi")
+                
+                // Avoid duplicates
+                if (foundDevices.none { it.macAddress == mac }) {
+                    val ring = Ring(
+                        name = name,
+                        macAddress = mac,
+                        rssi = rssi,
+                        isConnected = false
+                    )
+                    foundDevices.add(ring)
+                    _scanResults.value = foundDevices.toList()
+                }
+            }
+        }, durationSeconds)
+    }
+    
+    /**
+     * Stop scanning
+     */
+    fun stopScan() {
+        Log.i(TAG, "SDK Stop Scan")
+        YCBTClient.stopScanBle()
+    }
+    
     /**
      * Connect to a BLE device using SDK
      */
