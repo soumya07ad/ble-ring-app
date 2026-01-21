@@ -768,9 +768,21 @@ class NativeGattManager private constructor(private val context: Context) {
                 }
             }
             0xF0 -> {
-                // Type 0xF0 packet - secondary data
-                val byte4 = value[4].toInt() and 0xFF
-                Log.d(TAG, "🔍 Type 0xF0: byte[4]=$byte4")
+                // Type 0xF0 packet - may contain battery at byte[8]
+                // Example: [240, 18, 4, 85, 0, 85, 0, 0, 85, ...]
+                // BUT: 85 is often a false positive, real battery is at byte[8]
+                val battery = value[8].toInt() and 0xFF
+                
+                // Only update if it's a reasonable value and NOT the common false positive
+                if (battery in 1..100 && battery != 85) {
+                    Log.i(TAG, "🔋 BATTERY (type 0xF0): $battery%")
+                    _ringData.value = _ringData.value.copy(
+                        battery = battery,
+                        lastUpdate = System.currentTimeMillis()
+                    )
+                } else {
+                    Log.d(TAG, "🔍 Type 0xF0: byte[8]=$battery (not updating - likely false positive)")
+                }
             }
             0x88 -> {
                 // Type 0x88 packet - CONTAINS REAL BATTERY at byte[8]!
