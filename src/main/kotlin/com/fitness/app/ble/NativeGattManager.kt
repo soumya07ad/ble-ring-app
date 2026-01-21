@@ -715,15 +715,23 @@ class NativeGattManager private constructor(private val context: Context) {
         Log.i(TAG, "� EFE3 PACKET: type=0x${packetType.toString(16).uppercase()}, subtype=0x${packetSubType.toString(16).uppercase()}")
         Log.i(TAG, "═══════════════════════════════════")
         
-        // Print all bytes for analysis
-        val allBytes = value.take(15).mapIndexed { i, b -> "[$i]=${b.toInt() and 0xFF}" }.joinToString(", ")
+        // Print ALL 20 bytes for analysis
+        val allBytes = value.take(20).mapIndexed { i, b -> "[$i]=${b.toInt() and 0xFF}" }.joinToString(", ")
         Log.d(TAG, "All bytes: $allBytes")
         
         // Print potential battery values (50-100)
-        for (i in 0 until minOf(value.size, 15)) {
+        for (i in 0 until minOf(value.size, 20)) {
             val byteVal = value[i].toInt() and 0xFF
             if (byteVal in 60..100) {
                 Log.i(TAG, "🔋 POTENTIAL BATTERY: byte[$i] = $byteVal%")
+            }
+        }
+        
+        // Print potential HR values (40-200 range)
+        for (i in 0 until minOf(value.size, 20)) {
+            val byteVal = value[i].toInt() and 0xFF
+            if (byteVal in 40..200) {
+                Log.i(TAG, "❤️ POTENTIAL HR: byte[$i] = $byteVal bpm")
             }
         }
         
