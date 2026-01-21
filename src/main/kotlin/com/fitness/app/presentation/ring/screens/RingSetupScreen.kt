@@ -614,7 +614,7 @@ private fun ConnectedContent(
             item {
                 MeasurementButton(
                     text = if (uiState.ringData?.bloodPressureMeasuring == true) "Measuring BP..." else "Measure Blood Pressure",
-                    icon = Icons.Default.MonitorHeart,
+                    icon = Icons.Default.FavoriteBorder,
                     color = PrimaryPurple,
                     onClick = onMeasureBloodPressure,
                     enabled = uiState.ringData?.bloodPressureMeasuring != true
@@ -631,7 +631,7 @@ private fun ConnectedContent(
             item {
                 MeasurementButton(
                     text = if (uiState.ringData?.spO2Measuring == true) "Measuring SpO2..." else "Measure Blood Oxygen",
-                    icon = Icons.Default.Air,
+                    icon = Icons.Default.ThumbUp,
                     color = AccentCyan,
                     onClick = onMeasureSpO2,
                     enabled = uiState.ringData?.spO2Measuring != true
@@ -732,7 +732,7 @@ private fun BloodPressureCard(systolic: Int, diastolic: Int, isMeasuring: Boolea
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.MonitorHeart,
+                    imageVector = Icons.Default.FavoriteBorder,
                     contentDescription = null,
                     tint = PrimaryPurple,
                     modifier = Modifier.size(24.dp)
@@ -784,7 +784,7 @@ private fun SpO2Card(spO2: Int, isMeasuring: Boolean) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Air,
+                    imageVector = Icons.Default.ThumbUp,
                     contentDescription = null,
                     tint = AccentCyan,
                     modifier = Modifier.size(24.dp)
