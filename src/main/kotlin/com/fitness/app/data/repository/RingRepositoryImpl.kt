@@ -110,6 +110,7 @@ class RingRepositoryImpl(
                 ConnectionStatus.Connected(ring)
             }
             is com.fitness.app.ble.ConnectionState.Error -> ConnectionStatus.Error(state.message)
+            is com.fitness.app.ble.ConnectionState.Timeout -> ConnectionStatus.Error("Connection timed out")
         }
     }
     
