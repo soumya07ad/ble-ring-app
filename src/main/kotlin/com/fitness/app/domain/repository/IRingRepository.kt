@@ -71,4 +71,14 @@ interface IRingRepository {
      * Get connected ring info or null
      */
     fun getConnectedRing(): Ring?
+    
+    /**
+     * Start heart rate measurement
+     */
+    fun startHeartRateMeasurement()
+    
+    /**
+     * Stop heart rate measurement
+     */
+    fun stopHeartRateMeasurement()
 }

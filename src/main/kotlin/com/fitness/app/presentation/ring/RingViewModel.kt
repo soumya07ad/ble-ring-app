@@ -77,31 +77,7 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         
-        // Collect SDK heart rate data
-        viewModelScope.launch {
-            container.sdkHeartRateManager.heartRate.collect { hr ->
-                if (hr != null) {
-                    // Update ringData with SDK HR value
-                    _uiState.update { currentState ->
-                        currentState.ringData?.let { data ->
-                            currentState.copy(ringData = data.copy(heartRate = hr))
-                        } ?: currentState
-                    }
-                }
-            }
-        }
-        
-        // Collect SDK measuring state
-        viewModelScope.launch {
-            container.sdkHeartRateManager.isMeasuring.collect { measuring ->
-                _uiState.update { currentState ->
-                    currentState.ringData?.let { data ->
-                        currentState.copy(ringData = data.copy(heartRateMeasuring = measuring))
-                    } ?: currentState
-                }
-            }
-        }
-    }
+
     
     // ==================== Permission Handling ====================
     
@@ -266,15 +242,15 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
      * Start heart rate measurement using SDK
      */
     fun startHeartRateMeasurement() {
-        // Use SDK for HR measurement (native BLE doesn't expose HR protocol)
-        container.sdkHeartRateManager.startHeartRateMeasurement()
+        // Use SDK for HR measurement (via repository)
+        container.ringRepository.startHeartRateMeasurement()
     }
     
     /**
      * Stop heart rate measurement
      */
     fun stopHeartRateMeasurement() {
-        container.sdkHeartRateManager.stopHeartRateMeasurement()
+        container.ringRepository.stopHeartRateMeasurement()
     }
     
     // ==================== UI State Updates ====================

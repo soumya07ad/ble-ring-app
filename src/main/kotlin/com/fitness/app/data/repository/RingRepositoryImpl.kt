@@ -2,8 +2,8 @@ package com.fitness.app.data.repository
 
 import android.content.Context
 import com.fitness.app.ble.BleDevice
-import com.fitness.app.ble.NativeGattManager
-import com.fitness.app.ble.ConnectionState
+import com.fitness.app.ble.SdkBleManager
+import com.fitness.app.ble.BleConnectionState
 import com.fitness.app.ble.RingData
 import com.fitness.app.ble.ScanState
 import com.fitness.app.core.util.Result
@@ -24,10 +24,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Implementation of IRingRepository
- * Now uses NativeGattManager (pure native GATT, no SDK)
+ * Now uses SdkBleManager (full YC SDK approach)
  * 
- * This preserves the existing BLE functionality while providing
- * a clean MVVM-compatible interface
+ * This uses the SDK for all operations: connection, battery, steps, and heart rate
  */
 class RingRepositoryImpl(
     private val context: Context
@@ -35,9 +34,9 @@ class RingRepositoryImpl(
     
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
-    // Use NativeGattManager singleton (pure native GATT, no SDK!)
-    private val gattManager: NativeGattManager by lazy { 
-        NativeGattManager.getInstance(context)
+    // Use SdkBleManager singleton (full SDK approach)
+    private val sdkManager: SdkBleManager by lazy { 
+        SdkBleManager.getInstance(context)
     }
     
     // Domain state flows
@@ -54,70 +53,44 @@ class RingRepositoryImpl(
     private var connectedRing: Ring? = null
     
     init {
-        observeBleManagerStates()
+        sdkManager.initialize()
+        observeSdkManagerStates()
     }
     
     /**
-     * Observe NativeGattManager states and map to domain states
+     * Observe SdkBleManager states and map to domain states
      */
-    private fun observeBleManagerStates() {
+    private fun observeSdkManagerStates() {
         scope.launch {
             // Observe connection state
-            gattManager.connectionState.collect { state ->
+            sdkManager.connectionState.collect { state ->
                 _connectionStatus.value = mapConnectionState(state)
             }
         }
         
         scope.launch {
-            // Observe scan state
-            gattManager.scanState.collect { state ->
-                _scanStatus.value = mapScanState(state)
-            }
-        }
-        
-        scope.launch {
             // Observe ring data
-            gattManager.ringData.collect { data ->
+            sdkManager.ringData.collect { data ->
                 _ringData.value = mapRingData(data)
             }
         }
     }
     
     /**
-     * Map BleManager ConnectionState to domain ConnectionStatus
+     * Map SDK BleConnectionState to domain ConnectionStatus
      */
-    private fun mapConnectionState(state: ConnectionState): ConnectionStatus {
+    private fun mapConnectionState(state: BleConnectionState): ConnectionStatus {
         return when (state) {
-            is ConnectionState.Disconnected -> ConnectionStatus.Disconnected
-            is ConnectionState.Connecting -> ConnectionStatus.Connecting
-            is ConnectionState.Connected -> {
-                connectedRing?.let { ConnectionStatus.Connected(it) } 
-                    ?: ConnectionStatus.Connected(
-                        Ring(
-                            macAddress = gattManager.connectedMacAddress,
-                            name = gattManager.connectedDeviceName,
-                            isConnected = true
-                        )
-                    )
+            is BleConnectionState.Disconnected -> ConnectionStatus.Disconnected
+            is BleConnectionState.Connecting -> ConnectionStatus.Connecting
+            is BleConnectionState.Connected -> {
+                connectedRing = state.ring
+                ConnectionStatus.Connected(state.ring)
             }
-            is ConnectionState.Error -> ConnectionStatus.Error(state.message)
-            is ConnectionState.Timeout -> ConnectionStatus.Timeout
         }
     }
     
-    /**
-     * Map BleManager ScanState to domain ScanStatus
-     */
-    private fun mapScanState(state: ScanState): ScanStatus {
-        return when (state) {
-            is ScanState.Idle -> ScanStatus.Idle
-            is ScanState.Scanning -> ScanStatus.Scanning
-            is ScanState.DevicesFound -> ScanStatus.DevicesFound(
-                state.devices.map { it.toDomain() }
-            )
-            is ScanState.Error -> ScanStatus.Error(state.message)
-        }
-    }
+
     
     /**
      * Map BleManager RingData to domain RingHealthData
@@ -137,36 +110,19 @@ class RingRepositoryImpl(
     }
     
     override fun initialize() {
-        // Initialize pure native GATT manager
-        gattManager.initialize()
+        // Initialize SDK manager (already done in init block)
     }
     
     override suspend fun startScan(durationSeconds: Int): Result<List<Ring>> {
-        return try {
-            _scanStatus.value = ScanStatus.Scanning
-            gattManager.startScan(durationSeconds)
-            
-            // Wait for scan duration
-            delay(durationSeconds * 1000L)
-            
-            // Stop scan and get results
-            gattManager.stopScan()
-            
-            val devices = when (val state = gattManager.scanState.value) {
-                is ScanState.DevicesFound -> state.devices.map { it.toDomain() }
-                else -> emptyList()
-            }
-            
-            _scanStatus.value = ScanStatus.DevicesFound(devices)
-            Result.success(devices)
-        } catch (e: Exception) {
-            _scanStatus.value = ScanStatus.Error(e.message ?: "Scan failed")
-            Result.error("Scan failed: ${e.message}", e)
-        }
+        // SDK doesn't have scan like native GATT
+        // For now, we'll just return empty or use a known MAC address
+        _scanStatus.value = ScanStatus.Scanning
+        delay(durationSeconds * 1000L)
+        _scanStatus.value = ScanStatus.Idle
+        return Result.success(emptyList())
     }
     
     override fun stopScan() {
-        gattManager.stopScan()
         _scanStatus.value = ScanStatus.Idle
     }
     
@@ -174,22 +130,18 @@ class RingRepositoryImpl(
         return try {
             val ring = Ring(
                 macAddress = macAddress,
-                name = deviceName ?: "Ring",
+                name = deviceName ?: "R9 Ring",
                 isConnected = false
             )
             
             connectedRing = ring
             _connectionStatus.value = ConnectionStatus.Connecting
             
-            gattManager.connectDevice(macAddress = macAddress, deviceName = deviceName)
+            sdkManager.connectToDevice(macAddress)
             
             // Wait for connection (max 15 seconds)
             val connected = withTimeoutOrNull(15000L) {
-                while (gattManager.connectionState.value !is ConnectionState.Connected) {
-                    if (gattManager.connectionState.value is ConnectionState.Error ||
-                        gattManager.connectionState.value is ConnectionState.Timeout) {
-                        return@withTimeoutOrNull false
-                    }
+                while (sdkManager.connectionState.value !is BleConnectionState.Connected) {
                     delay(100)
                 }
                 true
@@ -200,12 +152,7 @@ class RingRepositoryImpl(
                 Result.success(connectedRing!!)
             } else {
                 connectedRing = null
-                val errorMsg = when (val state = gattManager.connectionState.value) {
-                    is ConnectionState.Error -> state.message
-                    is ConnectionState.Timeout -> "Connection timed out"
-                    else -> "Connection failed"
-                }
-                Result.error(errorMsg)
+                Result.error("Connection timed out")
             }
         } catch (e: Exception) {
             connectedRing = null
@@ -215,7 +162,7 @@ class RingRepositoryImpl(
     
     override suspend fun disconnect(): Result<Unit> {
         return try {
-            gattManager.disconnect()
+            sdkManager.disconnect()
             connectedRing = null
             _connectionStatus.value = ConnectionStatus.Disconnected
             Result.success(Unit)
@@ -234,23 +181,23 @@ class RingRepositoryImpl(
     }
     
     override fun isConnected(): Boolean {
-        return gattManager.connectionState.value is ConnectionState.Connected
+        return sdkManager.connectionState.value is BleConnectionState.Connected
     }
     
     override fun getConnectedRing(): Ring? = connectedRing
     
     /**
-     * Start heart rate measurement
+     * Start heart rate measurement via SDK
      */
-    fun startHeartRateMeasurement() {
-        gattManager.startHeartRateMeasurement()
+    override fun startHeartRateMeasurement() {
+        sdkManager.startHeartRateMeasurement()
     }
     
     /**
-     * Stop heart rate measurement
+     * Stop heart rate measurement via SDK
      */
-    fun stopHeartRateMeasurement() {
-        gattManager.stopHeartRateMeasurement()
+    override fun stopHeartRateMeasurement() {
+        sdkManager.stopHeartRateMeasurement()
     }
     
     companion object {
