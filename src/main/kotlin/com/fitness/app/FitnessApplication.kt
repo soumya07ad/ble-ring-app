@@ -4,7 +4,6 @@ import android.app.Application
 import android.util.Log
 import com.fitness.app.ble.NativeGattManager
 import com.fitness.app.core.di.AppContainer
-import com.yucheng.ycbtsdk.YCBTClient
 
 /**
  * Application class for one-time initialization
@@ -28,21 +27,12 @@ class FitnessApplication : Application() {
         AppContainer.initialize(this)
         Log.i(TAG, "✓ MVVM DI Container initialized")
         
-        // Initialize YC SDK for heart rate measurement
-        try {
-            YCBTClient.initClient(this, true)
-            Log.i(TAG, "✓ YC SDK initialized for HR measurement")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to init YC SDK: ${e.message}")
-        }
-        
-        // Initialize Native GATT Manager (for battery and steps)
+        // Initialize Native GATT Manager (Pure Native)
         NativeGattManager.getInstance(this).initialize()
         
         Log.i(TAG, "═══════════════════════════════════")
-        Log.i(TAG, "✓ App started - HYBRID mode")
-        Log.i(TAG, "✓ Native BLE: Battery + Steps")
-        Log.i(TAG, "✓ YC SDK: Heart Rate")
+        Log.i(TAG, "✓ App started - PURE NATIVE GATT mode")
+        Log.i(TAG, "✓ Battery & Steps: Native Byte Analysis (0xF0/FEA1)")
         Log.i(TAG, "═══════════════════════════════════")
     }
 }
