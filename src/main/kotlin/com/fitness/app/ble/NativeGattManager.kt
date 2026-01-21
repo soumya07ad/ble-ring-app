@@ -739,7 +739,9 @@ class NativeGattManager private constructor(private val context: Context) {
             0x0F -> {
                 when (packetSubType) {
                     0x06 -> {
-                        // Status packet with battery at byte[8]
+                        // Status packet format:
+                        // byte[8] = battery %
+                        // byte[12] = stored/last HR value
                         val battery = value[8].toInt() and 0xFF
                         if (battery in 1..100) {
                             Log.i(TAG, "🔋🔋🔋 BATTERY (type 0x06): $battery% 🔋🔋🔋")
@@ -747,6 +749,27 @@ class NativeGattManager private constructor(private val context: Context) {
                                 battery = battery,
                                 lastUpdate = System.currentTimeMillis()
                             )
+                        }
+                        
+                        // Check for HR at byte[12] (stored/last measured HR)
+                        if (value.size > 12) {
+                            val storedHR = value[12].toInt() and 0xFF
+                            if (storedHR in 40..200) {
+                                Log.i(TAG, "❤️ STORED HR in 0x06 packet: byte[12]=$storedHR bpm")
+                                
+                                // If we're actively measuring, update the HR
+                                if (_ringData.value.heartRateMeasuring || _ringData.value.heartRate == 0) {
+                                    Log.i(TAG, "❤️❤️❤️ HEART RATE: $storedHR bpm ❤️❤️❤️")
+                                    _ringData.value = _ringData.value.copy(
+                                        heartRate = storedHR,
+                                        heartRateMeasuring = false,
+                                        lastUpdate = System.currentTimeMillis()
+                                    )
+                                    Handler(Looper.getMainLooper()).post {
+                                        Toast.makeText(context, "❤️ Heart Rate: $storedHR bpm", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
                         }
                     }
                     0x15, 0x16 -> {
