@@ -22,6 +22,16 @@ sealed class ConnectionState {
 }
 
 /**
+ * Represents SDK BLE connection states
+ * Carries the Ring object when connected
+ */
+sealed class BleConnectionState {
+    object Disconnected : BleConnectionState()
+    object Connecting : BleConnectionState()
+    data class Connected(val ring: com.fitness.app.domain.model.Ring) : BleConnectionState()
+}
+
+/**
  * Represents BLE scan states
  */
 sealed class ScanState {

@@ -8,6 +8,7 @@ import com.yucheng.ycbtsdk.response.BleConnectResponse
 import com.yucheng.ycbtsdk.response.BleDataResponse
 import com.yucheng.ycbtsdk.response.BleDeviceToAppDataResponse
 import com.yucheng.ycbtsdk.response.BleRealDataResponse
+import com.fitness.app.domain.model.Ring
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
