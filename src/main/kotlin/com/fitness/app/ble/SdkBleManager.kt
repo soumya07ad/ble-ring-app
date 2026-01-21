@@ -8,6 +8,7 @@ import com.yucheng.ycbtsdk.response.BleConnectResponse
 import com.yucheng.ycbtsdk.response.BleDataResponse
 import com.yucheng.ycbtsdk.response.BleDeviceToAppDataResponse
 import com.yucheng.ycbtsdk.response.BleRealDataResponse
+import com.yucheng.ycbtsdk.bean.ScanDeviceBean
 import com.fitness.app.domain.model.Ring
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -87,24 +88,27 @@ class SdkBleManager private constructor(private val context: Context) {
         _scanResults.value = emptyList()
         val foundDevices = mutableListOf<Ring>()
         
-        YCBTClient.startScanBle({ code, device, rssi, scanRecord ->
+        YCBTClient.startScanBle({ code, device, rssi, _ ->
             if (code == 0 && device != null) {
-                val name = device.name ?: "Unknown Ring"
-                val mac = device.address
+                val name = device.device?.name ?: "Unknown Ring"
+                val mac = device.device?.address ?: ""
                 
-                // Filter for our ring (optional: based on name or service UUIDs in previous logs)
-                Log.d(TAG, "Found: $name ($mac) RSSI: $rssi")
-                
-                // Avoid duplicates
-                if (foundDevices.none { it.macAddress == mac }) {
-                    val ring = Ring(
-                        name = name,
-                        macAddress = mac,
-                        rssi = rssi,
-                        isConnected = false
-                    )
-                    foundDevices.add(ring)
-                    _scanResults.value = foundDevices.toList()
+                if (mac.isNotEmpty()) {
+                    // Filter for our ring (optional: based on name or service UUIDs in previous logs)
+                    Log.d(TAG, "Found: $name ($mac) RSSI: $rssi")
+                    
+                    // Avoid duplicates
+                    val currentList = foundDevices.toList()
+                    if (currentList.none { it.macAddress == mac }) {
+                        val ring = Ring(
+                            name = name,
+                            macAddress = mac,
+                            rssi = rssi,
+                            isConnected = false
+                        )
+                        foundDevices.add(ring)
+                        _scanResults.value = foundDevices.toList()
+                    }
                 }
             }
         }, durationSeconds)
