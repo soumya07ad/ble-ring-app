@@ -121,10 +121,15 @@ class RingRepositoryImpl(
         return RingHealthData(
             battery = data.battery,
             heartRate = data.heartRate,
+            heartRateMeasuring = data.heartRateMeasuring,
+            bloodPressureSystolic = data.bloodPressureSystolic,
+            bloodPressureDiastolic = data.bloodPressureDiastolic,
+            bloodPressureMeasuring = data.bloodPressureMeasuring,
+            spO2 = data.spO2,
+            spO2Measuring = data.spO2Measuring,
             steps = data.steps,
             distance = data.distance,
             calories = data.calories,
-            spO2 = data.spO2,
             deepSleep = data.deepSleep,
             lightSleep = data.lightSleep,
             lastUpdate = data.lastUpdate
@@ -219,6 +224,34 @@ class RingRepositoryImpl(
      */
     override fun stopHeartRateMeasurement() {
         nativeManager.stopHeartRateMeasurement()
+    }
+    
+    /**
+     * Start blood pressure measurement
+     */
+    override fun startBloodPressureMeasurement() {
+        nativeManager.startBloodPressureMeasurement()
+    }
+    
+    /**
+     * Stop blood pressure measurement
+     */
+    override fun stopBloodPressureMeasurement() {
+        nativeManager.stopBloodPressureMeasurement()
+    }
+    
+    /**
+     * Start SpO2 measurement
+     */
+    override fun startSpO2Measurement() {
+        nativeManager.startSpO2Measurement()
+    }
+    
+    /**
+     * Stop SpO2 measurement
+     */
+    override fun stopSpO2Measurement() {
+        nativeManager.stopSpO2Measurement()
     }
     
     companion object {

@@ -1032,4 +1032,140 @@ class NativeGattManager private constructor(private val context: Context) {
         
         _ringData.value = _ringData.value.copy(heartRateMeasuring = false)
     }
+    
+    /**
+     * Start blood pressure measurement
+     */
+    @SuppressLint("MissingPermission")
+    fun startBloodPressureMeasurement() {
+        val gatt = bluetoothGatt ?: run {
+            Log.w(TAG, "Cannot start BP measurement - not connected")
+            return
+        }
+        
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "🩺 STARTING BLOOD PRESSURE MEASUREMENT")
+        Log.i(TAG, "═══════════════════════════════════")
+        
+        // BP measurement commands (type 0x02 in YC protocol)
+        val bpCommands = listOf(
+            byteArrayOf(0x0F, 0x17, 0x01),  // Start BP measurement
+            byteArrayOf(0x17, 0x01),         // Fallback
+        )
+        
+        gatt.getService(CUSTOM_SERVICE_EFE0)?.getCharacteristic(CUSTOM_CHAR_EFE1)?.let { char ->
+            bpCommands.forEachIndexed { index, cmd ->
+                Handler(Looper.getMainLooper()).postDelayed({
+                    Log.i(TAG, "🩺 Sending BP command: ${cmd.joinToString { String.format("%02X", it) }}")
+                    char.value = cmd
+                    char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                    gatt.writeCharacteristic(char)
+                }, 1500L * index)
+            }
+        }
+        
+        _ringData.value = _ringData.value.copy(
+            bloodPressureMeasuring = true,
+            lastUpdate = System.currentTimeMillis()
+        )
+        
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, "🩺 Measuring BP... Keep wearing the ring (30 sec)", Toast.LENGTH_LONG).show()
+        }
+        
+        // Timeout after 40 seconds
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (_ringData.value.bloodPressureMeasuring) {
+                _ringData.value = _ringData.value.copy(bloodPressureMeasuring = false)
+                Log.w(TAG, "🩺 BP measurement timed out")
+                Toast.makeText(context, "🩺 BP measurement timeout - try again", Toast.LENGTH_SHORT).show()
+            }
+        }, 40000L)
+    }
+    
+    /**
+     * Stop blood pressure measurement
+     */
+    @SuppressLint("MissingPermission")
+    fun stopBloodPressureMeasurement() {
+        val gatt = bluetoothGatt ?: return
+        
+        Log.i(TAG, "🩺 STOPPING BLOOD PRESSURE MEASUREMENT")
+        
+        val stopCmd = byteArrayOf(0x17, 0x00)
+        gatt.getService(CUSTOM_SERVICE_EFE0)?.getCharacteristic(CUSTOM_CHAR_EFE1)?.let { char ->
+            char.value = stopCmd
+            gatt.writeCharacteristic(char)
+        }
+        
+        _ringData.value = _ringData.value.copy(bloodPressureMeasuring = false)
+    }
+    
+    /**
+     * Start SpO2 (blood oxygen) measurement
+     */
+    @SuppressLint("MissingPermission")
+    fun startSpO2Measurement() {
+        val gatt = bluetoothGatt ?: run {
+            Log.w(TAG, "Cannot start SpO2 measurement - not connected")
+            return
+        }
+        
+        Log.i(TAG, "═══════════════════════════════════")
+        Log.i(TAG, "🫁 STARTING SPO2 MEASUREMENT")
+        Log.i(TAG, "═══════════════════════════════════")
+        
+        // SpO2 measurement commands (type 0x03 in YC protocol)
+        val spo2Commands = listOf(
+            byteArrayOf(0x0F, 0x18, 0x01),  // Start SpO2 measurement
+            byteArrayOf(0x18, 0x01),         // Fallback
+        )
+        
+        gatt.getService(CUSTOM_SERVICE_EFE0)?.getCharacteristic(CUSTOM_CHAR_EFE1)?.let { char ->
+            spo2Commands.forEachIndexed { index, cmd ->
+                Handler(Looper.getMainLooper()).postDelayed({
+                    Log.i(TAG, "🫁 Sending SpO2 command: ${cmd.joinToString { String.format("%02X", it) }}")
+                    char.value = cmd
+                    char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                    gatt.writeCharacteristic(char)
+                }, 1500L * index)
+            }
+        }
+        
+        _ringData.value = _ringData.value.copy(
+            spO2Measuring = true,
+            lastUpdate = System.currentTimeMillis()
+        )
+        
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, "🫁 Measuring SpO2... Keep wearing the ring (30 sec)", Toast.LENGTH_LONG).show()
+        }
+        
+        // Timeout after 40 seconds
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (_ringData.value.spO2Measuring) {
+                _ringData.value = _ringData.value.copy(spO2Measuring = false)
+                Log.w(TAG, "🫁 SpO2 measurement timed out")
+                Toast.makeText(context, "🫁 SpO2 measurement timeout - try again", Toast.LENGTH_SHORT).show()
+            }
+        }, 40000L)
+    }
+    
+    /**
+     * Stop SpO2 measurement
+     */
+    @SuppressLint("MissingPermission")
+    fun stopSpO2Measurement() {
+        val gatt = bluetoothGatt ?: return
+        
+        Log.i(TAG, "🫁 STOPPING SPO2 MEASUREMENT")
+        
+        val stopCmd = byteArrayOf(0x18, 0x00)
+        gatt.getService(CUSTOM_SERVICE_EFE0)?.getCharacteristic(CUSTOM_CHAR_EFE1)?.let { char ->
+            char.value = stopCmd
+            gatt.writeCharacteristic(char)
+        }
+        
+        _ringData.value = _ringData.value.copy(spO2Measuring = false)
+    }
 }

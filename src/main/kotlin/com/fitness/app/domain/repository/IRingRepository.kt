@@ -81,4 +81,24 @@ interface IRingRepository {
      * Stop heart rate measurement
      */
     fun stopHeartRateMeasurement()
+    
+    /**
+     * Start blood pressure measurement
+     */
+    fun startBloodPressureMeasurement()
+    
+    /**
+     * Stop blood pressure measurement
+     */
+    fun stopBloodPressureMeasurement()
+    
+    /**
+     * Start SpO2 (blood oxygen) measurement
+     */
+    fun startSpO2Measurement()
+    
+    /**
+     * Stop SpO2 measurement
+     */
+    fun stopSpO2Measurement()
 }

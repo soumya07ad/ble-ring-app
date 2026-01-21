@@ -107,7 +107,9 @@ fun RingSetupScreen(
                         uiState = uiState,
                         onDisconnect = { viewModel.disconnect() },
                         onDone = onSetupComplete,
-                        onMeasureHeartRate = { viewModel.startHeartRateMeasurement() }
+                        onMeasureHeartRate = { viewModel.startHeartRateMeasurement() },
+                        onMeasureBloodPressure = { viewModel.startBloodPressureMeasurement() },
+                        onMeasureSpO2 = { viewModel.startSpO2Measurement() }
                     )
                 }
                 uiState.isConnecting -> {
@@ -512,7 +514,9 @@ private fun ConnectedContent(
     uiState: RingUiState,
     onDisconnect: () -> Unit,
     onDone: () -> Unit,
-    onMeasureHeartRate: () -> Unit
+    onMeasureHeartRate: () -> Unit,
+    onMeasureBloodPressure: () -> Unit = {},
+    onMeasureSpO2: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Success card
@@ -570,47 +574,82 @@ private fun ConnectedContent(
             }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
-        // Data cards
-        BatteryCard(batteryLevel = uiState.batteryLevel)
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        // Heart Rate Card with Measure button
-        HeartRateCard(
-            heartRate = uiState.heartRate,
-            isMeasuring = uiState.ringData?.heartRateMeasuring == true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // Measure Heart Rate button
-        Button(
-            onClick = onMeasureHeartRate,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = ErrorRed.copy(alpha = 0.8f)
-            )
+        // Scrollable health data section
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Favorite,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = if (uiState.ringData?.heartRateMeasuring == true) "Measuring..." else "Measure Heart Rate",
-                style = MaterialTheme.typography.labelLarge,
-                color = Color.White
-            )
+            // Battery
+            item {
+                BatteryCard(batteryLevel = uiState.batteryLevel)
+            }
+            
+            // Heart Rate
+            item {
+                HeartRateCard(
+                    heartRate = uiState.heartRate,
+                    isMeasuring = uiState.ringData?.heartRateMeasuring == true
+                )
+            }
+            item {
+                MeasurementButton(
+                    text = if (uiState.ringData?.heartRateMeasuring == true) "Measuring HR..." else "Measure Heart Rate",
+                    icon = Icons.Default.Favorite,
+                    color = ErrorRed,
+                    onClick = onMeasureHeartRate,
+                    enabled = uiState.ringData?.heartRateMeasuring != true
+                )
+            }
+            
+            // Blood Pressure
+            item {
+                BloodPressureCard(
+                    systolic = uiState.ringData?.bloodPressureSystolic ?: 0,
+                    diastolic = uiState.ringData?.bloodPressureDiastolic ?: 0,
+                    isMeasuring = uiState.ringData?.bloodPressureMeasuring == true
+                )
+            }
+            item {
+                MeasurementButton(
+                    text = if (uiState.ringData?.bloodPressureMeasuring == true) "Measuring BP..." else "Measure Blood Pressure",
+                    icon = Icons.Default.MonitorHeart,
+                    color = PrimaryPurple,
+                    onClick = onMeasureBloodPressure,
+                    enabled = uiState.ringData?.bloodPressureMeasuring != true
+                )
+            }
+            
+            // Blood Oxygen (SpO2)
+            item {
+                SpO2Card(
+                    spO2 = uiState.ringData?.spO2 ?: 0,
+                    isMeasuring = uiState.ringData?.spO2Measuring == true
+                )
+            }
+            item {
+                MeasurementButton(
+                    text = if (uiState.ringData?.spO2Measuring == true) "Measuring SpO2..." else "Measure Blood Oxygen",
+                    icon = Icons.Default.Air,
+                    color = AccentCyan,
+                    onClick = onMeasureSpO2,
+                    enabled = uiState.ringData?.spO2Measuring != true
+                )
+            }
+            
+            // Steps
+            item {
+                StepsCard(steps = uiState.steps)
+            }
+            
+            // Spacer for bottom buttons
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
         
         Spacer(modifier = Modifier.height(12.dp))
-        StepsCard(steps = uiState.steps)
-        
-        Spacer(modifier = Modifier.weight(1f))
         
         // Buttons
         Row(
@@ -630,6 +669,154 @@ private fun ConnectedContent(
         }
     }
 }
+
+@Composable
+private fun MeasurementButton(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color,
+    onClick: () -> Unit,
+    enabled: Boolean = true
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = color.copy(alpha = 0.8f),
+            disabledContainerColor = color.copy(alpha = 0.3f)
+        )
+    ) {
+        if (!enabled) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                color = Color.White,
+                strokeWidth = 2.dp
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        } else {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = Color.White
+        )
+    }
+}
+
+@Composable
+private fun BloodPressureCard(systolic: Int, diastolic: Int, isMeasuring: Boolean) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = GlassWhite
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(PrimaryPurple.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MonitorHeart,
+                    contentDescription = null,
+                    tint = PrimaryPurple,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Blood Pressure",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+                Text(
+                    text = if (isMeasuring) "Measuring..." 
+                           else if (systolic > 0) "$systolic/$diastolic mmHg" 
+                           else "-- / -- mmHg",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            if (isMeasuring) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = PrimaryPurple,
+                    strokeWidth = 2.dp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpO2Card(spO2: Int, isMeasuring: Boolean) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = GlassWhite
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(AccentCyan.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Air,
+                    contentDescription = null,
+                    tint = AccentCyan,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Blood Oxygen (SpO2)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+                Text(
+                    text = if (isMeasuring) "Measuring..." 
+                           else if (spO2 > 0) "$spO2%" 
+                           else "--%",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            if (isMeasuring) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = AccentCyan,
+                    strokeWidth = 2.dp
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun ManualEntryContent(
