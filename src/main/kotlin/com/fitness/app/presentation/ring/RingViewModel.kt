@@ -76,7 +76,7 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { it.copy(ringData = data) }
             }
         }
-        
+    }
 
     
     // ==================== Permission Handling ====================
