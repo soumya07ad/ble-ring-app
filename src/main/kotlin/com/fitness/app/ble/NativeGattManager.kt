@@ -968,13 +968,26 @@ class NativeGattManager private constructor(private val context: Context) {
             lastUpdate = System.currentTimeMillis()
         )
         
-        // Reset measuring flag after 60 seconds (HR measurement can take time)
+        // Show progress Toast
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, "❤️ Measuring HR... Keep wearing the ring (30 sec)", Toast.LENGTH_LONG).show()
+        }
+        
+        // Show a mid-progress Toast at 15 seconds
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (_ringData.value.heartRateMeasuring) {
+                Toast.makeText(context, "❤️ Still measuring... 15 seconds remaining", Toast.LENGTH_SHORT).show()
+            }
+        }, 15000L)
+        
+        // Reset measuring flag after 35 seconds (30s measurement + 5s buffer)
         Handler(Looper.getMainLooper()).postDelayed({
             if (_ringData.value.heartRateMeasuring) {
                 _ringData.value = _ringData.value.copy(heartRateMeasuring = false)
-                Log.w(TAG, "❤️ HR measurement timed out - try wearing the ring")
+                Log.w(TAG, "❤️ HR measurement timed out after 35s - ensure ring is worn properly")
+                Toast.makeText(context, "❤️ Measurement timeout - try again", Toast.LENGTH_SHORT).show()
             }
-        }, 60000L)
+        }, 35000L)
     }
 
     /**
