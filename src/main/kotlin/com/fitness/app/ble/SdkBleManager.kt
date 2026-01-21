@@ -83,19 +83,21 @@ class SdkBleManager private constructor(private val context: Context) {
     /**
      * Start scanning for devices
      */
+    @android.annotation.SuppressLint("MissingPermission")
     fun startScan(durationSeconds: Int) {
         Log.i(TAG, "SDK Start Scan")
         _scanResults.value = emptyList()
         val foundDevices = mutableListOf<Ring>()
         
-        YCBTClient.startScanBle({ code, device, rssi, _ ->
+        // SDK expects Function2<Int, ScanDeviceBean>
+        YCBTClient.startScanBle({ code: Int, device: ScanDeviceBean? ->
             if (code == 0 && device != null) {
                 val name = device.device?.name ?: "Unknown Ring"
                 val mac = device.device?.address ?: ""
+                val rssi = 0 // RSSI not available in bean
                 
                 if (mac.isNotEmpty()) {
-                    // Filter for our ring (optional: based on name or service UUIDs in previous logs)
-                    Log.d(TAG, "Found: $name ($mac) RSSI: $rssi")
+                    Log.d(TAG, "Found: $name ($mac)")
                     
                     // Avoid duplicates
                     val currentList = foundDevices.toList()
