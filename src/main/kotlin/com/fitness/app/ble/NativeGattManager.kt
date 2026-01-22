@@ -62,6 +62,11 @@ class NativeGattManager private constructor(private val context: Context) {
     private var connectionRetryCount = 0
     private val MAX_RETRIES = 3
     
+    // Keep-alive mechanism to prevent disconnect
+    private val keepAliveHandler = Handler(Looper.getMainLooper())
+    private val KEEP_ALIVE_INTERVAL = 5000L  // 5 seconds
+    private var keepAliveRunnable: Runnable? = null
+    
     companion object {
         private const val TAG = "NativeGattManager"
         private const val DEFAULT_SCAN_DURATION = 8
@@ -301,6 +306,10 @@ class NativeGattManager private constructor(private val context: Context) {
                     connectionRetryCount = 0  // Reset retry counter on success
                     _connectionState.value = ConnectionState.Connected
                     
+                    // Request HIGH PRIORITY connection to prevent timeout/disconnect
+                    gatt?.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
+                    Log.i(TAG, "📶 Requested HIGH PRIORITY connection")
+                    
                     // Update ring data with device info
                     _ringData.value = _ringData.value.copy(
                         deviceName = connectedDeviceName,
@@ -313,6 +322,9 @@ class NativeGattManager private constructor(private val context: Context) {
                         Toast.makeText(context, "Ring Connected!", Toast.LENGTH_SHORT).show()
                     }
                     
+                    // Start keep-alive mechanism
+                    startKeepAlive()
+                    
                     // Discover services
                     gatt?.discoverServices()
                 }
@@ -320,6 +332,9 @@ class NativeGattManager private constructor(private val context: Context) {
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     Log.w(TAG, "✗ DISCONNECTED (status=$status)")
                     isConnecting = false
+                    
+                    // Stop keep-alive when disconnected
+                    stopKeepAlive()
                     
                     bluetoothGatt?.close()
                     bluetoothGatt = null
@@ -923,6 +938,46 @@ class NativeGattManager private constructor(private val context: Context) {
      */
     fun isConnected(): Boolean {
         return _connectionState.value == ConnectionState.Connected
+    }
+    
+    /**
+     * Start keep-alive mechanism to prevent BLE disconnect
+     * Sends periodic RSSI read requests to maintain connection
+     */
+    @SuppressLint("MissingPermission")
+    private fun startKeepAlive() {
+        stopKeepAlive()  // Clear any existing
+        
+        keepAliveRunnable = object : Runnable {
+            override fun run() {
+                val gatt = bluetoothGatt
+                if (gatt != null && _connectionState.value == ConnectionState.Connected) {
+                    // Read RSSI to keep connection alive
+                    val rssiRead = gatt.readRemoteRssi()
+                    Log.d(TAG, "📶 Keep-alive ping (RSSI read: $rssiRead)")
+                    
+                    // Schedule next ping
+                    keepAliveHandler.postDelayed(this, KEEP_ALIVE_INTERVAL)
+                } else {
+                    Log.d(TAG, "📶 Keep-alive stopped - not connected")
+                }
+            }
+        }
+        
+        // Start after initial delay
+        keepAliveHandler.postDelayed(keepAliveRunnable!!, KEEP_ALIVE_INTERVAL)
+        Log.i(TAG, "📶 Keep-alive started (interval: ${KEEP_ALIVE_INTERVAL}ms)")
+    }
+    
+    /**
+     * Stop keep-alive mechanism
+     */
+    private fun stopKeepAlive() {
+        keepAliveRunnable?.let {
+            keepAliveHandler.removeCallbacks(it)
+            Log.d(TAG, "📶 Keep-alive stopped")
+        }
+        keepAliveRunnable = null
     }
 
     /**
