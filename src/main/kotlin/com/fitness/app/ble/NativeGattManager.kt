@@ -482,13 +482,14 @@ class NativeGattManager private constructor(private val context: Context) {
 
         val operationQueue = mutableListOf<() -> Unit>()
         
-        // 1. Try to read standard battery (2A19)
-        gatt.getService(BATTERY_SERVICE_UUID)?.getCharacteristic(BATTERY_LEVEL_UUID)?.let { char ->
-            operationQueue.add { 
-                Log.d(TAG, "Reading standard battery...")
-                gatt.readCharacteristic(char) 
-            }
-        }
+        // 1. Try to read standard battery (2A19) - DEPRECATED: Known unreliable
+        // Skip this - we'll rely on EFE3 notifications instead
+        // gatt.getService(BATTERY_SERVICE_UUID)?.getCharacteristic(BATTERY_LEVEL_UUID)?.let { char ->
+        //     operationQueue.add { 
+        //         Log.d(TAG, "Reading standard battery...")
+        //         gatt.readCharacteristic(char) 
+        //     }
+        // }
         
         // Schedule custom battery refresh after notifications are enabled
         Handler(Looper.getMainLooper()).postDelayed({
@@ -590,18 +591,24 @@ class NativeGattManager private constructor(private val context: Context) {
         val uuidString = uuid.toString().lowercase()
 
         when {
-            // Standard Battery Level (2A19) - enable as fallback
+            // Standard Battery Level (2A19) - DEPRECATED: Known to return incorrect values (often 100%)
+            // Only use as absolute last resort if no EFE3 data is available
             uuidString.contains("2a19") -> {
                 val battery = value[0].toInt() and 0xFF
-                Log.d(TAG, "🔋 STANDARD BATTERY (2A19): $battery%")
+                Log.d(TAG, "🔋 STANDARD BATTERY (2A19): $battery% (UNRELIABLE - IGNORING)")
                 
-                // Only update if we don't have a valid battery yet or it looks realistic
+                // CRITICAL FIX: Ignore 2A19 completely - it's known to return wrong values
+                // The real battery comes from EFE3 characteristic (type 0x0F/0x06, byte[8])
+                // Only use 2A19 if we have NO battery data at all AND it's not 100% (which is always wrong)
                 val currentBat = _ringData.value.battery
-                if (currentBat == 0 || battery != 100) {
-                     _ringData.value = _ringData.value.copy(
+                if (currentBat == null && battery != 100 && battery in 1..99) {
+                    Log.w(TAG, "⚠️ Using unreliable 2A19 battery as last resort: $battery%")
+                    _ringData.value = _ringData.value.copy(
                         battery = battery,
                         lastUpdate = System.currentTimeMillis()
                     )
+                } else {
+                    Log.d(TAG, "   Ignoring 2A19 value (unreliable source)")
                 }
             }
             
@@ -697,39 +704,31 @@ class NativeGattManager private constructor(private val context: Context) {
         
         // Log all bytes for analysis
         val allBytes = value.take(20).mapIndexed { i, b -> "[$i]=${b.toInt() and 0xFF}" }.joinToString(", ")
-        Log.i(TAG, "All bytes: $allBytes")
+        Log.d(TAG, "All bytes: $allBytes")
         
-        // Look for potential HR values (40-200 typical HR range)
-        for (i in 0 until minOf(value.size, 15)) {
+        // FEA2 might contain HR data, but it's less reliable than EFE3
+        // Search through bytes for valid HR values (40-200, excluding error codes)
+        for (i in 0 until minOf(value.size, 10)) {
             val byteVal = value[i].toInt() and 0xFF
-            if (byteVal in 40..200) {
-                Log.i(TAG, "❤️ POTENTIAL HR: byte[$i] = $byteVal bpm")
+            if (byteVal in 40..200 && byteVal != 199 && byteVal != 0 && byteVal != 255) {
+                // Only use FEA2 HR if we don't have recent HR from EFE3
+                val currentHR = _ringData.value.heartRate
+                val lastUpdate = _ringData.value.lastUpdate
+                val isStale = lastUpdate == 0L || (System.currentTimeMillis() - lastUpdate) > 10000
+                
+                if (currentHR == 0 || isStale) {
+                    Log.i(TAG, "❤️ HEART RATE FROM FEA2 (TERTIARY SOURCE): $byteVal bpm (byte[$i])")
+                    _ringData.value = _ringData.value.copy(
+                        heartRate = byteVal,
+                        heartRateMeasuring = false,
+                        lastUpdate = System.currentTimeMillis()
+                    )
+                    break  // Use first valid HR found
+                } else {
+                    Log.d(TAG, "   FEA2 HR ignored - have recent HR from EFE3 ($currentHR bpm)")
+                    break
+                }
             }
-        }
-        
-        // Try common positions for HR data
-        // Position 0 or 1 is most common for HR
-        val packetType = value[0].toInt() and 0xFF
-        val potentialHR1 = if (value.size > 1) value[1].toInt() and 0xFF else 0
-        val potentialHR2 = if (value.size > 2) value[2].toInt() and 0xFF else 0
-        
-        Log.i(TAG, "packet type=${packetType}, byte[1]=$potentialHR1, byte[2]=$potentialHR2")
-        
-        // If this looks like an HR packet (values in valid HR range 40-200)
-        val hrValue = when {
-            potentialHR1 in 40..200 -> potentialHR1
-            potentialHR2 in 40..200 -> potentialHR2
-            packetType in 40..200 -> packetType  // Sometimes HR is at byte[0]
-            else -> 0
-        }
-        
-        if (hrValue > 0) {
-            Log.i(TAG, "❤️❤️❤️ HEART RATE FOUND: $hrValue bpm ❤️❤️❤️")
-            _ringData.value = _ringData.value.copy(
-                heartRate = hrValue,
-                heartRateMeasuring = false,  // Measurement complete
-                lastUpdate = System.currentTimeMillis()
-            )
         }
         
         Log.i(TAG, "═══════════════════════════════════")
@@ -778,15 +777,18 @@ class NativeGattManager private constructor(private val context: Context) {
                 when (packetSubType) {
                     0x06 -> {
                         // Status packet format:
-                        // byte[8] = battery %
+                        // byte[8] = battery % (PRIMARY SOURCE - MOST RELIABLE)
                         // byte[12] = stored/last HR value
                         val battery = value[8].toInt() and 0xFF
                         if (battery in 1..100) {
-                            Log.i(TAG, "🔋🔋🔋 BATTERY (type 0x06): $battery% 🔋🔋🔋")
+                            Log.i(TAG, "🔋🔋🔋 BATTERY (EFE3 type 0x0F/0x06 - PRIMARY SOURCE): $battery% 🔋🔋🔋")
+                            // ALWAYS update from this source - it's the most reliable
                             _ringData.value = _ringData.value.copy(
                                 battery = battery,
                                 lastUpdate = System.currentTimeMillis()
                             )
+                        } else {
+                            Log.w(TAG, "⚠️ Invalid battery value from EFE3 0x06: $battery (expected 1-100)")
                         }
                         
                         // Check for stress level at byte[2]
@@ -801,66 +803,82 @@ class NativeGattManager private constructor(private val context: Context) {
                             }
                         }
                         
-                        // Check for HR at byte[12] (stored/last measured HR)
-                        if (value.size > 12) {
-                            val storedHR = value[12].toInt() and 0xFF
+                        // FIXED: HR is NOT at byte[12] - that's often 199 (error code)
+                        // Search through the packet to find the actual HR value
+                        // HR is typically in the range 40-200 bpm
+                        if (value.size >= 13) {
+                            // Check multiple byte positions for HR (byte[12] is often wrong)
+                            // Common positions: byte[9], byte[10], byte[11], byte[13], byte[14]
+                            val hrCandidates = listOf(
+                                value[9].toInt() and 0xFF,   // Common HR position
+                                value[10].toInt() and 0xFF,  // Alternative position
+                                value[11].toInt() and 0xFF,  // Alternative position
+                                value[13].toInt() and 0xFF,  // After byte[12]
+                                value[14].toInt() and 0xFF   // Further position
+                            )
                             
-                            // Debugging: User reports 199 is wrong, real is 96
-                            if (storedHR == 199) {
-                                Log.w(TAG, "⚠️ HR byte[12] is 199 (likely invalid/measuring code)")
+                            // Find first valid HR value (exclude error codes: 0, 199, 255)
+                            val validHR = hrCandidates.firstOrNull { hr ->
+                                hr in 40..200 && hr != 199 && hr != 0 && hr != 255
                             }
                             
-                            // Log any byte that is exactly 96 or close to it to help find real HR
-                            value.forEachIndexed { i, b ->
-                                val v = b.toInt() and 0xFF
-                                if (v in 90..100) {
-                                    Log.w(TAG, "🎯 CANDIDATE HR FOUND: byte[$i] = $v (Target: ~96)")
-                                }
-                            }
-
-                            // Strict validation: Exclude 0, 255, and specifically 199 (0xC7) if it's an error code
-                            if (storedHR in 40..190) {
-                                Log.i(TAG, "❤️ STORED HR in 0x06 packet: byte[12]=$storedHR bpm")
+                            if (validHR != null) {
+                                Log.i(TAG, "❤️❤️❤️ HEART RATE (type 0x06 - FIXED): $validHR bpm ❤️❤️❤️")
                                 
                                 // ALWAYS update HR when valid value received
                                 val previousHR = _ringData.value.heartRate
                                 _ringData.value = _ringData.value.copy(
-                                    heartRate = storedHR,
+                                    heartRate = validHR,
                                     heartRateMeasuring = false,
                                     lastUpdate = System.currentTimeMillis()
                                 )
-
                                 
                                 // Show Toast only when HR changes significantly (avoid spam)
-                                if (previousHR != storedHR) {
-                                    Log.i(TAG, "❤️❤️❤️ HEART RATE UPDATED: $storedHR bpm ❤️❤️❤️")
+                                if (previousHR != validHR && (previousHR == 0 || kotlin.math.abs(previousHR - validHR) > 5)) {
+                                    Log.i(TAG, "❤️❤️❤️ HEART RATE UPDATED: $validHR bpm ❤️❤️❤️")
                                     Handler(Looper.getMainLooper()).post {
-                                        Toast.makeText(context, "❤️ Heart Rate: $storedHR bpm", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "❤️ Heart Rate: $validHR bpm", Toast.LENGTH_SHORT).show()
                                     }
                                 }
+                            } else {
+                                // Log all bytes for debugging if no valid HR found
+                                Log.d(TAG, "🔍 No valid HR found in type 0x06 packet. All bytes: ${value.take(15).mapIndexed { i, b -> "[$i]=${b.toInt() and 0xFF}" }.joinToString(", ")}")
                             }
                         }
                     }
                     0x15, 0x16 -> {
-                        // ❤️ REAL-TIME HEART RATE PACKET!
+                        // ❤️ REAL-TIME HEART RATE PACKET! (PRIMARY SOURCE - MOST RELIABLE)
                         // Format: [0x0F, 0x15/0x16, HR_value, ...]
-                        Log.i(TAG, "❤️❤️❤️ REAL-TIME HR PACKET DETECTED (0x${packetSubType.toString(16)}) ❤️❤️❤️")
+                        // HR is typically at byte[2] (immediately after type/subtype)
+                        Log.i(TAG, "❤️❤️❤️ REAL-TIME HR PACKET DETECTED (0x${packetSubType.toString(16)}) - PRIMARY SOURCE ❤️❤️❤️")
                         
-                        // HR is typically at byte[2] or byte[3]
-                        for (i in 2 until minOf(value.size, 8)) {
-                            val hr = value[i].toInt() and 0xFF
-                            if (hr in 40..200) {
-                                Log.i(TAG, "❤️❤️❤️ HEART RATE: $hr bpm ❤️❤️❤️")
+                        // FIXED: HR is at byte[2] for real-time packets
+                        if (value.size > 2) {
+                            val hr = value[2].toInt() and 0xFF
+                            
+                            // Validate HR range and exclude error codes
+                            if (hr in 40..200 && hr != 199 && hr != 0 && hr != 255) {
+                                Log.i(TAG, "❤️❤️❤️ HEART RATE (REAL-TIME): $hr bpm ❤️❤️❤️")
+                                
+                                // ALWAYS update from real-time packets (highest priority)
+                                val previousHR = _ringData.value.heartRate
                                 _ringData.value = _ringData.value.copy(
                                     heartRate = hr,
                                     heartRateMeasuring = false,
                                     lastUpdate = System.currentTimeMillis()
                                 )
-                                Handler(Looper.getMainLooper()).post {
-                                    Toast.makeText(context, "Heart Rate: $hr bpm", Toast.LENGTH_SHORT).show()
+                                
+                                // Show Toast for real-time updates
+                                if (previousHR != hr) {
+                                    Handler(Looper.getMainLooper()).post {
+                                        Toast.makeText(context, "❤️ Heart Rate: $hr bpm", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
-                                break  // Found valid HR, stop searching
+                            } else {
+                                Log.w(TAG, "⚠️ Invalid HR value in real-time packet: $hr (expected 40-200, excluding 199)")
                             }
+                        } else {
+                            Log.w(TAG, "⚠️ Real-time HR packet too short: ${value.size} bytes (expected at least 3)")
                         }
                     }
                     0x85 -> {
@@ -868,21 +886,30 @@ class NativeGattManager private constructor(private val context: Context) {
                         Log.d(TAG, "🔍 Type 0x85 packet (ignored for battery)")
                     }
                     0xF1 -> {
-                        // This might be HR or other measurement data
-                        // Packet: [15, 241, HR?, ...]
-                        Log.i(TAG, "❤️ Type 0xF1 - POTENTIAL HR/MEASUREMENT DATA!")
+                        // Type 0xF1 - HR measurement data (SECONDARY SOURCE)
+                        // Packet: [15, 241, HR_value, ...]
+                        // HR is typically at byte[2]
+                        Log.i(TAG, "❤️ Type 0xF1 - HR MEASUREMENT DATA (SECONDARY SOURCE)")
                         
-                        // Look for valid HR value in positions 2-6
-                        for (i in 2 until minOf(value.size, 7)) {
-                            val hr = value[i].toInt() and 0xFF
-                            if (hr in 40..200) {
-                                Log.i(TAG, "❤️❤️❤️ HEART RATE FROM 0xF1: $hr bpm ❤️❤️❤️")
-                                _ringData.value = _ringData.value.copy(
-                                    heartRate = hr,
-                                    heartRateMeasuring = false,
-                                    lastUpdate = System.currentTimeMillis()
-                                )
-                                break
+                        if (value.size > 2) {
+                            val hr = value[2].toInt() and 0xFF
+                            
+                            // Validate and exclude error codes
+                            if (hr in 40..200 && hr != 199 && hr != 0 && hr != 255) {
+                                // Only update if we don't have HR from real-time packets (0x15/0x16)
+                                val currentHR = _ringData.value.heartRate
+                                if (currentHR == 0 || _ringData.value.lastUpdate < System.currentTimeMillis() - 5000) {
+                                    Log.i(TAG, "❤️❤️❤️ HEART RATE FROM 0xF1: $hr bpm ❤️❤️❤️")
+                                    _ringData.value = _ringData.value.copy(
+                                        heartRate = hr,
+                                        heartRateMeasuring = false,
+                                        lastUpdate = System.currentTimeMillis()
+                                    )
+                                } else {
+                                    Log.d(TAG, "   HR already set from real-time source ($currentHR bpm), ignoring 0xF1")
+                                }
+                            } else {
+                                Log.d(TAG, "   Invalid HR in 0xF1 packet: $hr")
                             }
                         }
                     }
@@ -910,17 +937,20 @@ class NativeGattManager private constructor(private val context: Context) {
                 // Type 0xF0 packet - may contain battery at byte[8]
                 // Example: [240, 18, 4, 85, 0, 85, 0, 0, 85, ...]
                 // BUT: 85 is often a false positive, real battery is at byte[8]
+                // TERTIARY SOURCE - Only use if no other source has provided battery
                 val battery = value[8].toInt() and 0xFF
                 
-                // Only update if it's a reasonable value and NOT the common false positive
-                if (battery in 1..100 && battery != 85) {
-                    Log.i(TAG, "🔋 BATTERY (type 0xF0): $battery%")
+                // Only update if it's a reasonable value, NOT the common false positive (85),
+                // and we don't already have battery from a more reliable source
+                val currentBat = _ringData.value.battery
+                if (battery in 1..100 && battery != 85 && currentBat == null) {
+                    Log.i(TAG, "🔋 BATTERY (type 0xF0 - TERTIARY SOURCE): $battery%")
                     _ringData.value = _ringData.value.copy(
                         battery = battery,
                         lastUpdate = System.currentTimeMillis()
                     )
                 } else {
-                    Log.d(TAG, "🔍 Type 0xF0: byte[8]=$battery (not updating - likely false positive)")
+                    Log.d(TAG, "🔍 Type 0xF0: byte[8]=$battery (not updating - ${if (battery == 85) "false positive" else "already have battery"})")
                 }
             }
             0x88 -> {
@@ -1028,13 +1058,10 @@ class NativeGattManager private constructor(private val context: Context) {
         
         Log.i(TAG, "🔋 Refreshing battery...")
         
-        // 1. Try Standard Battery Service (2A19)
-        gatt.getService(BATTERY_SERVICE_UUID)?.getCharacteristic(BATTERY_LEVEL_UUID)?.let { char ->
-            Log.i(TAG, "🔋 Reading standard battery characteristic...")
-            gatt.readCharacteristic(char)
-        }
+        // NOTE: Standard Battery Service (2A19) is UNRELIABLE - returns incorrect values (often 100%)
+        // Skip it and use EFE3 status request instead
         
-        // 2. Try Custom Command (0x0F, 0x06, 0x01) to request status packet which contains battery
+        // Request status packet (0x0F, 0x06) which contains battery at byte[8]
         // This is necessary if the ring doesn't support standard battery service reliably
         Handler(Looper.getMainLooper()).postDelayed({
              gatt.getService(CUSTOM_SERVICE_EFE0)?.getCharacteristic(CUSTOM_CHAR_EFE1)?.let { char ->
@@ -1081,10 +1108,11 @@ class NativeGattManager private constructor(private val context: Context) {
         Log.i(TAG, "❤️ STARTING HEART RATE MEASUREMENT")
         Log.i(TAG, "═══════════════════════════════════")
         
-        // Simplified HR commands - only send essential ones to avoid disconnect
-        // Too many commands causes GATT_CONN_TIMEOUT (status=8)
+        // HR measurement commands - send both to trigger real-time HR packets
+        // 0x15 = Start HR measurement, 0x16 = Start real-time HR streaming
         val hrCommands = listOf(
-            byteArrayOf(0x0F, 0x15, 0x01),  // Start HR measurement
+            byteArrayOf(0x0F, 0x15, 0x01),  // Start HR measurement (triggers 0x0F/0x15 packets)
+            byteArrayOf(0x0F, 0x16, 0x01),  // Start real-time HR streaming (triggers 0x0F/0x16 packets)
         )
         
         // Primary: Write to EFE1 (main command characteristic on EFE0 service)
@@ -1095,12 +1123,12 @@ class NativeGattManager private constructor(private val context: Context) {
                 hrCommands.forEachIndexed { index, cmd ->
                     Handler(Looper.getMainLooper()).postDelayed({
                         if (bluetoothGatt != null) {  // Check still connected
-                            Log.i(TAG, "❤️ Sending HR command to EFE1: ${cmd.joinToString { String.format("%02X", it) }}")
+                            Log.i(TAG, "❤️ Sending HR command ${index + 1}/${hrCommands.size} to EFE1: ${cmd.joinToString("") { "%02X".format(it) }}")
                             char.value = cmd
                             char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
                             gatt.writeCharacteristic(char)
                         }
-                    }, 3000L * index)  // Increased spacing to 3s
+                    }, 2000L * (index + 1))  // 2s, 4s delays between commands
                 }
             } else {
                 Log.d(TAG, "EFE1 does not support write")
