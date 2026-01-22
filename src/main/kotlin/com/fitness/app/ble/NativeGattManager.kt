@@ -264,33 +264,35 @@ class NativeGattManager private constructor(private val context: Context) {
             return
         }
 
-        try {
-            val device = bluetoothAdapter.getRemoteDevice(macAddress)
-            
-            // Close existing connection and wait for BLE stack to reset
-            bluetoothGatt?.let { gatt ->
-                gatt.disconnect()
-                gatt.close()
-                Thread.sleep(500)  // Give BLE stack time to clean up
-            }
-            bluetoothGatt = null
-
-            // Connect using native GATT with autoConnect=true for persistent connection
-            // autoConnect=true helps maintain connection and handles reconnection better
-            bluetoothGatt = device.connectGatt(
-                context,
-                true,  // autoConnect = true for more stable persistent connection
-                gattCallback,
-                BluetoothDevice.TRANSPORT_LE
-            )
-
-            Log.i(TAG, "✓ Native GATT connection initiated...")
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Connection error: ${e.message}")
-            _connectionState.value = ConnectionState.Error("Connection failed: ${e.message}")
-            isConnecting = false
+        // Close any existing connection first
+        bluetoothGatt?.let { gatt ->
+            gatt.disconnect()
+            gatt.close()
         }
+        bluetoothGatt = null
+        
+        // Delay before new connection to let BLE stack reset
+        Handler(Looper.getMainLooper()).postDelayed({
+            try {
+                val device = bluetoothAdapter.getRemoteDevice(macAddress)
+                
+                // Connect using native GATT
+                // autoConnect=false for faster initial connection, we handle reconnection ourselves
+                bluetoothGatt = device.connectGatt(
+                    context,
+                    false,  // autoConnect = false for faster initial connect
+                    gattCallback,
+                    BluetoothDevice.TRANSPORT_LE
+                )
+
+                Log.i(TAG, "✓ Native GATT connection initiated...")
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Connection error: ${e.message}")
+                _connectionState.value = ConnectionState.Error("Connection failed: ${e.message}")
+                isConnecting = false
+            }
+        }, 300L)  // 300ms delay for BLE stack cleanup
     }
 
     /**
@@ -327,11 +329,16 @@ class NativeGattManager private constructor(private val context: Context) {
                         Toast.makeText(context, "Ring Connected!", Toast.LENGTH_SHORT).show()
                     }
                     
-                    // Start keep-alive mechanism
-                    startKeepAlive()
-                    
-                    // Discover services
+                    //  Discover services first
                     gatt?.discoverServices()
+                    
+                    // Start keep-alive AFTER service discovery completes (delayed)
+                    // This prevents overwhelming BLE stack with too many operations at once
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        if (_connectionState.value == ConnectionState.Connected) {
+                            startKeepAlive()
+                        }
+                    }, 10000L)  // 10 second delay
                 }
                 
                 BluetoothProfile.STATE_DISCONNECTED -> {
