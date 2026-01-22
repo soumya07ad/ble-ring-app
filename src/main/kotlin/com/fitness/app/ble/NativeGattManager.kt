@@ -999,14 +999,15 @@ class NativeGattManager private constructor(private val context: Context) {
                 }
             }
             0x1A -> {
-                // Type 0x1A packet (26 decimal) - BATTERY DATA PACKET!
+                // Type 0x1A packet (26 decimal) - STATUS PACKET with BATTERY and HR!
                 // Example: [26, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 105, 114, 73, 128, 60, 0]
-                //                                                                    ^^
-                //                                                   byte[16] = 73% (REAL BATTERY!)
-                // Subtype 0x08 = battery status packet
-                Log.i(TAG, "🔋🔋🔋 TYPE 0x1A BATTERY PACKET DETECTED! 🔋🔋🔋")
+                //                                                       ^^^       ^^
+                //                                          byte[14] = 105 bpm    byte[16] = 73% battery
+                // Subtype 0x08 = status packet with HR and battery
+                Log.i(TAG, "🔋❤️ TYPE 0x1A STATUS PACKET DETECTED! 🔋❤️")
                 
                 if (value.size > 16 && packetSubType == 0x08) {
+                    // Extract BATTERY from byte[16]
                     val battery = value[16].toInt() and 0xFF
                     if (battery in 1..100) {
                         Log.i(TAG, "🔋🔋🔋 BATTERY (type 0x1A/0x08 at byte[16]): $battery% 🔋🔋🔋")
@@ -1014,17 +1015,43 @@ class NativeGattManager private constructor(private val context: Context) {
                             battery = battery,
                             lastUpdate = System.currentTimeMillis()
                         )
+                    }
+                    
+                    // Extract HEART RATE from byte[14] (primary) or search in nearby bytes
+                    val hrCandidates = listOf(
+                        value[14].toInt() and 0xFF,  // Primary HR position (105 in user logs)
+                        value[15].toInt() and 0xFF,  // Alternative position (114 in user logs)
+                        value[17].toInt() and 0xFF   // Another candidate (128 in user logs - might be too high)
+                    )
+                    
+                    // Find first valid HR value (40-200 range, exclude error codes)
+                    val validHR = hrCandidates.firstOrNull { hr ->
+                        hr in 40..180 && hr != 199 && hr != 0 && hr != 255
+                    }
+                    
+                    if (validHR != null) {
+                        Log.i(TAG, "❤️❤️❤️ HEART RATE (type 0x1A at byte[14]): $validHR bpm ❤️❤️❤️")
+                        val previousHR = _ringData.value.heartRate
+                        _ringData.value = _ringData.value.copy(
+                            heartRate = validHR,
+                            heartRateMeasuring = false,
+                            lastUpdate = System.currentTimeMillis()
+                        )
                         
-                        // Show toast for battery update
-                        Handler(Looper.getMainLooper()).post {
-                            Toast.makeText(context, "🔋 Battery: $battery%", Toast.LENGTH_SHORT).show()
+                        // Show Toast when HR changes
+                        if (previousHR != validHR && (previousHR == 0 || kotlin.math.abs(previousHR - validHR) > 3)) {
+                            Handler(Looper.getMainLooper()).post {
+                                Toast.makeText(context, "❤️ Heart Rate: $validHR bpm", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     } else {
-                        Log.w(TAG, "⚠️ Invalid battery at byte[16]: $battery (expected 1-100)")
+                        Log.d(TAG, "🔍 No valid HR in 0x1A packet. Candidates: $hrCandidates")
                     }
                 } else {
-                    // Fallback: search for battery in other positions
-                    Log.d(TAG, "🔍 Type 0x1A subtype 0x${packetSubType.toString(16)} - searching for battery...")
+                    // Fallback: search for battery and HR in other positions
+                    Log.d(TAG, "🔍 Type 0x1A subtype 0x${packetSubType.toString(16)} - searching for data...")
+                    
+                    // Search for battery
                     for (i in listOf(16, 18, 8)) {
                         if (value.size > i) {
                             val potentialBat = value[i].toInt() and 0xFF
@@ -1032,6 +1059,22 @@ class NativeGattManager private constructor(private val context: Context) {
                                 Log.i(TAG, "🔋 Found battery at byte[$i]: $potentialBat%")
                                 _ringData.value = _ringData.value.copy(
                                     battery = potentialBat,
+                                    lastUpdate = System.currentTimeMillis()
+                                )
+                                break
+                            }
+                        }
+                    }
+                    
+                    // Search for HR
+                    for (i in listOf(14, 15, 2, 3)) {
+                        if (value.size > i) {
+                            val potentialHR = value[i].toInt() and 0xFF
+                            if (potentialHR in 40..180) {
+                                Log.i(TAG, "❤️ Found HR at byte[$i]: $potentialHR bpm")
+                                _ringData.value = _ringData.value.copy(
+                                    heartRate = potentialHR,
+                                    heartRateMeasuring = false,
                                     lastUpdate = System.currentTimeMillis()
                                 )
                                 break
