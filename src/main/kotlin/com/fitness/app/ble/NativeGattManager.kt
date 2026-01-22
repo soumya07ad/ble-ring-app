@@ -64,8 +64,12 @@ class NativeGattManager private constructor(private val context: Context) {
     
     // Keep-alive mechanism to prevent disconnect
     private val keepAliveHandler = Handler(Looper.getMainLooper())
-    private val KEEP_ALIVE_INTERVAL = 5000L  // 5 seconds
+    private val KEEP_ALIVE_INTERVAL = 15000L  // 15 seconds (reduced frequency for stability)
     private var keepAliveRunnable: Runnable? = null
+    
+    // Auto-reconnect control
+    private var shouldAutoReconnect = true
+    private var lastDataReceivedTime = 0L
     
     companion object {
         private const val TAG = "NativeGattManager"
@@ -277,13 +281,16 @@ class NativeGattManager private constructor(private val context: Context) {
                 val device = bluetoothAdapter.getRemoteDevice(macAddress)
                 
                 // Connect using native GATT
-                // autoConnect=false for faster initial connection, we handle reconnection ourselves
+                // autoConnect=true for automatic reconnection after disconnect
                 bluetoothGatt = device.connectGatt(
                     context,
-                    false,  // autoConnect = false for faster initial connect
+                    true,  // autoConnect = true for stable connection
                     gattCallback,
                     BluetoothDevice.TRANSPORT_LE
                 )
+                
+                // Mark that we want to stay connected
+                shouldAutoReconnect = true
 
                 Log.i(TAG, "✓ Native GATT connection initiated...")
 
@@ -351,32 +358,56 @@ class NativeGattManager private constructor(private val context: Context) {
                     bluetoothGatt?.close()
                     bluetoothGatt = null
                     
-                    // Handle retryable GATT errors:
+                    // Handle ALL disconnections with auto-reconnect
+                    // Common GATT status codes:
+                    // - status 0 = GATT_SUCCESS (normal disconnect, may be unexpected)
                     // - status 8 = GATT_CONN_TIMEOUT (connection timeout)
+                    // - status 19 = GATT_CONN_TERMINATE_PEER_USER (remote disconnect)
                     // - status 133 = GATT_ERROR (generic error)
                     val isRetryableError = status == 8 || status == 133
+                    val isUnexpectedDisconnect = status == 0 || status == 19
                     
-                    if (isRetryableError && connectionRetryCount < MAX_RETRIES) {
-                        connectionRetryCount++
-                        Log.w(TAG, "⚠️ GATT error (status=$status) - retry $connectionRetryCount/$MAX_RETRIES in 2 seconds...")
-                        
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            if (connectedMacAddress.isNotEmpty()) {
-                                Log.i(TAG, "🔄 Retrying connection to $connectedMacAddress...")
-                                connectDevice(connectedMacAddress, connectedDeviceName)
+                    // Auto-reconnect for all unexpected disconnects OR retryable errors
+                    if (shouldAutoReconnect && connectedMacAddress.isNotEmpty()) {
+                        if (isRetryableError && connectionRetryCount < MAX_RETRIES) {
+                            connectionRetryCount++
+                            val delay = 2000L * connectionRetryCount
+                            Log.w(TAG, "⚠️ GATT error (status=$status) - retry $connectionRetryCount/$MAX_RETRIES in ${delay}ms...")
+                            
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                if (shouldAutoReconnect && connectedMacAddress.isNotEmpty()) {
+                                    Log.i(TAG, "🔄 Retrying connection to $connectedMacAddress...")
+                                    connectDevice(connectedMacAddress, connectedDeviceName)
+                                }
+                            }, delay)
+                        } else if (isUnexpectedDisconnect) {
+                            // Unexpected disconnect - try to reconnect after brief delay
+                            Log.w(TAG, "⚠️ Unexpected disconnect (status=$status) - auto-reconnecting in 3s...")
+                            connectionRetryCount = 0  // Reset retry count for unexpected disconnects
+                            
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                if (shouldAutoReconnect && connectedMacAddress.isNotEmpty()) {
+                                    Log.i(TAG, "🔄 Auto-reconnecting to $connectedMacAddress...")
+                                    connectDevice(connectedMacAddress, connectedDeviceName)
+                                }
+                            }, 3000L)
+                            
+                            Handler(Looper.getMainLooper()).post {
+                                Toast.makeText(context, "Connection lost. Reconnecting...", Toast.LENGTH_SHORT).show()
                             }
-                        }, 2000L * connectionRetryCount)  // Increasing delay
-                    } else {
-                        // Give up or normal disconnect
-                        connectionRetryCount = 0
-                        _connectionState.value = ConnectionState.Disconnected
-                        
-                        if (isRetryableError) {
+                        } else {
+                            // Max retries exceeded
+                            connectionRetryCount = 0
+                            _connectionState.value = ConnectionState.Disconnected
                             Log.e(TAG, "❌ Connection failed after $MAX_RETRIES retries. Try toggling Bluetooth.")
                             Handler(Looper.getMainLooper()).post {
                                 Toast.makeText(context, "Connection failed. Toggle Bluetooth and retry.", Toast.LENGTH_LONG).show()
                             }
                         }
+                    } else {
+                        // Intentional disconnect - don't reconnect
+                        connectionRetryCount = 0
+                        _connectionState.value = ConnectionState.Disconnected
                     }
                 }
             }
@@ -1037,10 +1068,14 @@ class NativeGattManager private constructor(private val context: Context) {
      */
     @SuppressLint("MissingPermission")
     fun disconnect() {
-        Log.d(TAG, "Disconnecting...")
+        Log.d(TAG, "Disconnecting (intentional)...")
+        shouldAutoReconnect = false  // Prevent auto-reconnect
+        stopKeepAlive()
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
         bluetoothGatt = null
+        connectedMacAddress = ""
+        connectedDeviceName = ""
         _connectionState.value = ConnectionState.Disconnected
     }
 
