@@ -267,14 +267,19 @@ class NativeGattManager private constructor(private val context: Context) {
         try {
             val device = bluetoothAdapter.getRemoteDevice(macAddress)
             
-            // Close existing connection
-            bluetoothGatt?.close()
+            // Close existing connection and wait for BLE stack to reset
+            bluetoothGatt?.let { gatt ->
+                gatt.disconnect()
+                gatt.close()
+                Thread.sleep(500)  // Give BLE stack time to clean up
+            }
             bluetoothGatt = null
 
-            // Connect using native GATT
+            // Connect using native GATT with autoConnect=true for persistent connection
+            // autoConnect=true helps maintain connection and handles reconnection better
             bluetoothGatt = device.connectGatt(
                 context,
-                false,  // autoConnect = false for faster connection
+                true,  // autoConnect = true for more stable persistent connection
                 gattCallback,
                 BluetoothDevice.TRANSPORT_LE
             )
