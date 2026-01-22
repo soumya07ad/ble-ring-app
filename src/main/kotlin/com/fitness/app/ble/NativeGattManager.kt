@@ -769,14 +769,17 @@ class NativeGattManager private constructor(private val context: Context) {
                             if (storedHR in 40..200) {
                                 Log.i(TAG, "❤️ STORED HR in 0x06 packet: byte[12]=$storedHR bpm")
                                 
-                                // If we're actively measuring, update the HR
-                                if (_ringData.value.heartRateMeasuring || _ringData.value.heartRate == 0) {
-                                    Log.i(TAG, "❤️❤️❤️ HEART RATE: $storedHR bpm ❤️❤️❤️")
-                                    _ringData.value = _ringData.value.copy(
-                                        heartRate = storedHR,
-                                        heartRateMeasuring = false,
-                                        lastUpdate = System.currentTimeMillis()
-                                    )
+                                // ALWAYS update HR when valid value received
+                                val previousHR = _ringData.value.heartRate
+                                _ringData.value = _ringData.value.copy(
+                                    heartRate = storedHR,
+                                    heartRateMeasuring = false,
+                                    lastUpdate = System.currentTimeMillis()
+                                )
+                                
+                                // Show Toast only when HR changes significantly (avoid spam)
+                                if (previousHR != storedHR) {
+                                    Log.i(TAG, "❤️❤️❤️ HEART RATE UPDATED: $storedHR bpm ❤️❤️❤️")
                                     Handler(Looper.getMainLooper()).post {
                                         Toast.makeText(context, "❤️ Heart Rate: $storedHR bpm", Toast.LENGTH_SHORT).show()
                                     }
@@ -949,15 +952,10 @@ class NativeGattManager private constructor(private val context: Context) {
         Log.i(TAG, "❤️ STARTING HEART RATE MEASUREMENT")
         Log.i(TAG, "═══════════════════════════════════")
         
-        // YC SDK HR measurement commands with proper protocol format
-        // Based on observed packet patterns, commands should use 0x0F header
+        // Simplified HR commands - only send essential ones to avoid disconnect
+        // Too many commands causes GATT_CONN_TIMEOUT (status=8)
         val hrCommands = listOf(
-            // Format: [header, command_type, params...]
-            byteArrayOf(0x0F, 0x15, 0x01),              // Start HR measurement (protocol format)
-            byteArrayOf(0x0F, 0x16, 0x01),              // Start real-time HR
-            byteArrayOf(0x0F, 0x05, 0x01),              // Alternative HR start
-            byteArrayOf(0x15, 0x01),                     // Simple start (fallback)
-            byteArrayOf(0x16, 0x01),                     // Real-time HR (fallback)
+            byteArrayOf(0x0F, 0x15, 0x01),  // Start HR measurement
         )
         
         // Primary: Write to EFE1 (main command characteristic on EFE0 service)
@@ -967,35 +965,20 @@ class NativeGattManager private constructor(private val context: Context) {
                 
                 hrCommands.forEachIndexed { index, cmd ->
                     Handler(Looper.getMainLooper()).postDelayed({
-                        Log.i(TAG, "❤️ Sending HR command to EFE1: ${cmd.joinToString { String.format("%02X", it) }}")
-                        char.value = cmd
-                        char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                        gatt.writeCharacteristic(char)
-                    }, 1500L * index)
+                        if (bluetoothGatt != null) {  // Check still connected
+                            Log.i(TAG, "❤️ Sending HR command to EFE1: ${cmd.joinToString { String.format("%02X", it) }}")
+                            char.value = cmd
+                            char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                            gatt.writeCharacteristic(char)
+                        }
+                    }, 3000L * index)  // Increased spacing to 3s
                 }
             } else {
                 Log.d(TAG, "EFE1 does not support write")
             }
         } ?: Log.d(TAG, "EFE1 characteristic not found")
         
-        // Also try FEC7 as backup
-        gatt.getService(SERVICE_FEE7)?.getCharacteristic(CHAR_FEC7)?.let { char ->
-            if (char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0 ||
-                char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0) {
-                
-                Handler(Looper.getMainLooper()).postDelayed({
-                    val cmd = byteArrayOf(0x0F, 0x15, 0x01)
-                    Log.i(TAG, "❤️ Sending HR command to FEC7: ${cmd.joinToString { String.format("%02X", it) }}")
-                    char.value = cmd
-                    char.writeType = if (char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0) {
-                        BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-                    } else {
-                        BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                    }
-                    gatt.writeCharacteristic(char)
-                }, 8000L)
-            }
-        }
+        // Note: Removed FEC7 backup command - was causing GATT_CONN_TIMEOUT (status=8)
         
         // Update UI to show measuring
         _ringData.value = _ringData.value.copy(
