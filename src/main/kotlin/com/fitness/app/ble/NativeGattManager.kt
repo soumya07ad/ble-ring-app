@@ -804,7 +804,22 @@ class NativeGattManager private constructor(private val context: Context) {
                         // Check for HR at byte[12] (stored/last measured HR)
                         if (value.size > 12) {
                             val storedHR = value[12].toInt() and 0xFF
-                            if (storedHR in 40..200) {
+                            
+                            // Debugging: User reports 199 is wrong, real is 96
+                            if (storedHR == 199) {
+                                Log.w(TAG, "⚠️ HR byte[12] is 199 (likely invalid/measuring code)")
+                            }
+                            
+                            // Log any byte that is exactly 96 or close to it to help find real HR
+                            value.forEachIndexed { i, b ->
+                                val v = b.toInt() and 0xFF
+                                if (v in 90..100) {
+                                    Log.w(TAG, "🎯 CANDIDATE HR FOUND: byte[$i] = $v (Target: ~96)")
+                                }
+                            }
+
+                            // Strict validation: Exclude 0, 255, and specifically 199 (0xC7) if it's an error code
+                            if (storedHR in 40..190) {
                                 Log.i(TAG, "❤️ STORED HR in 0x06 packet: byte[12]=$storedHR bpm")
                                 
                                 // ALWAYS update HR when valid value received
@@ -814,6 +829,7 @@ class NativeGattManager private constructor(private val context: Context) {
                                     heartRateMeasuring = false,
                                     lastUpdate = System.currentTimeMillis()
                                 )
+
                                 
                                 // Show Toast only when HR changes significantly (avoid spam)
                                 if (previousHR != storedHR) {
