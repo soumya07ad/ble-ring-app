@@ -1025,11 +1025,25 @@ class NativeGattManager private constructor(private val context: Context) {
                 if (char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0 ||
                     char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0) {
                     
-                    Log.i(TAG, "🔋 Sending custom status request for battery...")
-                    val cmd = byteArrayOf(0x0F, 0x06, 0x01) // Status/info request
-                    char.value = cmd
-                    char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                    gatt.writeCharacteristic(char)
+                    Log.i(TAG, "🔋 Sending custom status requests for battery...")
+                    
+                    // Try multiple commands sequence to trigger data/status response
+                    val commands = listOf(
+                        byteArrayOf(0x0F, 0x0C, 0x01), // Step sync (usually returns status too)
+                        byteArrayOf(0x0F, 0x06, 0x01), // Explicit status request
+                        byteArrayOf(0x27, 0x01)        // Alternative status/info
+                    )
+                    
+                    commands.forEachIndexed { index, cmd ->
+                         Handler(Looper.getMainLooper()).postDelayed({
+                            if (isConnected()) {
+                                Log.d(TAG, "  Sending batt cmd ${index+1}: ${cmd.joinToString("") { "%02X".format(it) }}")
+                                char.value = cmd
+                                char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                                gatt.writeCharacteristic(char)
+                            }
+                         }, 500L * index)
+                    }
                 }
             }
         }, 500L) // Slight delay to separate from read request
