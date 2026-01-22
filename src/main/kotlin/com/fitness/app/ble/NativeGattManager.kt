@@ -967,6 +967,48 @@ class NativeGattManager private constructor(private val context: Context) {
                     )
                 }
             }
+            0x1A -> {
+                // Type 0x1A packet (26 decimal) - BATTERY DATA PACKET!
+                // Example: [26, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 105, 114, 73, 128, 60, 0]
+                //                                                                    ^^
+                //                                                   byte[16] = 73% (REAL BATTERY!)
+                // Subtype 0x08 = battery status packet
+                Log.i(TAG, "🔋🔋🔋 TYPE 0x1A BATTERY PACKET DETECTED! 🔋🔋🔋")
+                
+                if (value.size > 16 && packetSubType == 0x08) {
+                    val battery = value[16].toInt() and 0xFF
+                    if (battery in 1..100) {
+                        Log.i(TAG, "🔋🔋🔋 BATTERY (type 0x1A/0x08 at byte[16]): $battery% 🔋🔋🔋")
+                        _ringData.value = _ringData.value.copy(
+                            battery = battery,
+                            lastUpdate = System.currentTimeMillis()
+                        )
+                        
+                        // Show toast for battery update
+                        Handler(Looper.getMainLooper()).post {
+                            Toast.makeText(context, "🔋 Battery: $battery%", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Log.w(TAG, "⚠️ Invalid battery at byte[16]: $battery (expected 1-100)")
+                    }
+                } else {
+                    // Fallback: search for battery in other positions
+                    Log.d(TAG, "🔍 Type 0x1A subtype 0x${packetSubType.toString(16)} - searching for battery...")
+                    for (i in listOf(16, 18, 8)) {
+                        if (value.size > i) {
+                            val potentialBat = value[i].toInt() and 0xFF
+                            if (potentialBat in 1..100) {
+                                Log.i(TAG, "🔋 Found battery at byte[$i]: $potentialBat%")
+                                _ringData.value = _ringData.value.copy(
+                                    battery = potentialBat,
+                                    lastUpdate = System.currentTimeMillis()
+                                )
+                                break
+                            }
+                        }
+                    }
+                }
+            }
             0x81 -> {
                 // Acknowledgment packet
                 Log.d(TAG, "🔍 Type 0x81 - ACK packet")
