@@ -482,14 +482,18 @@ class NativeGattManager private constructor(private val context: Context) {
 
         val operationQueue = mutableListOf<() -> Unit>()
         
-        // DISABLED: Standard battery service (2A19) returns wrong 100%
-        // Real battery comes from EFE3 status packets (byte[8])
-        // gatt.getService(BATTERY_SERVICE_UUID)?.getCharacteristic(BATTERY_LEVEL_UUID)?.let { char ->
-        //     operationQueue.add { 
-        //         Log.d(TAG, "Reading battery...")
-        //         gatt.readCharacteristic(char) 
-        //     }
-        // }
+        // 1. Try to read standard battery (2A19)
+        gatt.getService(BATTERY_SERVICE_UUID)?.getCharacteristic(BATTERY_LEVEL_UUID)?.let { char ->
+            operationQueue.add { 
+                Log.d(TAG, "Reading standard battery...")
+                gatt.readCharacteristic(char) 
+            }
+        }
+        
+        // Schedule custom battery refresh after notifications are enabled
+        Handler(Looper.getMainLooper()).postDelayed({
+            refreshBattery()
+        }, 3000L)
         
         // 2. Enable notifications on FEA1 (likely real battery/health data)
         gatt.getService(SERVICE_FEE7)?.getCharacteristic(CHAR_FEA1)?.let { char ->
@@ -586,12 +590,19 @@ class NativeGattManager private constructor(private val context: Context) {
         val uuidString = uuid.toString().lowercase()
 
         when {
-            // DISABLED: Standard Battery Level (2A19) returns wrong 100%
-            // Real battery comes from EFE3 status packets
+            // Standard Battery Level (2A19) - enable as fallback
             uuidString.contains("2a19") -> {
                 val battery = value[0].toInt() and 0xFF
-                Log.d(TAG, "🔋 IGNORED: 2A19 battery = $battery% (wrong, using EFE3 instead)")
-                // Don't update ringData - we use EFE3 for real battery
+                Log.d(TAG, "🔋 STANDARD BATTERY (2A19): $battery%")
+                
+                // Only update if we don't have a valid battery yet or it looks realistic
+                val currentBat = _ringData.value.battery
+                if (currentBat == 0 || battery != 100) {
+                     _ringData.value = _ringData.value.copy(
+                        battery = battery,
+                        lastUpdate = System.currentTimeMillis()
+                    )
+                }
             }
             
             // FEA1 - Likely contains real battery or health data
@@ -998,9 +1009,30 @@ class NativeGattManager private constructor(private val context: Context) {
     @SuppressLint("MissingPermission")
     fun refreshBattery() {
         val gatt = bluetoothGatt ?: return
+        
+        Log.i(TAG, "🔋 Refreshing battery...")
+        
+        // 1. Try Standard Battery Service (2A19)
         gatt.getService(BATTERY_SERVICE_UUID)?.getCharacteristic(BATTERY_LEVEL_UUID)?.let { char ->
+            Log.i(TAG, "🔋 Reading standard battery characteristic...")
             gatt.readCharacteristic(char)
         }
+        
+        // 2. Try Custom Command (0x0F, 0x06, 0x01) to request status packet which contains battery
+        // This is necessary if the ring doesn't support standard battery service reliably
+        Handler(Looper.getMainLooper()).postDelayed({
+             gatt.getService(CUSTOM_SERVICE_EFE0)?.getCharacteristic(CUSTOM_CHAR_EFE1)?.let { char ->
+                if (char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0 ||
+                    char.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0) {
+                    
+                    Log.i(TAG, "🔋 Sending custom status request for battery...")
+                    val cmd = byteArrayOf(0x0F, 0x06, 0x01) // Status/info request
+                    char.value = cmd
+                    char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                    gatt.writeCharacteristic(char)
+                }
+            }
+        }, 500L) // Slight delay to separate from read request
     }
 
     /**
