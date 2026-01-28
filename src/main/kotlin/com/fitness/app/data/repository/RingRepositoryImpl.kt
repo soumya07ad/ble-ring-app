@@ -1,11 +1,10 @@
 package com.fitness.app.data.repository
 
 import android.content.Context
-import com.fitness.app.ble.BleDevice
-import com.fitness.app.ble.NativeGattManager
-import com.fitness.app.ble.ConnectionState
+import android.util.Log
+import com.fitness.app.ble.BleConnectionState
 import com.fitness.app.ble.RingData
-import com.fitness.app.ble.ScanState
+import com.fitness.app.ble.SdkBleManager
 import com.fitness.app.core.util.Result
 import com.fitness.app.domain.model.ConnectionStatus
 import com.fitness.app.domain.model.Ring
@@ -24,19 +23,34 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Implementation of IRingRepository
- * Now uses SdkBleManager (full YC SDK approach)
+ * Uses SdkBleManager (YCBTClient SDK approach)
  * 
- * This uses the SDK for all operations: connection, battery, steps, and heart rate
+ * SDK handles all BLE operations: scanning, connection, data retrieval
  */
 class RingRepositoryImpl(
     private val context: Context
 ) : IRingRepository {
     
+    companion object {
+        private const val TAG = "RingRepositoryImpl"
+        
+        @Volatile
+        private var INSTANCE: RingRepositoryImpl? = null
+        
+        fun getInstance(context: Context): RingRepositoryImpl {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: RingRepositoryImpl(context.applicationContext).also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
+    
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
-    // Use NativeGattManager (pure native approach)
-    private val nativeManager: NativeGattManager by lazy { 
-        NativeGattManager.getInstance(context)
+    // Use SdkBleManager (YCBTClient SDK approach)
+    private val sdkManager: SdkBleManager by lazy { 
+        SdkBleManager.getInstance(context)
     }
     
     // Domain state flows
@@ -53,69 +67,54 @@ class RingRepositoryImpl(
     private var connectedRing: Ring? = null
     
     init {
-        nativeManager.initialize()
-        observeNativeManagerStates()
+        sdkManager.initialize()
+        observeSdkManagerStates()
     }
     
     /**
-     * Observe NativeGattManager states and map to domain states
+     * Observe SdkBleManager states and map to domain states
      */
-    private fun observeNativeManagerStates() {
+    private fun observeSdkManagerStates() {
+        // Observe connection state
         scope.launch {
-            // Observe connection state
-            nativeManager.connectionState.collect { state ->
+            sdkManager.connectionState.collect { state ->
                 _connectionStatus.value = mapConnectionState(state)
             }
         }
         
+        // Observe ring data
         scope.launch {
-            // Observe ring data
-            nativeManager.ringData.collect { data ->
+            sdkManager.ringData.collect { data ->
                 _ringData.value = mapRingData(data)
             }
         }
         
         // Observe scan results
         scope.launch {
-            nativeManager.scanState.collect { state ->
-                 when (state) {
-                     is ScanState.Idle -> _scanStatus.value = ScanStatus.Idle
-                     is ScanState.Scanning -> _scanStatus.value = ScanStatus.Scanning
-                     is ScanState.DevicesFound -> {
-                         // Convert BleDevice -> Ring
-                         val rings = state.devices.map { it.toDomain() }
-                         _scanStatus.value = ScanStatus.DevicesFound(rings)
-                     }
-                     is ScanState.Error -> _scanStatus.value = ScanStatus.Error(state.message)
-                 }
+            sdkManager.scanResults.collect { rings ->
+                if (rings.isNotEmpty()) {
+                    _scanStatus.value = ScanStatus.DevicesFound(rings)
+                }
             }
         }
     }
     
     /**
-     * Map Native Connection State to domain ConnectionStatus
+     * Map SDK Connection State to domain ConnectionStatus
      */
-    private fun mapConnectionState(state: com.fitness.app.ble.ConnectionState): ConnectionStatus {
+    private fun mapConnectionState(state: BleConnectionState): ConnectionStatus {
         return when (state) {
-            is com.fitness.app.ble.ConnectionState.Disconnected -> ConnectionStatus.Disconnected
-            is com.fitness.app.ble.ConnectionState.Connecting -> ConnectionStatus.Connecting
-            is com.fitness.app.ble.ConnectionState.Connected -> {
-                // If we know the ring details, pass them
-                val ring = Ring(
-                    macAddress = nativeManager.connectedMacAddress,
-                    name = nativeManager.connectedDeviceName,
-                    isConnected = true
-                )
-                connectedRing = ring
-                ConnectionStatus.Connected(ring)
+            is BleConnectionState.Disconnected -> ConnectionStatus.Disconnected
+            is BleConnectionState.Connecting -> ConnectionStatus.Connecting
+            is BleConnectionState.Connected -> {
+                connectedRing = state.ring.copy(isConnected = true)
+                ConnectionStatus.Connected(connectedRing!!)
             }
-            is com.fitness.app.ble.ConnectionState.Error -> ConnectionStatus.Error(state.message)
-            is com.fitness.app.ble.ConnectionState.Timeout -> ConnectionStatus.Error("Connection timed out")
         }
     }
     
     /**
-     * Map BleManager RingData to domain RingHealthData
+     * Map SDK RingData to domain RingHealthData
      */
     private fun mapRingData(data: RingData): RingHealthData {
         return RingHealthData(
@@ -138,12 +137,13 @@ class RingRepositoryImpl(
     }
     
     override fun initialize() {
-        nativeManager.initialize()
+        sdkManager.initialize()
     }
     
     override suspend fun startScan(durationSeconds: Int): Result<List<Ring>> {
         return try {
-            nativeManager.startScan(durationSeconds)
+            _scanStatus.value = ScanStatus.Scanning
+            sdkManager.startScan(durationSeconds)
             Result.success(emptyList()) // Results come via flow
         } catch (e: Exception) {
             _scanStatus.value = ScanStatus.Error(e.message ?: "Scan failed")
@@ -152,7 +152,8 @@ class RingRepositoryImpl(
     }
     
     override fun stopScan() {
-        nativeManager.stopScan()
+        sdkManager.stopScan()
+        _scanStatus.value = ScanStatus.Idle
     }
     
     override suspend fun connect(macAddress: String, deviceName: String?): Result<Ring> {
@@ -166,11 +167,12 @@ class RingRepositoryImpl(
             connectedRing = ring
             _connectionStatus.value = ConnectionStatus.Connecting
             
-            nativeManager.connectDevice(macAddress, deviceName)
+            Log.i(TAG, "Connecting via SDK to: $macAddress")
+            sdkManager.connectToDevice(macAddress)
             
             // Wait for connection (max 15 seconds)
             val connected = withTimeoutOrNull(15000L) {
-                while (nativeManager.connectionState.value !is com.fitness.app.ble.ConnectionState.Connected) {
+                while (sdkManager.connectionState.value !is BleConnectionState.Connected) {
                     delay(100)
                 }
                 true
@@ -178,6 +180,7 @@ class RingRepositoryImpl(
             
             if (connected) {
                 connectedRing = ring.copy(isConnected = true)
+                Log.i(TAG, "✓ SDK Connection successful!")
                 Result.success(connectedRing!!)
             } else {
                 connectedRing = null
@@ -190,14 +193,16 @@ class RingRepositoryImpl(
     }
     
     override suspend fun disconnect(): Result<Unit> {
-        // Native manager doesn't have explicit disconnect method public yet, 
-        // effectively we stop via connectDevice or need to expose disconnect
-        // For now, we just reset state
+        sdkManager.disconnect()
+        connectedRing = null
         _connectionStatus.value = ConnectionStatus.Disconnected
         return Result.success(Unit)
     }
     
     override suspend fun getBattery(): Result<Int> {
+        // Request fresh battery data
+        sdkManager.refreshDeviceInfo()
+        
         val battery = _ringData.value.battery
         return if (battery != null && battery > 0) {
             Result.success(battery)
@@ -207,76 +212,69 @@ class RingRepositoryImpl(
     }
     
     override fun isConnected(): Boolean {
-        return nativeManager.connectionState.value is com.fitness.app.ble.ConnectionState.Connected
+        return sdkManager.connectionState.value is BleConnectionState.Connected
     }
     
     override fun getConnectedRing(): Ring? = connectedRing
     
     /**
-     * Start heart rate measurement via Native GATT
-     * Sends command to EFE1/FEC7 and listens for HR data on FEA2/EFE3
+     * Start heart rate measurement via SDK
      */
     override fun startHeartRateMeasurement() {
-        nativeManager.startHeartRateMeasurement()
+        Log.i(TAG, "Starting HR measurement via SDK")
+        sdkManager.startHeartRateMeasurement()
     }
     
     /**
      * Stop heart rate measurement
      */
     override fun stopHeartRateMeasurement() {
-        nativeManager.stopHeartRateMeasurement()
+        sdkManager.stopHeartRateMeasurement()
     }
     
     /**
      * Start blood pressure measurement
+     * Note: SDK may not support this directly
      */
     override fun startBloodPressureMeasurement() {
-        nativeManager.startBloodPressureMeasurement()
+        Log.w(TAG, "Blood pressure measurement not yet implemented in SDK")
+        // TODO: Implement when SDK method is available
     }
     
     /**
      * Stop blood pressure measurement
      */
     override fun stopBloodPressureMeasurement() {
-        nativeManager.stopBloodPressureMeasurement()
+        Log.w(TAG, "Blood pressure measurement not yet implemented in SDK")
     }
     
     /**
      * Start SpO2 measurement
+     * Note: SDK may not support this directly
      */
     override fun startSpO2Measurement() {
-        nativeManager.startSpO2Measurement()
+        Log.w(TAG, "SpO2 measurement not yet implemented in SDK")
+        // TODO: Implement when SDK method is available
     }
     
     /**
      * Stop SpO2 measurement
      */
     override fun stopSpO2Measurement() {
-        nativeManager.stopSpO2Measurement()
+        Log.w(TAG, "SpO2 measurement not yet implemented in SDK")
     }
     
-    companion object {
-        @Volatile
-        private var INSTANCE: RingRepositoryImpl? = null
-        
-        fun getInstance(context: Context): RingRepositoryImpl {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: RingRepositoryImpl(context.applicationContext).also {
-                    INSTANCE = it
-                }
-            }
-        }
+    /**
+     * Refresh device info (battery, device info)
+     */
+    fun refreshDeviceInfo() {
+        sdkManager.refreshDeviceInfo()
     }
-}
-
-/**
- * Extension function to convert BleDevice to domain Ring
- */
-private fun BleDevice.toDomain(): Ring {
-    return Ring(
-        macAddress = deviceMac,
-        name = deviceName,
-        rssi = rssi,
-        isConnected = false
-    )
+    
+    /**
+     * Refresh steps data
+     */
+    fun refreshStepsData() {
+        sdkManager.refreshStepsData()
+    }
 }
