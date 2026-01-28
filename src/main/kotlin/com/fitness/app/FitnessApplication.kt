@@ -50,14 +50,18 @@ class FitnessApplication : Application() {
     
     /**
      * Initialize YCBTClient SDK with all necessary callbacks
-     * Note: SDK AAR only has 2-param initClient(context, isReconnect)
+     * Per SDK V1.0.4 documentation
      */
     private fun initializeYCBTClientSDK() {
         try {
-            // Initialize SDK (2-param version in our AAR)
-            // Second param enables auto-reconnect
-            YCBTClient.initClient(this, true)
-            Log.i(TAG, "✓ YCBTClient.initClient(context, isReconnect=true)")
+            // 1. Initialize SDK with 3 parameters per docs:
+            // initClient(context, isReconnect, isDebug)
+            YCBTClient.initClient(this, true, true)
+            Log.i(TAG, "✓ YCBTClient.initClient(context, isReconnect=true, isDebug=true)")
+            
+            // 2. Enable auto-reconnect per docs
+            YCBTClient.setReconnect(true)
+            Log.i(TAG, "✓ YCBTClient.setReconnect(true)")
             
             // 3. Register global connection state listener
             // State codes from docs:
