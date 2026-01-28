@@ -5,17 +5,18 @@ import android.util.Log
 import com.fitness.app.core.di.AppContainer
 import com.yucheng.ycbtsdk.YCBTClient
 import com.yucheng.ycbtsdk.Constants
+import com.yucheng.ycbtsdk.gatt.Reconnect
 import com.yucheng.ycbtsdk.response.BleConnectResponse
 import com.yucheng.ycbtsdk.response.BleDeviceToAppDataResponse
 
 /**
  * Application class for one-time initialization
  * 
- * YCBTClient SDK APPROACH:
- * - SDK handles all BLE operations (scan, connect, data)
- * - Must be initialized before any BLE operations
- * 
- * MVVM: Initializes DI container for dependency injection
+ * YCBTClient SDK APPROACH (per SDK V1.0.4 documentation):
+ * 1. initClient(context, isReconnect, isDebug)
+ * 2. Reconnect.getInstance().init(context, isReconnect)
+ * 3. registerBleStateChange() for connection callbacks
+ * 4. deviceToApp() for data callbacks
  */
 class FitnessApplication : Application() {
 
@@ -37,8 +38,7 @@ class FitnessApplication : Application() {
         Log.i(TAG, "✓ MVVM DI Container initialized")
         
         // ══════════════════════════════════════════════════════════
-        // CRITICAL: Initialize YCBTClient SDK
-        // This MUST be called before any BLE operations!
+        // CRITICAL: Initialize YCBTClient SDK per documentation
         // ══════════════════════════════════════════════════════════
         initializeYCBTClientSDK()
         
@@ -49,26 +49,33 @@ class FitnessApplication : Application() {
     }
     
     /**
-     * Initialize YCBTClient SDK with all necessary callbacks
-     * Per SDK V1.0.4 documentation
+     * Initialize YCBTClient SDK exactly per V1.0.4 documentation
      */
     private fun initializeYCBTClientSDK() {
         try {
-            // 1. Initialize SDK with 3 parameters per docs:
+            // ═══════════════════════════════════════════════════════
+            // STEP 1: Initialize SDK (per docs section 1.1)
             // initClient(context, isReconnect, isDebug)
+            // ═══════════════════════════════════════════════════════
             YCBTClient.initClient(this, true, true)
-            Log.i(TAG, "✓ YCBTClient.initClient(context, isReconnect=true, isDebug=true)")
+            Log.i(TAG, "✓ YCBTClient.initClient(context, true, true)")
             
-            // 2. Enable auto-reconnect per docs
-            YCBTClient.setReconnect(true)
-            Log.i(TAG, "✓ YCBTClient.setReconnect(true)")
+            // ═══════════════════════════════════════════════════════
+            // STEP 2: Initialize Reconnect class (per docs section 1.1)
+            // "When initializing, call the Reconnect class"
+            // Reconnect.getInstance().init(getApplicationContext(), true)
+            // ═══════════════════════════════════════════════════════
+            Reconnect.getInstance().init(applicationContext, true)
+            Log.i(TAG, "✓ Reconnect.getInstance().init(context, true)")
             
-            // 3. Register global connection state listener
-            // State codes from docs:
-            // 0x01=TimeOut, 0x02=NotOpen, 0x03=Disconnect, 0x04=Disconnecting
-            // 0x05=Connecting, 0x06=Connected, 0x07=ServicesDiscovered
-            // 0x08=CharacteristicDiscovered, 0x09=CharacteristicNotification
-            // 0x0a=ReadWriteOK (decimal 10)
+            // ═══════════════════════════════════════════════════════
+            // STEP 3: Register global connection state listener (1.4)
+            // ═══════════════════════════════════════════════════════
+            // State codes from docs (section 1.6):
+            // 0x01=TimeOut, 0x02=NotOpen, 0x03=Disconnect
+            // 0x04=Disconnecting, 0x05=Connecting, 0x06=Connected
+            // 0x07=ServicesDiscovered, 0x08=CharacteristicDiscovered
+            // 0x09=CharacteristicNotification, 0x0a=ReadWriteOK
             YCBTClient.registerBleStateChange(object : BleConnectResponse {
                 override fun onConnectResponse(code: Int) {
                     Log.i(TAG, "🔗 Connection state: code=$code (0x${Integer.toHexString(code)})")
@@ -89,7 +96,9 @@ class FitnessApplication : Application() {
             })
             Log.i(TAG, "✓ Registered BLE state change listener")
             
-            // 4. Register device-to-app data callback
+            // ═══════════════════════════════════════════════════════
+            // STEP 4: Register device-to-app data callback
+            // ═══════════════════════════════════════════════════════
             YCBTClient.deviceToApp(object : BleDeviceToAppDataResponse {
                 override fun onDataResponse(dataType: Int, dataMap: HashMap<*, *>?) {
                     Log.i(TAG, "📥 Device data: type=$dataType")
@@ -101,7 +110,7 @@ class FitnessApplication : Application() {
             Log.i(TAG, "✓ Registered device-to-app data listener")
             
             Log.i(TAG, "═══════════════════════════════════")
-            Log.i(TAG, "✓ YCBTClient SDK INITIALIZED!")
+            Log.i(TAG, "✓ YCBTClient SDK FULLY INITIALIZED!")
             Log.i(TAG, "═══════════════════════════════════")
             
         } catch (e: Exception) {
