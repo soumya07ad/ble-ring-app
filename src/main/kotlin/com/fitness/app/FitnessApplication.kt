@@ -58,6 +58,15 @@ class FitnessApplication : Application() {
             YCBTClient.initClient(this, true)
             Log.i(TAG, "✓ YCBTClient.initClient() called")
             
+            // 2. Enable SDK auto-reconnect (SDK-driven reconnection like RealSil)
+            // SDK owns the reconnection lifecycle - app should NOT implement reconnect logic
+            try {
+                YCBTClient.setReconnect(true)
+                Log.i(TAG, "✓ SDK Auto-reconnect ENABLED")
+            } catch (e: Exception) {
+                Log.w(TAG, "setReconnect not available: ${e.message}")
+            }
+            
             // 2. Register global connection state listener
             YCBTClient.registerBleStateChange(object : BleConnectResponse {
                 override fun onConnectResponse(code: Int) {

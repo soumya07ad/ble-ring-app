@@ -14,12 +14,10 @@ import com.fitness.app.domain.repository.IRingRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Implementation of IRingRepository
@@ -167,27 +165,25 @@ class RingRepositoryImpl(
             connectedRing = ring
             _connectionStatus.value = ConnectionStatus.Connecting
             
-            Log.i(TAG, "Connecting via SDK to: $macAddress")
-            sdkManager.connectToDevice(macAddress)
+            // SDK-DRIVEN CONNECTION (like RealSil in Chinese app)
+            // - Trigger connect() ONCE
+            // - SDK owns the connection lifecycle
+            // - SDK handles retries and reconnection internally
+            // - App only observes state via callbacks
+            Log.i(TAG, "═══════════════════════════════════")
+            Log.i(TAG, "🔗 Triggering SDK connect: $macAddress")
+            Log.i(TAG, "   SDK owns: connection, retries, reconnect")
+            Log.i(TAG, "═══════════════════════════════════")
             
-            // Wait for connection (max 15 seconds)
-            val connected = withTimeoutOrNull(15000L) {
-                while (sdkManager.connectionState.value !is BleConnectionState.Connected) {
-                    delay(100)
-                }
-                true
-            } ?: false
+            sdkManager.connectToDevice(macAddress, deviceName)
             
-            if (connected) {
-                connectedRing = ring.copy(isConnected = true)
-                Log.i(TAG, "✓ SDK Connection successful!")
-                Result.success(connectedRing!!)
-            } else {
-                connectedRing = null
-                Result.error("Connection timed out")
-            }
+            // Return immediately - connection state will be updated via SDK callbacks
+            // NO app-level timeout - SDK manages this
+            Result.success(ring)
+            
         } catch (e: Exception) {
             connectedRing = null
+            _connectionStatus.value = ConnectionStatus.Disconnected
             Result.error("Connection failed: ${e.message}", e)
         }
     }
