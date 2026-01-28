@@ -568,25 +568,50 @@ class SdkBleManager private constructor(private val context: Context) {
     }
     
     private fun handleConnectionStateChange(code: Int) {
+        Log.i(TAG, "🔗 State change: code=$code (0x${Integer.toHexString(code)})")
+        
         when (code) {
+            Constants.BLEState.TimeOut -> {
+                Log.w(TAG, "⏰ TimeOut (0x01)")
+                isConnecting = false
+                _connectionState.value = BleConnectionState.Disconnected
+            }
             Constants.BLEState.Disconnect -> {
-                Log.i(TAG, "❌ SDK Disconnected")
-                isConnecting = false  // Reset connecting flag
+                Log.w(TAG, "❌ Disconnected (0x03)")
+                isConnecting = false
                 stopDataRefresh()
                 _connectionState.value = BleConnectionState.Disconnected
                 _ringData.value = RingData()
             }
+            Constants.BLEState.Disconnecting -> {
+                Log.i(TAG, "🔌 Disconnecting (0x04)")
+                _connectionState.value = BleConnectionState.Connecting
+            }
+            Constants.BLEState.Connecting -> {
+                Log.i(TAG, "🔗 Connecting (0x05)")
+                _connectionState.value = BleConnectionState.Connecting
+            }
             Constants.BLEState.Connected -> {
-                Log.i(TAG, "🔗 SDK Connected (waiting for services...)")
-                // Still connecting until ReadWriteOK
+                Log.i(TAG, "✓ Connected (0x06) - waiting for services...")
+                _connectionState.value = BleConnectionState.Connecting
+            }
+            Constants.BLEState.ServicesDiscovered -> {
+                Log.i(TAG, "📋 Services Discovered (0x07)")
+                _connectionState.value = BleConnectionState.Connecting
+            }
+            Constants.BLEState.CharacteristicDiscovered -> {
+                Log.i(TAG, "📝 Characteristic Discovered (0x08)")
+                _connectionState.value = BleConnectionState.Connecting
+            }
+            Constants.BLEState.CharacteristicNotification -> {
+                Log.i(TAG, "🔔 Notification Enabled (0x09)")
                 _connectionState.value = BleConnectionState.Connecting
             }
             Constants.BLEState.ReadWriteOK -> {
                 Log.i(TAG, "═══════════════════════════════════")
-                Log.i(TAG, "✓✓✓ SDK READY - SERVICES OK ✓✓✓")
+                Log.i(TAG, "✓✓✓ ReadWriteOK (0x0a) - READY! ✓✓✓")
                 Log.i(TAG, "═══════════════════════════════════")
                 
-                // ✓ Connection complete - reset flag
                 isConnecting = false
                 
                 _connectionState.value = connectedMacAddress?.let {
@@ -595,17 +620,17 @@ class SdkBleManager private constructor(private val context: Context) {
                     )
                 } ?: BleConnectionState.Disconnected
                 
-                // Immediately fetch all data
+                // Fetch all data on successful connection
                 Log.i(TAG, "📊 Fetching initial data...")
                 handler.postDelayed({
-                    getAllRealData()      // Main data retrieval
-                    refreshDeviceInfo()   // Device info + battery
-                    refreshStepsData()    // Steps from history
-                    startDataRefresh()    // Start periodic refresh
+                    getAllRealData()
+                    refreshDeviceInfo()
+                    refreshStepsData()
+                    startDataRefresh()
                 }, 500)
             }
             else -> {
-                Log.w(TAG, "Unknown connection state: $code")
+                Log.w(TAG, "Unknown state: $code")
             }
         }
     }
