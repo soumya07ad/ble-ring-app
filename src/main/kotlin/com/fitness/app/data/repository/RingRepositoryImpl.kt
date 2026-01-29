@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.fitness.app.ble.BleConnectionState
 import com.fitness.app.ble.RingData
-import com.fitness.app.ble.SdkBleManager
+import com.fitness.app.ble.MrdBleManager
 import com.fitness.app.core.util.Result
 import com.fitness.app.domain.model.ConnectionStatus
 import com.fitness.app.domain.model.Ring
@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Implementation of IRingRepository
- * Uses SdkBleManager (YCBTClient SDK approach)
+ * Uses MrdBleManager (Manridy MRD SDK approach)
  * 
  * SDK handles all BLE operations: scanning, connection, data retrieval
  */
@@ -46,9 +46,9 @@ class RingRepositoryImpl(
     
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
-    // Use SdkBleManager (YCBTClient SDK approach)
-    private val sdkManager: SdkBleManager by lazy { 
-        SdkBleManager.getInstance(context)
+    // Use MrdBleManager (Manridy MRD SDK approach)
+    private val mrdManager: MrdBleManager by lazy { 
+        MrdBleManager.getInstance(context)
     }
     
     // Domain state flows
@@ -65,31 +65,30 @@ class RingRepositoryImpl(
     private var connectedRing: Ring? = null
     
     init {
-        sdkManager.initialize()
-        observeSdkManagerStates()
+        observeManagerStates()
     }
     
     /**
-     * Observe SdkBleManager states and map to domain states
+     * Observe MrdBleManager states and map to domain states
      */
-    private fun observeSdkManagerStates() {
+    private fun observeManagerStates() {
         // Observe connection state
         scope.launch {
-            sdkManager.connectionState.collect { state ->
+            mrdManager.connectionState.collect { state ->
                 _connectionStatus.value = mapConnectionState(state)
             }
         }
         
         // Observe ring data
         scope.launch {
-            sdkManager.ringData.collect { data ->
+            mrdManager.ringData.collect { data ->
                 _ringData.value = mapRingData(data)
             }
         }
         
         // Observe scan results
         scope.launch {
-            sdkManager.scanResults.collect { rings ->
+            mrdManager.scanResults.collect { rings ->
                 if (rings.isNotEmpty()) {
                     _scanStatus.value = ScanStatus.DevicesFound(rings)
                 }
@@ -135,13 +134,13 @@ class RingRepositoryImpl(
     }
     
     override fun initialize() {
-        sdkManager.initialize()
+        // MRD SDK initialized in FitnessApplication
     }
     
     override suspend fun startScan(durationSeconds: Int): Result<List<Ring>> {
         return try {
             _scanStatus.value = ScanStatus.Scanning
-            sdkManager.startScan(durationSeconds)
+            mrdManager.startScan(durationSeconds)
             Result.success(emptyList()) // Results come via flow
         } catch (e: Exception) {
             _scanStatus.value = ScanStatus.Error(e.message ?: "Scan failed")
@@ -150,7 +149,7 @@ class RingRepositoryImpl(
     }
     
     override fun stopScan() {
-        sdkManager.stopScan()
+        mrdManager.stopScan()
         _scanStatus.value = ScanStatus.Idle
     }
     
@@ -175,7 +174,7 @@ class RingRepositoryImpl(
             Log.i(TAG, "   SDK owns: connection, retries, reconnect")
             Log.i(TAG, "═══════════════════════════════════")
             
-            sdkManager.connectToDevice(macAddress, deviceName)
+            mrdManager.connectToDevice(macAddress, deviceName)
             
             // Return immediately - connection state will be updated via SDK callbacks
             // NO app-level timeout - SDK manages this
@@ -189,7 +188,7 @@ class RingRepositoryImpl(
     }
     
     override suspend fun disconnect(): Result<Unit> {
-        sdkManager.disconnect()
+        mrdManager.disconnect()
         connectedRing = null
         _connectionStatus.value = ConnectionStatus.Disconnected
         return Result.success(Unit)
@@ -197,7 +196,7 @@ class RingRepositoryImpl(
     
     override suspend fun getBattery(): Result<Int> {
         // Request fresh battery data
-        sdkManager.refreshDeviceInfo()
+        mrdManager.requestBattery()
         
         val battery = _ringData.value.battery
         return if (battery != null && battery > 0) {
@@ -208,7 +207,7 @@ class RingRepositoryImpl(
     }
     
     override fun isConnected(): Boolean {
-        return sdkManager.connectionState.value is BleConnectionState.Connected
+        return mrdManager.connectionState.value is BleConnectionState.Connected
     }
     
     override fun getConnectedRing(): Ring? = connectedRing
@@ -217,15 +216,15 @@ class RingRepositoryImpl(
      * Start heart rate measurement via SDK
      */
     override fun startHeartRateMeasurement() {
-        Log.i(TAG, "Starting HR measurement via SDK")
-        sdkManager.startHeartRateMeasurement()
+        Log.i(TAG, "Starting HR measurement via MRD SDK")
+        mrdManager.requestHeartRate()
     }
     
     /**
      * Stop heart rate measurement
      */
     override fun stopHeartRateMeasurement() {
-        sdkManager.stopHeartRateMeasurement()
+        // MRD SDK auto-stops after measurement
     }
     
     /**
@@ -264,13 +263,13 @@ class RingRepositoryImpl(
      * Refresh device info (battery, device info)
      */
     fun refreshDeviceInfo() {
-        sdkManager.refreshDeviceInfo()
+        mrdManager.requestBattery()
     }
     
     /**
      * Refresh steps data
      */
     fun refreshStepsData() {
-        sdkManager.refreshStepsData()
+        mrdManager.requestSteps()
     }
 }

@@ -80,12 +80,7 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     
     // ══════════════════════════════════════════════════════════
-    // YCBT BLE SDK + JieLi Libraries (from YCBleSdkDemo)
+    // Manridy MRD SDK (for R9 Ring) - WORKING SDK!
     // ══════════════════════════════════════════════════════════
-    implementation(files("libs/ycbtsdk-release.aar"))
-    implementation(files("libs/JL_Watch_V1.10.0-release.aar"))
-    implementation(files("libs/jl_bt_ota_V1.9.3-release.aar"))
-    implementation(files("libs/jl_rcsp_V0.5.2-release.aar"))
-    implementation(files("libs/AliAgent-release-4.1.3.aar"))
-    implementation(files("libs/BmpConvert_V1.2.1-release.aar"))
+    implementation(files("libs/sdk_mrd20240218_1.1.5.aar"))
 }
