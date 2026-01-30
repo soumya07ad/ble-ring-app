@@ -599,6 +599,7 @@ enum class BluetoothState {
                 }
 
                 // Parse Steps with enhanced data (calories, distance)
+                Log.d(TAG, "🔍 Attempting to parse steps from JSON: $json")
                 val steps = parseJsonInt(json, "stepNum") ?: parseJsonInt(json, "step") ?: parseJsonInt(json, "steps")
                 val calories = parseJsonInt(json, "stepCalorie") ?: parseJsonInt(json, "calories")
                 val distanceMeters = parseJsonInt(json, "stepDistance") ?: parseJsonInt(json, "stepMileage") ?: parseJsonInt(json, "distance")
