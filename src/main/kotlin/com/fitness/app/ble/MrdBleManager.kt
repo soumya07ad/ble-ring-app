@@ -442,6 +442,7 @@ enum class BluetoothState {
      * Request stress/HRV data from ring
      */
     fun requestStress() {
+        Log.i(TAG, "📤 Requesting stress/HRV data from ring...")
         val command = Manridy.getMrdSend().getHRVHistory(2).datas
         writeData(command)
     }
@@ -667,12 +668,22 @@ enum class BluetoothState {
                 }
                 
                 // Parse Stress/HRV
-                val stress = parseJsonInt(json, "hrv") ?: parseJsonInt(json, "stress")
-                if (stress != null && stress in 0..100) {
-                    Log.i(TAG, "😰 Stress: $stress")
+                Log.d(TAG, "🔍 Attempting to parse stress from JSON: $json")
+                val stress = parseJsonInt(json, "hrv") 
+                    ?: parseJsonInt(json, "stress") 
+                    ?: parseJsonInt(json, "ss_type")
+                    ?: parseJsonInt(json, "measureMode")
+                    
+                Log.d(TAG, "🔍 Stress Parse Debug: stress=$stress")
+                
+                if (stress != null && stress in 0..200) {  // Extended range for ss_type
+                    Log.i(TAG, "😰 Stress/HRV: $stress")
                     handler.post {
                         _ringData.value = _ringData.value.copy(stress = stress, lastUpdate = System.currentTimeMillis())
+                        Log.d(TAG, "✅ Stress data updated in ringData state")
                     }
+                } else {
+                    Log.w(TAG, "⚠️ Stress data out of range or null: $stress")
                 }
             }
         } catch (e: Exception) {
