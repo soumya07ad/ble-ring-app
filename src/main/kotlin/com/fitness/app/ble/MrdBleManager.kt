@@ -599,9 +599,12 @@ enum class BluetoothState {
                 }
 
                 // Parse Steps with enhanced data (calories, distance)
-                val steps = parseJsonInt(json, "step") ?: parseJsonInt(json, "steps")
+                val steps = parseJsonInt(json, "stepNum") ?: parseJsonInt(json, "step") ?: parseJsonInt(json, "steps")
                 val calories = parseJsonInt(json, "stepCalorie") ?: parseJsonInt(json, "calories")
-                val distanceMeters = parseJsonInt(json, "stepMileage") ?: parseJsonInt(json, "distance")
+                val distanceMeters = parseJsonInt(json, "stepDistance") ?: parseJsonInt(json, "stepMileage") ?: parseJsonInt(json, "distance")
+                
+                // DEBUG LOGGING
+                Log.d(TAG, "🔍 Step Parse Debug: steps=$steps, calories=$calories, distance=$distanceMeters")
                 
                 if (steps != null && steps >= 0) {
                     val distanceKm = (distanceMeters ?: 0) / 1000.0
@@ -613,7 +616,10 @@ enum class BluetoothState {
                             distance = distanceMeters ?: 0,
                             lastUpdate = System.currentTimeMillis()
                         )
+                        Log.d(TAG, "✅ Step data updated in ringData state")
                     }
+                } else {
+                    Log.w(TAG, "⚠️ Step data null or invalid: $steps")
                 }
                 
                 // Parse SpO2 (Blood Oxygen) - Float for decimals
