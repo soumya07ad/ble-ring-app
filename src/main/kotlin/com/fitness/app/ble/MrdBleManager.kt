@@ -516,24 +516,28 @@ class MrdBleManager private constructor(private val context: Context) {
                     }
                 }
                 
-                // Parse SpO2 (Blood Oxygen)
-                val spo2 = parseJsonInt(json, "bo") ?: parseJsonInt(json, "spo2")
-                if (spo2 != null && spo2 in 80..100) {
+                // Parse SpO2 (Blood Oxygen) - Float for decimals
+                val spo2 = parseJsonFloat(json, "bo") ?: parseJsonFloat(json, "spo2")
+                if (spo2 != null && spo2 in 80f..100f) {
                     Log.i(TAG, "🫁 SpO2: $spo2%")
                     handler.post {
                         _ringData.value = _ringData.value.copy(spO2 = spo2, lastUpdate = System.currentTimeMillis())
                     }
                 }
                 
-                // Parse Blood Pressure
-                val systolic = parseJsonInt(json, "hightBp") ?: parseJsonInt(json, "systolic")
-                val diastolic = parseJsonInt(json, "lowBp") ?: parseJsonInt(json, "diastolic")
+                // Parse Blood Pressure - ALL 3 VALUES
+                val systolic = parseJsonInt(json, "bphp") ?: parseJsonInt(json, "hightBp") ?: parseJsonInt(json, "systolic")
+                val diastolic = parseJsonInt(json, "bplp") ?: parseJsonInt(json, "lowBp") ?: parseJsonInt(json, "diastolic")
+                val bpHR = parseJsonInt(json, "bphr") ?: parseJsonInt(json, "bpHeartRate")
+                
                 if (systolic != null && diastolic != null) {
-                    Log.i(TAG, "🩺 BP: $systolic/$diastolic mmHg")
+                    val hrInfo = if (bpHR != null && bpHR > 0) ", HR: $bpHR bpm" else ""
+                    Log.i(TAG, "🩺 BP: $systolic/$diastolic mmHg$hrInfo")
                     handler.post {
                         _ringData.value = _ringData.value.copy(
                             bloodPressureSystolic = systolic,
                             bloodPressureDiastolic = diastolic,
+                            bloodPressureHeartRate = bpHR ?: 0,
                             lastUpdate = System.currentTimeMillis()
                         )
                     }
@@ -565,6 +569,20 @@ class MrdBleManager private constructor(private val context: Context) {
         }
     }
     
+    
+    /**
+     * Parse Float value from JSON (for SpO2 decimals like 99.5)
+     */
+    private fun parseJsonFloat(json: String?, key: String): Float? {
+        if (json.isNullOrEmpty()) return null
+        return try {
+            // Match both integers and decimals
+            val regex = "\"$key\"\\s*:\\s*([0-9]+\\.?[0-9]*)".toRegex()
+            regex.find(json)?.groupValues?.get(1)?.toFloatOrNull()
+        } catch (e: Exception) {
+            null
+        }
+    }
     private fun bytesToHex(bytes: ByteArray): String {
         return bytes.joinToString("") { "%02X".format(it) }
     }

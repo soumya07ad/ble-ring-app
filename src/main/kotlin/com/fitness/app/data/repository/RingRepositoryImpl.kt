@@ -123,6 +123,7 @@ class RingRepositoryImpl(
             heartRateMeasuring = data.heartRateMeasuring,
             bloodPressureSystolic = data.bloodPressureSystolic,
             bloodPressureDiastolic = data.bloodPressureDiastolic,
+            bloodPressureHeartRate = data.bloodPressureHeartRate,
             bloodPressureMeasuring = data.bloodPressureMeasuring,
             spO2 = data.spO2,
             spO2Measuring = data.spO2Measuring,
