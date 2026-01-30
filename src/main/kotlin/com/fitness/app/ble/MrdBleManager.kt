@@ -416,6 +416,7 @@ enum class BluetoothState {
      * Request steps from ring
      */
     fun requestSteps() {
+        Log.i(TAG, "📤 Requesting step data from ring...")
         val command = Manridy.getMrdSend().getStep(3).datas
         writeData(command)
     }
