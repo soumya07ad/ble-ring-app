@@ -5,6 +5,7 @@ import com.fitness.app.domain.model.ConnectionStatus
 import com.fitness.app.domain.model.Ring
 import com.fitness.app.domain.model.RingHealthData
 import com.fitness.app.domain.model.ScanStatus
+import com.fitness.app.ble.MeasurementTimer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 

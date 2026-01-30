@@ -5,6 +5,7 @@ import android.util.Log
 import com.fitness.app.ble.BleConnectionState
 import com.fitness.app.ble.RingData
 import com.fitness.app.ble.MrdBleManager
+import com.fitness.app.ble.MeasurementTimer
 import com.fitness.app.core.util.Result
 import com.fitness.app.domain.model.ConnectionStatus
 import com.fitness.app.domain.model.Ring
