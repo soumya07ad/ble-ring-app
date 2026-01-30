@@ -40,9 +40,9 @@ class MrdBleManager private constructor(private val context: Context) {
         private const val TAG = "MrdBleManager"
         
         // UUID for R9 Ring (MRD SDK)
-        private val SERVICE_UUID = UUID.fromString("0000FE00-0000-1000-8000-00805F9B34FB")
-        private val NOTIFY_CHAR_UUID = UUID.fromString("0000FE01-0000-1000-8000-00805F9B34FB")
-        private val WRITE_CHAR_UUID = UUID.fromString("0000FE02-0000-1000-8000-00805F9B34FB")
+        private val SERVICE_UUID = UUID.fromString("f000efe0-0451-4000-0000-00000000b000")
+        private val NOTIFY_CHAR_UUID = UUID.fromString("f000efe3-0451-4000-0000-00000000b000")
+        private val WRITE_CHAR_UUID = UUID.fromString("f000efe1-0451-4000-0000-00000000b000")
         private val CLIENT_CONFIG_UUID = UUID.fromString("00002902-0000-1000-8000-00805F9B34FB")
         
         @Volatile
