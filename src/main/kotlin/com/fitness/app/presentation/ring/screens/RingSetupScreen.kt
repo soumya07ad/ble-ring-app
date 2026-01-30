@@ -624,7 +624,7 @@ private fun ConnectedContent(
             // Blood Oxygen (SpO2)
             item {
                 SpO2Card(
-                    spO2 = uiState.ringData?.spO2 ?: 0,
+                    spO2 = uiState.ringData?.spO2 ?: 0f,
                     isMeasuring = uiState.ringData?.spO2Measuring == true
                 )
             }
@@ -771,7 +771,7 @@ private fun BloodPressureCard(systolic: Int, diastolic: Int, isMeasuring: Boolea
 }
 
 @Composable
-private fun SpO2Card(spO2: Int, isMeasuring: Boolean) {
+private fun SpO2Card(spO2: Float, isMeasuring: Boolean) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
