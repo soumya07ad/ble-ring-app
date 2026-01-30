@@ -625,10 +625,13 @@ enum class BluetoothState {
                     }
                 }
                 
-                // Parse Blood Pressure - ALL 3 VALUES
-                val systolic = parseJsonInt(json, "bphp") ?: parseJsonInt(json, "hightBp") ?: parseJsonInt(json, "systolic")
-                val diastolic = parseJsonInt(json, "bplp") ?: parseJsonInt(json, "lowBp") ?: parseJsonInt(json, "diastolic")
-                val bpHR = parseJsonInt(json, "bphr") ?: parseJsonInt(json, "bpHeartRate")
+               // Parse Blood Pressure - ALL 3 VALUES
+                val systolic = parseJsonInt(json, "bpHp") ?: parseJsonInt(json, "bphp") ?: parseJsonInt(json, "hightBp") ?: parseJsonInt(json, "systolic")
+                val diastolic = parseJsonInt(json, "bpLp") ?: parseJsonInt(json, "bplp") ?: parseJsonInt(json, "lowBp") ?: parseJsonInt(json, "diastolic")
+                val bpHR = parseJsonInt(json, "bpHr") ?: parseJsonInt(json, "bphr") ?: parseJsonInt(json, "bpHeartRate")
+                
+                // DEBUG LOGGING
+                Log.d(TAG, "🔍 BP Parse Debug: systolic=$systolic, diastolic=$diastolic, bpHR=$bpHR")
                 
                 if (systolic != null && diastolic != null) {
                     val hrInfo = if (bpHR != null && bpHR > 0) ", HR: $bpHR bpm" else ""
@@ -640,7 +643,10 @@ enum class BluetoothState {
                             bloodPressureHeartRate = bpHR ?: 0,
                             lastUpdate = System.currentTimeMillis()
                         )
+                        Log.d(TAG, "✅ BP data updated in ringData state")
                     }
+                } else {
+                    Log.w(TAG, "⚠️ BP data incomplete: systolic=$systolic, diastolic=$diastolic")
                 }
                 
                 // Parse Stress/HRV

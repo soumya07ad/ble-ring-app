@@ -104,11 +104,20 @@ class RingRepositoryImpl(
      */
     private fun mapConnectionState(state: BleConnectionState): ConnectionStatus {
         return when (state) {
-            is BleConnectionState.Disconnected -> ConnectionStatus.Disconnected
+            is BleConnectionState.Disconnected -> {
+                _connectedRing.value = null
+                ConnectionStatus.Disconnected
+            }
             is BleConnectionState.Connecting -> ConnectionStatus.Connecting
             is BleConnectionState.Connected -> {
-                connectedRing = state.ring.copy(isConnected = true)
-                ConnectionStatus.Connected(connectedRing!!)
+                // Store connected ring info
+                _connectedRing.value = state.ring
+                ConnectionStatus.Connected(state.ring)
+            }
+            is BleConnectionState.Error -> {
+                // Treat error as disconnected for now
+                _connectedRing.value = null
+                ConnectionStatus.Disconnected
             }
         }
     }
