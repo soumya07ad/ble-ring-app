@@ -44,6 +44,15 @@ class MrdBleManager private constructor(private val context: Context) {
     companion object {
         private const val TAG = "MrdBleManager"
         
+
+/**
+ * Bluetooth hardware/software state
+ */
+enum class BluetoothState {
+    NOT_AVAILABLE,  // No Bluetooth hardware
+    DISABLED,       // Bluetooth is turned off
+    ENABLED         // Bluetooth is on and ready
+}
         // UUID for R9 Ring (MRD SDK)
         private val SERVICE_UUID = UUID.fromString("f000efe0-0451-4000-0000-00000000b000")
         private val NOTIFY_CHAR_UUID = UUID.fromString("f000efe3-0451-4000-0000-00000000b000")
@@ -94,10 +103,61 @@ class MrdBleManager private constructor(private val context: Context) {
         Log.i(TAG, "═══════════════════════════════════")
     }
     
+    // Connection timeout
+    private var connectionTimeoutJob: Job? = null
+    
+    // ==================== Bluetooth State Checks ====================
+    
+    /**
+     * Check if Bluetooth hardware is available
+     */
+    fun isBluetoothAvailable(): Boolean {
+        return bluetoothAdapter != null
+    }
+    
+    /**
+     * Check if Bluetooth is currently enabled
+     */
+    fun isBluetoothEnabled(): Boolean {
+        return bluetoothAdapter?.isEnabled == true
+    }
+    
+    /**
+     * Get current Bluetooth state
+     */
+    fun getBluetoothState(): BluetoothState {
+        return when {
+            bluetoothAdapter == null -> BluetoothState.NOT_AVAILABLE
+            !bluetoothAdapter.isEnabled -> BluetoothState.DISABLED
+            else -> BluetoothState.ENABLED
+        }
+    }
+    
     // ==================== Scanning ====================
     
     @SuppressLint("MissingPermission")
     fun startScan(durationSeconds: Int = 6) {
+        // CHECK BLUETOOTH STATE FIRST
+        when (getBluetoothState()) {
+            BluetoothState.NOT_AVAILABLE -> {
+                Log.e(TAG, "❌ Bluetooth not available on this device")
+                handler.post {
+                    _connectionState.value = BleConnectionState.Error("Bluetooth not available on this device")
+                }
+                return
+            }
+            BluetoothState.DISABLED -> {
+                Log.e(TAG, "❌ Bluetooth is disabled - Please enable Bluetooth")
+                handler.post {
+                    _connectionState.value = BleConnectionState.Error("Please enable Bluetooth to scan for devices")
+                }
+                return
+            }
+            BluetoothState.ENABLED -> {
+                // Continue with scan
+            }
+        }
+        
         if (isScanning) {
             Log.w(TAG, "⚠️ Already scanning")
             return
@@ -163,8 +223,21 @@ class MrdBleManager private constructor(private val context: Context) {
         }
         
         override fun onScanFailed(errorCode: Int) {
-            Log.e(TAG, "❌ Scan failed: errorCode=$errorCode")
+            val errorMsg = when (errorCode) {
+                android.bluetooth.le.ScanCallback.SCAN_FAILED_ALREADY_STARTED -> "Scan already started"
+                android.bluetooth.le.ScanCallback.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED -> "App registration failed"
+                android.bluetooth.le.ScanCallback.SCAN_FAILED_FEATURE_UNSUPPORTED -> "BLE scan not supported on this device"
+                android.bluetooth.le.ScanCallback.SCAN_FAILED_INTERNAL_ERROR -> "Internal Bluetooth error"
+                else -> "Unknown error: $errorCode"
+            }
+            
+            Log.e(TAG, "❌ Scan failed: $errorMsg (code=$errorCode)")
             isScanning = false
+            
+            // Update state so UI knows about the error
+            handler.post {
+                _connectionState.value = BleConnectionState.Error("Scan failed: $errorMsg")
+            }
         }
     }
     
@@ -172,6 +245,15 @@ class MrdBleManager private constructor(private val context: Context) {
     
     @SuppressLint("MissingPermission")
     fun connectToDevice(macAddress: String, deviceName: String? = null) {
+        // CHECK BLUETOOTH STATE FIRST
+        if (!isBluetoothEnabled()) {
+            Log.e(TAG, "❌ Cannot connect: Bluetooth is not enabled")
+            handler.post {
+                _connectionState.value = BleConnectionState.Error("Bluetooth is not enabled")
+            }
+            return
+        }
+        
         val currentState = _connectionState.value
         if (currentState is BleConnectionState.Connected) {
             Log.w(TAG, "⚠️ Already connected, disconnecting first...")
@@ -181,6 +263,9 @@ class MrdBleManager private constructor(private val context: Context) {
         val device = bluetoothAdapter?.getRemoteDevice(macAddress)
         if (device == null) {
             Log.e(TAG, "❌ Device not found: $macAddress")
+            handler.post {
+                _connectionState.value = BleConnectionState.Error("Device not found")
+            }
             return
         }
         
@@ -190,6 +275,18 @@ class MrdBleManager private constructor(private val context: Context) {
         
         _connectionState.value = BleConnectionState.Connecting
         connectedDevice = device
+        
+        // START 30-SECOND TIMEOUT
+        connectionTimeoutJob?.cancel()
+        connectionTimeoutJob = CoroutineScope(Dispatchers.Main).launch {
+            delay(30000) // 30 seconds
+            
+            if (_connectionState.value is BleConnectionState.Connecting) {
+                Log.e(TAG, "❌ Connection timeout after 30 seconds")
+                disconnect()
+                _connectionState.value = BleConnectionState.Error("Connection timeout")
+            }
+        }
         
         bluetoothGatt = device.connectGatt(context, false, gattCallback)
         MrdPushCore.getInstance().init(bluetoothGatt)
@@ -230,6 +327,9 @@ class MrdBleManager private constructor(private val context: Context) {
         
         @SuppressLint("MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+            // Cancel connection timeout - we're successfully connected!
+            connectionTimeoutJob?.cancel()
+            
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.i(TAG, "✓ Services discovered")
                 

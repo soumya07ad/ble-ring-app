@@ -26,9 +26,25 @@ sealed class ConnectionState {
  * Carries the Ring object when connected
  */
 sealed class BleConnectionState {
+    /**
+     * Not connected to any device
+     */
     object Disconnected : BleConnectionState()
+    
+    /**
+     * Attempting to connect
+     */
     object Connecting : BleConnectionState()
+    
+    /**
+     * Successfully connected to a ring
+     */
     data class Connected(val ring: com.fitness.app.domain.model.Ring) : BleConnectionState()
+    
+    /**
+     * Error occurred during BLE operation
+     */
+    data class Error(val message: String) : BleConnectionState()
 }
 
 /**
