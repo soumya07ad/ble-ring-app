@@ -62,6 +62,8 @@ class RingRepositoryImpl(
     override val ringData: StateFlow<RingHealthData> = _ringData.asStateFlow()
     
     // Track connected ring
+    
+    override val measurementTimer: StateFlow<MeasurementTimer> = mrdManager.measurementTimer
     private var connectedRing: Ring? = null
     
     init {
@@ -232,8 +234,8 @@ class RingRepositoryImpl(
      * Note: SDK may not support this directly
      */
     override fun startBloodPressureMeasurement() {
-        Log.w(TAG, "Blood pressure measurement not yet implemented in SDK")
-        // TODO: Implement when SDK method is available
+        Log.i(TAG, "Starting 30-second blood pressure measurement")
+        mrdManager.startBloodPressureMeasurement()
     }
     
     /**
@@ -248,8 +250,8 @@ class RingRepositoryImpl(
      * Note: SDK may not support this directly
      */
     override fun startSpO2Measurement() {
-        Log.i(TAG, "Requesting SpO2 data")
-        mrdManager.requestSpO2()
+        Log.i(TAG, "Starting 30-second SpO2 measurement")
+        mrdManager.startSpO2Measurement()
     }
     
     /**
@@ -297,5 +299,9 @@ class RingRepositoryImpl(
         mrdManager.requestSpO2()
         mrdManager.requestBloodPressure()
         mrdManager.requestStress()
+    }
+    
+    override fun stopMeasurement() {
+        mrdManager.stopMeasurement()
     }
 }

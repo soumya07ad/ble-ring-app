@@ -104,3 +104,43 @@ data class RingData(
     
     val distanceKm: Float get() = distance / 1000f
 }
+
+/**
+ * Measurement timer state for timed vital sign measurements
+ */
+data class MeasurementTimer(
+    val isActive: Boolean = false,
+    val measurementType: MeasurementType = MeasurementType.NONE,
+    val remainingSeconds: Int = 0,
+    val totalSeconds: Int = 30
+) {
+    /**
+     * Progress as percentage (0.0 to 1.0)
+     */
+    val progressPercent: Float get() = if (totalSeconds > 0) {
+        (totalSeconds - remainingSeconds) / totalSeconds.toFloat()
+    } else 0f
+}
+
+/**
+ * Types of measurements that can be timed
+ */
+enum class MeasurementType {
+    NONE,
+    HEART_RATE,
+    BLOOD_PRESSURE,
+    SPO2,
+    STRESS;
+    
+    /**
+     * Display name for UI
+     */
+    val displayName: String
+        get() = when (this) {
+            HEART_RATE -> "Heart Rate"
+            BLOOD_PRESSURE -> "Blood Pressure"
+            SPO2 -> "Blood Oxygen (SpO2)"
+            STRESS -> "Stress Level"
+            NONE -> ""
+        }
+}

@@ -1,4 +1,4 @@
-package com.fitness.app.ble
+﻿package com.fitness.app.ble
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
@@ -23,6 +23,11 @@ import com.manridy.sdk_mrd2019.send.MrdSendListRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
@@ -67,6 +72,12 @@ class MrdBleManager private constructor(private val context: Context) {
     private val _scanResults = MutableStateFlow<List<Ring>>(emptyList())
     val scanResults: StateFlow<List<Ring>> = _scanResults.asStateFlow()
     
+    
+    private val _measurementTimer = MutableStateFlow(MeasurementTimer())
+    val measurementTimer: StateFlow<MeasurementTimer> = _measurementTimer.asStateFlow()
+    
+    // Measurement Job
+    private var measurementJob: Job? = null
     // BLE objects
     private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     private var bluetoothGatt: BluetoothGatt? = null
@@ -336,6 +347,103 @@ class MrdBleManager private constructor(private val context: Context) {
     /**
      * Write data to ring
      */
+    
+    // ==================== Timed Measurements ====================
+    
+    /**
+     * Start 30-second heart rate measurement
+     */
+    fun startHeartRateMeasurement() {
+        startTimedMeasurement(
+            type = MeasurementType.HEART_RATE,
+            requestFunc = { requestHeartRate() }
+        )
+    }
+    
+    /**
+     * Start 30-second blood pressure measurement
+     */
+    fun startBloodPressureMeasurement() {
+        startTimedMeasurement(
+            type = MeasurementType.BLOOD_PRESSURE,
+            requestFunc = { requestBloodPressure() }
+        )
+    }
+    
+    /**
+     * Start 30-second SpO2 measurement
+     */
+    fun startSpO2Measurement() {
+        startTimedMeasurement(
+            type = MeasurementType.SPO2,
+            requestFunc = { requestSpO2() }
+        )
+    }
+    
+    /**
+     * Start 30-second stress measurement
+     */
+    fun startStressMeasurement() {
+        startTimedMeasurement(
+            type = MeasurementType.STRESS,
+            requestFunc = { requestStress() }
+        )
+    }
+    
+    /**
+     * Generic timed measurement function
+     * Requests data every 2 seconds for the specified duration
+     */
+    private fun startTimedMeasurement(
+        type: MeasurementType,
+        durationSeconds: Int = 30,
+        requestFunc: () -> Unit
+    ) {
+        // Cancel any existing measurement
+        stopMeasurement()
+        
+        Log.i(TAG, " Starting ${type.name} measurement for $durationSeconds seconds")
+        
+        measurementJob = CoroutineScope(Dispatchers.Main).launch {
+            _measurementTimer.value = MeasurementTimer(
+                isActive = true,
+                measurementType = type,
+                remainingSeconds = durationSeconds,
+                totalSeconds = durationSeconds
+            )
+            
+            // Request data every 2 seconds during the measurement
+            for (second in durationSeconds downTo 0) {
+                _measurementTimer.value = _measurementTimer.value.copy(
+                    remainingSeconds = second
+                )
+                
+                // Request every 2 seconds
+                if (second % 2 == 0) {
+                    requestFunc()
+                }
+                
+                if (second > 0) {
+                    delay(1000)  // Wait 1 second
+                }
+            }
+            
+            Log.i(TAG, " ${type.name} measurement complete")
+            _measurementTimer.value = MeasurementTimer()  // Reset
+        }
+    }
+    
+    /**
+     * Stop current measurement
+     */
+    fun stopMeasurement() {
+        measurementJob?.cancel()
+        measurementJob = null
+        _measurementTimer.value = MeasurementTimer()
+        if (_measurementTimer.value.isActive) {
+            Log.i(TAG, " Measurement stopped")
+        }
+    }
     @SuppressLint("MissingPermission")
     private fun writeData(data: ByteArray) {
         val gatt = bluetoothGatt

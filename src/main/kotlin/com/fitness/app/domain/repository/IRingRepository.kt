@@ -1,4 +1,4 @@
-package com.fitness.app.domain.repository
+﻿package com.fitness.app.domain.repository
 
 import com.fitness.app.core.util.Result
 import com.fitness.app.domain.model.ConnectionStatus
@@ -29,6 +29,11 @@ interface IRingRepository {
      */
     val ringData: StateFlow<RingHealthData>
     
+    
+    /**
+     * Observe measurement timer for timed vital sign measurements
+     */
+    val measurementTimer: StateFlow<MeasurementTimer>
     /**
      * Initialize BLE components
      */
@@ -101,4 +106,9 @@ interface IRingRepository {
      * Stop SpO2 measurement
      */
     fun stopSpO2Measurement()
+    
+    /**
+     * Stop current measurement
+     */
+    fun stopMeasurement()
 }
