@@ -617,12 +617,20 @@ enum class BluetoothState {
                 }
                 
                 // Parse SpO2 (Blood Oxygen) - Float for decimals
-                val spo2 = parseJsonFloat(json, "bo") ?: parseJsonFloat(json, "spo2")
+                // boRate comes as STRING "99.5", need to handle both string and number
+                val spo2 = parseJsonFloat(json, "boRate") ?: parseJsonFloat(json, "bo") ?: parseJsonFloat(json, "spo2")
+                
+                // DEBUG LOGGING
+                Log.d(TAG, "🔍 SpO2 Parse Debug: spo2=$spo2 from JSON: $json")
+                
                 if (spo2 != null && spo2 in 80f..100f) {
                     Log.i(TAG, "🫁 SpO2: $spo2%")
                     handler.post {
                         _ringData.value = _ringData.value.copy(spO2 = spo2, lastUpdate = System.currentTimeMillis())
+                        Log.d(TAG, "✅ SpO2 data updated in ringData state")
                     }
+                } else {
+                    Log.w(TAG, "⚠️ SpO2 out of range or null: $spo2")
                 }
                 
                // Parse Blood Pressure - ALL 3 VALUES
@@ -682,8 +690,8 @@ enum class BluetoothState {
     private fun parseJsonFloat(json: String?, key: String): Float? {
         if (json.isNullOrEmpty()) return null
         return try {
-            // Match both integers and decimals
-            val regex = "\"$key\"\\s*:\\s*([0-9]+\\.?[0-9]*)".toRegex()
+            // Match both quoted strings "99.5" and unquoted numbers 99.5
+            val regex = "\"$key\"\\s*:\\s*\"?([0-9]+\\.?[0-9]*)\"?".toRegex()
             regex.find(json)?.groupValues?.get(1)?.toFloatOrNull()
         } catch (e: Exception) {
             null
