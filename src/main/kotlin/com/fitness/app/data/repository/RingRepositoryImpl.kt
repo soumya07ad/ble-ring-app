@@ -1,4 +1,4 @@
-package com.fitness.app.data.repository
+﻿package com.fitness.app.data.repository
 
 import android.content.Context
 import android.util.Log
@@ -248,8 +248,8 @@ class RingRepositoryImpl(
      * Note: SDK may not support this directly
      */
     override fun startSpO2Measurement() {
-        Log.w(TAG, "SpO2 measurement not yet implemented in SDK")
-        // TODO: Implement when SDK method is available
+        Log.i(TAG, "Requesting SpO2 data")
+        mrdManager.requestSpO2()
     }
     
     /**
@@ -271,5 +271,31 @@ class RingRepositoryImpl(
      */
     fun refreshStepsData() {
         mrdManager.requestSteps()
+    }
+    
+    /**
+     * Refresh blood pressure data
+     */
+    fun refreshBloodPressure() {
+        mrdManager.requestBloodPressure()
+    }
+    
+    /**
+     * Refresh stress/HRV data
+     */
+    fun refreshStress() {
+        mrdManager.requestStress()
+    }
+    
+    /**
+     * Refresh all health data from ring
+     */
+    fun refreshAllData() {
+        mrdManager.requestBattery()
+        mrdManager.requestHeartRate()
+        mrdManager.requestSteps()
+        mrdManager.requestSpO2()
+        mrdManager.requestBloodPressure()
+        mrdManager.requestStress()
     }
 }

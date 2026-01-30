@@ -310,6 +310,30 @@ class MrdBleManager private constructor(private val context: Context) {
     }
     
     /**
+     * Request SpO2 (blood oxygen) from ring
+     */
+    fun requestSpO2() {
+        val command = Manridy.getMrdSend().getBoData(0).datas
+        writeData(command)
+    }
+    
+    /**
+     * Request blood pressure from ring
+     */
+    fun requestBloodPressure() {
+        val command = Manridy.getMrdSend().getBpData(0).datas
+        writeData(command)
+    }
+    
+    /**
+     * Request stress/HRV data from ring
+     */
+    fun requestStress() {
+        val command = Manridy.getMrdSend().getHRVHistory(2).datas
+        writeData(command)
+    }
+    
+    /**
      * Write data to ring
      */
     @SuppressLint("MissingPermission")
@@ -366,11 +390,53 @@ class MrdBleManager private constructor(private val context: Context) {
                     }
                 }
 
+                // Parse Steps with enhanced data (calories, distance)
                 val steps = parseJsonInt(json, "step") ?: parseJsonInt(json, "steps")
+                val calories = parseJsonInt(json, "stepCalorie") ?: parseJsonInt(json, "calories")
+                val distanceMeters = parseJsonInt(json, "stepMileage") ?: parseJsonInt(json, "distance")
+                
                 if (steps != null && steps >= 0) {
-                    Log.i(TAG, "👟 Steps: $steps")
+                    val distanceKm = (distanceMeters ?: 0) / 1000.0
+                    Log.i(TAG, "👟 Steps: $steps (${calories ?: 0} cal, ${String.format("%.2f", distanceKm)} km)")
                     handler.post {
-                        _ringData.value = _ringData.value.copy(steps = steps, lastUpdate = System.currentTimeMillis())
+                        _ringData.value = _ringData.value.copy(
+                            steps = steps,
+                            calories = calories ?: 0,
+                            distance = distanceMeters ?: 0,
+                            lastUpdate = System.currentTimeMillis()
+                        )
+                    }
+                }
+                
+                // Parse SpO2 (Blood Oxygen)
+                val spo2 = parseJsonInt(json, "bo") ?: parseJsonInt(json, "spo2")
+                if (spo2 != null && spo2 in 80..100) {
+                    Log.i(TAG, "🫁 SpO2: $spo2%")
+                    handler.post {
+                        _ringData.value = _ringData.value.copy(spO2 = spo2, lastUpdate = System.currentTimeMillis())
+                    }
+                }
+                
+                // Parse Blood Pressure
+                val systolic = parseJsonInt(json, "hightBp") ?: parseJsonInt(json, "systolic")
+                val diastolic = parseJsonInt(json, "lowBp") ?: parseJsonInt(json, "diastolic")
+                if (systolic != null && diastolic != null) {
+                    Log.i(TAG, "🩺 BP: $systolic/$diastolic mmHg")
+                    handler.post {
+                        _ringData.value = _ringData.value.copy(
+                            bloodPressureSystolic = systolic,
+                            bloodPressureDiastolic = diastolic,
+                            lastUpdate = System.currentTimeMillis()
+                        )
+                    }
+                }
+                
+                // Parse Stress/HRV
+                val stress = parseJsonInt(json, "hrv") ?: parseJsonInt(json, "stress")
+                if (stress != null && stress in 0..100) {
+                    Log.i(TAG, "😰 Stress: $stress")
+                    handler.post {
+                        _ringData.value = _ringData.value.copy(stress = stress, lastUpdate = System.currentTimeMillis())
                     }
                 }
             }
