@@ -682,7 +682,8 @@ enum class BluetoothState {
     private fun parseJsonInt(json: String?, key: String): Int? {
         if (json.isNullOrEmpty()) return null
         return try {
-            val regex = "\"$key\"\\s*:\\s*(\\d+)".toRegex()
+            // Match both quoted "stepNum":506 and unquoted stepNum:506
+            val regex = "\"?$key\"?\\s*:\\s*(\\d+)".toRegex()
             regex.find(json)?.groupValues?.get(1)?.toIntOrNull()
         } catch (e: Exception) {
             null
@@ -696,8 +697,9 @@ enum class BluetoothState {
     private fun parseJsonFloat(json: String?, key: String): Float? {
         if (json.isNullOrEmpty()) return null
         return try {
-            // Match both quoted strings "99.5" and unquoted numbers 99.5
-            val regex = "\"$key\"\\s*:\\s*\"?([0-9]+\\.?[0-9]*)\"?".toRegex()
+            // Match both quoted and unquoted keys, and quoted and unquoted values
+            // Examples: "boRate":"99.5" OR boRate:"99.5" OR boRate:99.5
+            val regex = "\"?$key\"?\\s*:\\s*\"?([0-9]+\\.?[0-9]*)\"?".toRegex()
             regex.find(json)?.groupValues?.get(1)?.toFloatOrNull()
         } catch (e: Exception) {
             null
