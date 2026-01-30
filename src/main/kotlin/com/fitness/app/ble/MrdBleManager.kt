@@ -355,9 +355,10 @@ enum class BluetoothState {
                         }
                         
                         // Request initial data
-                        Log.i(TAG, "📊 Requesting initial battery data...")
+                        Log.i(TAG, "📊 Requesting initial data...")
                         handler.postDelayed({
                             requestBattery()
+                            requestSteps()
                         }, 500)
                     }
                 } else {
