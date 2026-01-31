@@ -359,6 +359,7 @@ enum class BluetoothState {
                         handler.postDelayed({
                             requestBattery()
                             requestSteps()
+                            requestStress()
                         }, 500)
                     }
                 } else {
