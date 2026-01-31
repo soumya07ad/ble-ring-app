@@ -102,7 +102,7 @@ data class RingData(
     val distance: Int = 0,       // meters
     val calories: Int = 0,       // kcal
     val sleepData: com.fitness.app.domain.model.SleepData = com.fitness.app.domain.model.SleepData(),
-    val firmwareInfo: com.fitness.app.domain.model.FirmwareInfo = com.fitness.app.domain.model.FirmwareInfo(),
+    val firmwareInfo: com.fitness.app.domain.model.FirmwareInfo = com.fitness.app.domain.model.FirmwareInfo(), // Firmware version and type
     val lastUpdate: Long = 0L
 ) {
     val totalSleepMinutes: Int get() = sleepData.totalMinutes
