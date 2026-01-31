@@ -296,6 +296,13 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
         container.ringRepository.stopStressMeasurement()
     }
     
+    /**
+     * Request sleep history from ring
+     */
+    fun requestSleepHistory() {
+        container.ringRepository.requestSleepHistory()
+    }
+    
     // ==================== UI State Updates ====================
     
     /**

@@ -119,6 +119,11 @@ interface IRingRepository {
     fun stopStressMeasurement()
     
     /**
+     * Request sleep history from ring
+     */
+    fun requestSleepHistory()
+    
+    /**
      * Stop current measurement
      */
     fun stopMeasurement()

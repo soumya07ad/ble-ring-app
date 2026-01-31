@@ -288,6 +288,14 @@ class RingRepositoryImpl(
     }
     
     /**
+     * Request sleep history from ring
+     */
+    override fun requestSleepHistory() {
+        Log.i(TAG, "Requesting sleep history from ring")
+        mrdManager.requestSleepHistory()
+    }
+    
+    /**
      * Refresh device info (battery, device info)
      */
     fun refreshDeviceInfo() {

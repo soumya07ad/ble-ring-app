@@ -443,19 +443,24 @@ enum class BluetoothState {
     }
     
     /**
-     * Request stress/HRV data from ring
+     * Request stress/HRV data
      */
     fun requestStress() {
         Log.i(TAG, "📤 Requesting stress/HRV data from ring...")
-        val command = Manridy.getMrdSend().getHRVHistory(2).datas
-        writeData(command)
+        val request = MrdReadRequest(MrdReadEnum.READHSID)
+        Manridy.getMrdRead().send(request)
     }
     
     /**
-     * Write data to ring
+     * Request sleep history from ring
      */
+    fun requestSleepHistory() {
+        Log.i(TAG, "📤 Requesting sleep history from ring...")
+        val request = MrdReadRequest(MrdReadEnum.READSLEEP)
+        Manridy.getMrdRead().send(request)
+    }
     
-    // ==================== Timed Measurements ====================
+    // ==================== Measurement Functions ==================== Timed Measurements ====================
     
     /**
      * Start 30-second heart rate measurement
@@ -691,6 +696,35 @@ enum class BluetoothState {
                 } else {
                     Log.w(TAG, "⚠️ Stress data out of range or null: $stress")
                 }
+                
+                // Parse Sleep data
+                val sleepDeep = parseJsonInt(json, "sleepDeep")
+                val sleepLight = parseJsonInt(json, "sleepLight")
+                val sleepAwake = parseJsonInt(json, "sleepAwake")
+                val sleepLength = parseJsonInt(json, "sleepLength")
+                val sleepStart = parseJsonString(json, "sleepStartTime")
+                val sleepEnd = parseJsonString(json, "sleepEndTime")
+                
+                if (sleepLength != null && sleepLength > 0) {
+                    val quality = calculateSleepQuality(sleepDeep ?: 0, sleepLength)
+                    Log.i(TAG, "😴 Sleep: ${sleepLength}min (deep: ${sleepDeep ?: 0}, light: ${sleepLight ?: 0}, quality: $quality%)")
+                    
+                    handler.post {
+                        _ringData.value = _ringData.value.copy(
+                            sleepData = com.fitness.app.domain.model.SleepData(
+                                totalMinutes = sleepLength,
+                                deepMinutes = sleepDeep ?: 0,
+                                lightMinutes = sleepLight ?: 0,
+                                awakeMinutes = sleepAwake ?: 0,
+                                startTime = sleepStart ?: "",
+                                endTime = sleepEnd ?: "",
+                                quality = quality
+                            ),
+                            lastUpdate = System.currentTimeMillis()
+                        )
+                        Log.d(TAG, "✅ Sleep data updated in ringData state")
+                    }
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Parse error: ${e.message}", e)
@@ -725,6 +759,39 @@ enum class BluetoothState {
             null
         }
     }
+    
+    /**
+     * Parse String value from JSON
+     */
+    private fun parseJsonString(json: String?, key: String): String? {
+        if (json.isNullOrEmpty()) return null
+        return try {
+            // Match: "sleepStartTime":"08:30" or sleepStartTime:"08:30"
+            val regex = "\"?$key\"?\\s*:\\s*\"([^\"]*)\"".toRegex()
+            regex.find(json)?.groupValues?.get(1)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    /**
+     * Calculate sleep quality score based on deep sleep percentage
+     * Returns 0-100 score
+     */
+    private fun calculateSleepQuality(deepMinutes: Int, totalMinutes: Int): Int {
+        if (totalMinutes == 0) return 0
+        
+        // Deep sleep should be 15-25% of total for good quality
+        val deepPercentage = (deepMinutes.toFloat() / totalMinutes * 100).toInt()
+        
+        return when {
+            deepPercentage >= 20 -> 90  // Excellent
+            deepPercentage >= 15 -> 75  // Good
+            deepPercentage >= 10 -> 60  // Fair
+            else -> 40  // Poor
+        }
+    }
+    
     private fun bytesToHex(bytes: ByteArray): String {
         return bytes.joinToString("") { "%02x".format(it) }
     }
