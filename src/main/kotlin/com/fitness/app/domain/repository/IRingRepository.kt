@@ -109,6 +109,16 @@ interface IRingRepository {
     fun stopSpO2Measurement()
     
     /**
+     * Start stress measurement
+     */
+    fun startStressMeasurement()
+    
+    /**
+     * Stop stress measurement
+     */
+    fun stopStressMeasurement()
+    
+    /**
      * Stop current measurement
      */
     fun stopMeasurement()
