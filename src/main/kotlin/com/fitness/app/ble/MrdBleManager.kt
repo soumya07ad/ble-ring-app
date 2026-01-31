@@ -105,9 +105,6 @@ enum class BluetoothState {
         Log.i(TAG, "═══════════════════════════════════")
     }
     
-    // Connection timeout
-    private var connectionTimeoutJob: Job? = null
-    
     // ==================== Bluetooth State Checks ====================
     
     /**
