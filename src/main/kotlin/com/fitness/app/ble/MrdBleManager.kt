@@ -318,7 +318,8 @@ enum class BluetoothState {
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     Log.w(TAG, "❌ Disconnected")
-                    handler.post {
+            stopKeepAlive()  // Stop keep-alive when disconnected
+            handler.post {
                         _connectionState.value = BleConnectionState.Disconnected
                     }
                 }
@@ -360,6 +361,9 @@ enum class BluetoothState {
                             requestBattery()
                             requestSteps()
                             requestStress()
+                            
+                            // Start periodic keep-alive (every 5 seconds)
+                            startKeepAlive()
                         }, 500)
                     }
                 } else {
@@ -723,7 +727,32 @@ enum class BluetoothState {
         }
     }
     private fun bytesToHex(bytes: ByteArray): String {
-        return bytes.joinToString("") { "%02X".format(it) }
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+    
+    /**
+     * Start periodic keep-alive to prevent connection timeout
+     * Requests battery every 5 seconds to maintain connection
+     */
+    private fun startKeepAlive() {
+        stopKeepAlive()  // Cancel any existing keep-alive
+        
+        keepAliveJob = ioScope.launch {
+            while (isActive) {
+                delay(5000)  // Every 5 seconds
+                Log.d(TAG, "💓 Keep-alive: requesting battery")
+                requestBattery()
+            }
+        }
+        Log.i(TAG, "💓 Keep-alive started (5s interval)")
+    }
+    
+    /**
+     * Stop keep-alive
+     */
+    private fun stopKeepAlive() {
+        keepAliveJob?.cancel()
+        keepAliveJob = null
+        Log.d(TAG, "💓 Keep-alive stopped")
     }
 }
-
