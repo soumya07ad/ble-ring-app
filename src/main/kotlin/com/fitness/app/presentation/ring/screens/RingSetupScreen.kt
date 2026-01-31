@@ -1117,11 +1117,12 @@ private fun SleepCard(
                             .background(PrimaryPurple.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.DarkMode,
-                            contentDescription = null,
-                            tint = PrimaryPurple,
-                            modifier = Modifier.size(24.dp)
+                        // Custom moon icon using a circle
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(PrimaryPurple)
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
