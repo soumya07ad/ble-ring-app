@@ -282,6 +282,20 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
         container.ringRepository.stopSpO2Measurement()
     }
     
+    /**
+     * Start stress measurement
+     */
+    fun startStressMeasurement() {
+        container.ringRepository.startStressMeasurement()
+    }
+    
+    /**
+     * Stop stress measurement
+     */
+    fun stopStressMeasurement() {
+        container.ringRepository.stopStressMeasurement()
+    }
+    
     // ==================== UI State Updates ====================
     
     /**
