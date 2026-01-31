@@ -1225,3 +1225,70 @@ private fun SleepMetric(
         )
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// FIRMWARE CARD
+// ═══════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun FirmwareCard(
+    firmwareInfo: com.fitness.app.domain.model.FirmwareInfo,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = GlassWhite
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Icon
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(AccentBlue.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = AccentBlue,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                // Firmware info
+                Column {
+                    Text(
+                        text = "Firmware",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextSecondary
+                    )
+                    Text(
+                        text = if (firmwareInfo.version.isNotEmpty()) {
+                            "v${firmwareInfo.version}"
+                        } else {
+                            "--"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary
+                    )
+                    if (firmwareInfo.type.isNotEmpty()) {
+                        Text(
+                            text = "Type: ${firmwareInfo.type}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextMuted
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
