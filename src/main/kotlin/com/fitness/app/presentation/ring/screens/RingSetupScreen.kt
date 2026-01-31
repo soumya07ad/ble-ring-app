@@ -39,6 +39,8 @@ import com.fitness.app.presentation.ring.RingUiState
 import com.fitness.app.presentation.ring.RingViewModel
 import com.fitness.app.presentation.ring.components.*
 import com.fitness.app.ui.theme.*
+import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Refresh
 
 // ═══════════════════════════════════════════════════════════════════════
 // PREMIUM RING SETUP SCREEN - Modern Fitness App Design
