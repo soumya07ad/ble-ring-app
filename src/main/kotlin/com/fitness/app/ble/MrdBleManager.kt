@@ -15,19 +15,13 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.fitness.app.domain.model.Ring
-import com.manridy.sdk_mrd2019.Manridy
-import com.manridy.sdk_mrd2019.install.MrdPushCore
-import com.manridy.sdk_mrd2019.read.MrdReadEnum
-import com.manridy.sdk_mrd2019.read.MrdReadRequest
-import com.manridy.sdk_mrd2019.send.MrdSendListRequest
+import com.manridy.lib.mrd.Manridy
+import com.manridy.lib.mrd.bean.RawData
+import com.manridy.lib.mrd.bean.RawDataType
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
@@ -85,8 +79,14 @@ enum class BluetoothState {
     private val _measurementTimer = MutableStateFlow(MeasurementTimer())
     val measurementTimer: StateFlow<MeasurementTimer> = _measurementTimer.asStateFlow()
     
-    // Measurement Job
+    // Coroutine scope for background tasks
+    private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    
+    // Jobs
     private var measurementJob: Job? = null
+    private var connectionTimeoutJob: Job? = null
+    private var keepAliveJob: Job? = null
+    
     // BLE objects
     private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     private var bluetoothGatt: BluetoothGatt? = null
