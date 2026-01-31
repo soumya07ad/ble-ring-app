@@ -671,13 +671,13 @@ enum class BluetoothState {
                 }
                 
                 // Parse Stress/HRV
-                Log.d(TAG, "🔍 Attempting to parse stress from JSON: $json")
-                val stress = parseJsonInt(json, "hrv") 
-                    ?: parseJsonInt(json, "stress") 
-                    ?: parseJsonInt(json, "ss_type")
-                    ?: parseJsonInt(json, "measureMode")
+                val ssType = parseJsonInt(json, "ss_type")
+                val hrv = parseJsonInt(json, "hrv")
+                val stressField = parseJsonInt(json, "stress")
+                val measureMode = parseJsonInt(json, "measureMode")
+                val stress = ssType ?: hrv ?: stressField ?: measureMode
                     
-                Log.d(TAG, "🔍 Stress Parse Debug: stress=$stress")
+                Log.d(TAG, "🔍 Stress Parse: ss_type=$ssType, hrv=$hrv, stress=$stressField, measureMode=$measureMode → final=$stress")
                 
                 if (stress != null && stress in 0..200) {  // Extended range for ss_type
                     Log.i(TAG, "😰 Stress/HRV: $stress")
