@@ -603,15 +603,15 @@ enum class BluetoothState {
                 }
 
                 // Parse Steps with enhanced data (calories, distance)
-                Log.d(TAG, "🔍 Attempting to parse steps from JSON: $json")
-                val steps = parseJsonInt(json, "stepNum").also { Log.d(TAG, "stepNum result: $it") }
-                    ?: parseJsonInt(json, "step").also { Log.d(TAG, "step result: $it") }
-                    ?: parseJsonInt(json, "steps").also { Log.d(TAG, "steps result: $it") }
-                val calories = parseJsonInt(json, "stepCalorie")
+                val stepNum1 = parseJsonInt(json, "stepNum")
+                val stepNum2 = parseJsonInt(json, "step")
+                val stepNum3 = parseJsonInt(json, "steps")
+                val steps = stepNum1 ?: stepNum2 ?: stepNum3
+                val calories = parseJsonInt(json, "stepCalorie") ?: parseJsonInt(json, "calories")
                 val distanceMeters = parseJsonInt(json, "stepMileage") ?: parseJsonInt(json, "stepDistance") ?: parseJsonInt(json, "distance")
                 
                 // DEBUG LOGGING
-                Log.d(TAG, "🔍 Step Parse Debug: steps=$steps, calories=$calories, distance=$distanceMeters")
+                Log.d(TAG, "🔍 Step Parse: stepNum=$stepNum1, step=$stepNum2, steps=$stepNum3 → final=$steps, cal=$calories, dist=$distanceMeters")
                 
                 if (steps != null && steps >= 0) {
                     val distanceKm = (distanceMeters ?: 0) / 1000.0
