@@ -1190,7 +1190,7 @@ private fun SleepCard(
                         SleepMetric(
                             label = "Awake",
                             value = "${sleepData.awakeMinutes}m",
-                            color = WarningAmber
+                            color = AccentCyan
                         )
                     }
                 }
