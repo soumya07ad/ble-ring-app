@@ -273,6 +273,21 @@ class RingRepositoryImpl(
     }
     
     /**
+     * Start stress measurement
+     */
+    override fun startStressMeasurement() {
+        Log.i(TAG, "Starting 30-second stress measurement")
+        mrdManager.startStressMeasurement()
+    }
+    
+    /**
+     * Stop stress measurement
+     */
+    override fun stopStressMeasurement() {
+        mrdManager.stopMeasurement()
+    }
+    
+    /**
      * Refresh device info (battery, device info)
      */
     fun refreshDeviceInfo() {
