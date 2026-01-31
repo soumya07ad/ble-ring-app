@@ -110,7 +110,8 @@ fun RingSetupScreen(
                         onMeasureHeartRate = { viewModel.startHeartRateMeasurement() },
                         onMeasureBloodPressure = { viewModel.startBloodPressureMeasurement() },
                         onMeasureSpO2 = { viewModel.startSpO2Measurement() },
-                        onMeasureStress = { viewModel.startStressMeasurement() }
+                        onMeasureStress = { viewModel.startStressMeasurement() },
+                        onRequestSleep = { viewModel.requestSleepHistory() }
                     )
                 }
                 uiState.isConnecting -> {
@@ -518,7 +519,8 @@ private fun ConnectedContent(
     onMeasureHeartRate: () -> Unit,
     onMeasureBloodPressure: () -> Unit = {},
     onMeasureSpO2: () -> Unit = {},
-    onMeasureStress: () -> Unit = {}
+    onMeasureStress: () -> Unit = {},
+    onRequestSleep: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Success card
@@ -645,6 +647,14 @@ private fun ConnectedContent(
                 StressCard(
                     stress = uiState.ringData?.stress ?: 0,
                     onMeasureClick = onMeasureStress
+                )
+            }
+            
+            // Sleep Data
+            item {
+                SleepCard(
+                    sleepData = uiState.ringData?.sleepData,
+                    onRequestSleep = onRequestSleep
                 )
             }
             
