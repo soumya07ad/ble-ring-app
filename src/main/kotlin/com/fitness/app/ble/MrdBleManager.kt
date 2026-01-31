@@ -447,8 +447,8 @@ enum class BluetoothState {
      */
     fun requestStress() {
         Log.i(TAG, "📤 Requesting stress/HRV data from ring...")
-        val request = MrdReadRequest(MrdReadEnum.READHSID)
-        Manridy.getMrdRead().send(request)
+        val command = Manridy.getMrdSend().getHRVHistory(2).datas
+        writeData(command)
     }
     
     /**
@@ -456,8 +456,8 @@ enum class BluetoothState {
      */
     fun requestSleepHistory() {
         Log.i(TAG, "📤 Requesting sleep history from ring...")
-        val request = MrdReadRequest(MrdReadEnum.READSLEEP)
-        Manridy.getMrdRead().send(request)
+        val command = Manridy.getMrdSend().getSleepHistory(2).datas
+        writeData(command)
     }
     
     // ==================== Measurement Functions ==================== Timed Measurements ====================
