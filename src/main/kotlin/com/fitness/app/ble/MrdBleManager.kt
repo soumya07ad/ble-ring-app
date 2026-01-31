@@ -15,9 +15,11 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.fitness.app.domain.model.Ring
-import com.manridy.lib.mrd.Manridy
-import com.manridy.lib.mrd.bean.RawData
-import com.manridy.lib.mrd.bean.RawDataType
+import com.manridy.sdk_mrd2019.Manridy
+import com.manridy.sdk_mrd2019.install.MrdPushCore
+import com.manridy.sdk_mrd2019.read.MrdReadEnum
+import com.manridy.sdk_mrd2019.read.MrdReadRequest
+import com.manridy.sdk_mrd2019.send.MrdSendListRequest
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
