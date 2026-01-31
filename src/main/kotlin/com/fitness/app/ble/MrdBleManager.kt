@@ -15,19 +15,16 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.fitness.app.domain.model.Ring
+import com.fitness.app.domain.model.SleepData
 import com.manridy.sdk_mrd2019.Manridy
 import com.manridy.sdk_mrd2019.install.MrdPushCore
 import com.manridy.sdk_mrd2019.read.MrdReadEnum
 import com.manridy.sdk_mrd2019.read.MrdReadRequest
 import com.manridy.sdk_mrd2019.send.MrdSendListRequest
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
@@ -85,8 +82,14 @@ enum class BluetoothState {
     private val _measurementTimer = MutableStateFlow(MeasurementTimer())
     val measurementTimer: StateFlow<MeasurementTimer> = _measurementTimer.asStateFlow()
     
-    // Measurement Job
+    // Coroutine scope for background tasks
+    private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    
+    // Jobs
     private var measurementJob: Job? = null
+    private var connectionTimeoutJob: Job? = null
+    private var keepAliveJob: Job? = null
+    
     // BLE objects
     private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     private var bluetoothGatt: BluetoothGatt? = null
@@ -102,9 +105,6 @@ enum class BluetoothState {
         Log.i(TAG, "Ready to detect R9 rings")
         Log.i(TAG, "═══════════════════════════════════")
     }
-    
-    // Connection timeout
-    private var connectionTimeoutJob: Job? = null
     
     // ==================== Bluetooth State Checks ====================
     
@@ -318,7 +318,8 @@ enum class BluetoothState {
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     Log.w(TAG, "❌ Disconnected")
-                    handler.post {
+            stopKeepAlive()  // Stop keep-alive when disconnected
+            handler.post {
                         _connectionState.value = BleConnectionState.Disconnected
                     }
                 }
@@ -360,6 +361,9 @@ enum class BluetoothState {
                             requestBattery()
                             requestSteps()
                             requestStress()
+                            
+                            // Start periodic keep-alive (every 5 seconds)
+                            startKeepAlive()
                         }, 500)
                     }
                 } else {
@@ -440,7 +444,7 @@ enum class BluetoothState {
     }
     
     /**
-     * Request stress/HRV data from ring
+     * Request stress/HRV data
      */
     fun requestStress() {
         Log.i(TAG, "📤 Requesting stress/HRV data from ring...")
@@ -449,10 +453,15 @@ enum class BluetoothState {
     }
     
     /**
-     * Write data to ring
+     * Request sleep history from ring
+     * TODO: SDK doesn't have getSleepHistory() method yet
      */
+    fun requestSleepHistory() {
+        Log.w(TAG, "⚠️ Sleep history not yet supported by SDK")
+        // Will parse sleep data when received from ring automatically
+    }
     
-    // ==================== Timed Measurements ====================
+    // ==================== Measurement Functions ==================== Timed Measurements ====================
     
     /**
      * Start 30-second heart rate measurement
@@ -679,13 +688,13 @@ enum class BluetoothState {
                 }
                 
                 // Parse Stress/HRV
-                Log.d(TAG, "🔍 Attempting to parse stress from JSON: $json")
-                val stress = parseJsonInt(json, "hrv") 
-                    ?: parseJsonInt(json, "stress") 
-                    ?: parseJsonInt(json, "ss_type")
-                    ?: parseJsonInt(json, "measureMode")
+                val ssType = parseJsonInt(json, "ss_type")
+                val hrv = parseJsonInt(json, "hrv")
+                val stressField = parseJsonInt(json, "stress")
+                val measureMode = parseJsonInt(json, "measureMode")
+                val stress = ssType ?: hrv ?: stressField ?: measureMode
                     
-                Log.d(TAG, "🔍 Stress Parse Debug: stress=$stress")
+                Log.d(TAG, "🔍 Stress Parse: ss_type=$ssType, hrv=$hrv, stress=$stressField, measureMode=$measureMode → final=$stress")
                 
                 if (stress != null && stress in 0..200) {  // Extended range for ss_type
                     Log.i(TAG, "😰 Stress/HRV: $stress")
@@ -695,6 +704,35 @@ enum class BluetoothState {
                     }
                 } else {
                     Log.w(TAG, "⚠️ Stress data out of range or null: $stress")
+                }
+                
+                // Parse Sleep data
+                val sleepDeep = parseJsonInt(json, "sleepDeep")
+                val sleepLight = parseJsonInt(json, "sleepLight")
+                val sleepAwake = parseJsonInt(json, "sleepAwake")
+                val sleepLength = parseJsonInt(json, "sleepLength")
+                val sleepStart = parseJsonString(json, "sleepStartTime")
+                val sleepEnd = parseJsonString(json, "sleepEndTime")
+                
+                if (sleepLength != null && sleepLength > 0) {
+                    val quality = calculateSleepQuality(sleepDeep ?: 0, sleepLength)
+                    Log.i(TAG, "😴 Sleep: ${sleepLength}min (deep: ${sleepDeep ?: 0}, light: ${sleepLight ?: 0}, quality: $quality%)")
+                    
+                    handler.post {
+                        _ringData.value = _ringData.value.copy(
+                            sleepData = SleepData(
+                                totalMinutes = sleepLength,
+                                deepMinutes = sleepDeep ?: 0,
+                                lightMinutes = sleepLight ?: 0,
+                                awakeMinutes = sleepAwake ?: 0,
+                                startTime = sleepStart ?: "",
+                                endTime = sleepEnd ?: "",
+                                quality = quality
+                            ),
+                            lastUpdate = System.currentTimeMillis()
+                        )
+                        Log.d(TAG, "✅ Sleep data updated in ringData state")
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -730,8 +768,91 @@ enum class BluetoothState {
             null
         }
     }
+    
+    /**
+     * Parse String value from JSON
+     */
+    private fun parseJsonString(json: String?, key: String): String? {
+        if (json.isNullOrEmpty()) return null
+        return try {
+            // Match: "sleepStartTime":"08:30" or sleepStartTime:"08:30"
+            val regex = "\"?$key\"?\\s*:\\s*\"([^\"]*)\"".toRegex()
+            regex.find(json)?.groupValues?.get(1)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    /**
+     * Calculate sleep quality score based on deep sleep percentage
+     * Returns 0-100 score
+     */
+    private fun calculateSleepQuality(deepMinutes: Int, totalMinutes: Int): Int {
+        if (totalMinutes == 0) return 0
+        
+        // Deep sleep should be 15-25% of total for good quality
+        val deepPercentage = (deepMinutes.toFloat() / totalMinutes * 100).toInt()
+        
+        return when {
+            deepPercentage >= 20 -> 90  // Excellent
+            deepPercentage >= 15 -> 75  // Good
+            deepPercentage >= 10 -> 60  // Fair
+            else -> 40  // Poor
+        }
+    }
+    
+    /**
+     * Parse firmware information from JSON
+     */
+    private fun parseFirmwareInfo(json: String?): com.fitness.app.domain.model.FirmwareInfo {
+        if (json.isNullOrEmpty()) return com.fitness.app.domain.model.FirmwareInfo()
+        
+        return try {
+            val type = parseJsonString(json, "firmwareType") ?: ""
+            val version = parseJsonString(json, "firmwareVersion") ?: ""
+            
+            if (type.isNotEmpty() || version.isNotEmpty()) {
+                Log.i(TAG, "📱 Firmware: Type=$type, Version=$version")
+            }
+            
+            com.fitness.app.domain.model.FirmwareInfo(
+                type = type,
+                version = version,
+                lastUpdate = System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing firmware info", e)
+            com.fitness.app.domain.model.FirmwareInfo()
+        }
+    }
+    
     private fun bytesToHex(bytes: ByteArray): String {
-        return bytes.joinToString("") { "%02X".format(it) }
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+    
+    /**
+     * Start periodic keep-alive to prevent connection timeout
+     * Requests battery every 5 seconds to maintain connection
+     */
+    private fun startKeepAlive() {
+        stopKeepAlive()  // Cancel any existing keep-alive
+        
+        keepAliveJob = ioScope.launch {
+            while (isActive) {
+                delay(5000)  // Every 5 seconds
+                Log.d(TAG, "💓 Keep-alive: requesting battery")
+                requestBattery()
+            }
+        }
+        Log.i(TAG, "💓 Keep-alive started (5s interval)")
+    }
+    
+    /**
+     * Stop keep-alive
+     */
+    private fun stopKeepAlive() {
+        keepAliveJob?.cancel()
+        keepAliveJob = null
+        Log.d(TAG, "💓 Keep-alive stopped")
     }
 }
-

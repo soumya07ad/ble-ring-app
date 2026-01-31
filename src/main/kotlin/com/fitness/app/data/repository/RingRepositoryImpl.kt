@@ -140,8 +140,8 @@ class RingRepositoryImpl(
             steps = data.steps,
             distance = data.distance,
             calories = data.calories,
-            deepSleep = data.deepSleep,
-            lightSleep = data.lightSleep,
+            sleepData = data.sleepData,
+            firmwareInfo = data.firmwareInfo,
             lastUpdate = data.lastUpdate
         )
     }
@@ -285,6 +285,14 @@ class RingRepositoryImpl(
      */
     override fun stopStressMeasurement() {
         mrdManager.stopMeasurement()
+    }
+    
+    /**
+     * Request sleep history from ring
+     */
+    override fun requestSleepHistory() {
+        Log.i(TAG, "Requesting sleep history from ring")
+        mrdManager.requestSleepHistory()
     }
     
     /**

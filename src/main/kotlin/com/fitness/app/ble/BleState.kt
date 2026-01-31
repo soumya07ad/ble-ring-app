@@ -101,11 +101,11 @@ data class RingData(
     val steps: Int = 0,
     val distance: Int = 0,       // meters
     val calories: Int = 0,       // kcal
-    val deepSleep: Int = 0,     // minutes
-    val lightSleep: Int = 0,    // minutes
+    val sleepData: com.fitness.app.domain.model.SleepData = com.fitness.app.domain.model.SleepData(),
+    val firmwareInfo: com.fitness.app.domain.model.FirmwareInfo = com.fitness.app.domain.model.FirmwareInfo(), // Firmware version and type
     val lastUpdate: Long = 0L
 ) {
-    val totalSleepMinutes: Int get() = deepSleep + lightSleep
+    val totalSleepMinutes: Int get() = sleepData.totalMinutes
     
     /** Returns battery display string: "85%" or "Unknown" */
     val batteryDisplay: String get() = battery?.let { "$it%" } ?: "Unknown"

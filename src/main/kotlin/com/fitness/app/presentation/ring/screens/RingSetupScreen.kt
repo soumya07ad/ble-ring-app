@@ -109,7 +109,9 @@ fun RingSetupScreen(
                         onDone = onSetupComplete,
                         onMeasureHeartRate = { viewModel.startHeartRateMeasurement() },
                         onMeasureBloodPressure = { viewModel.startBloodPressureMeasurement() },
-                        onMeasureSpO2 = { viewModel.startSpO2Measurement() }
+                        onMeasureSpO2 = { viewModel.startSpO2Measurement() },
+                        onMeasureStress = { viewModel.startStressMeasurement() },
+                        onRequestSleep = { viewModel.requestSleepHistory() }
                     )
                 }
                 uiState.isConnecting -> {
@@ -516,7 +518,9 @@ private fun ConnectedContent(
     onDone: () -> Unit,
     onMeasureHeartRate: () -> Unit,
     onMeasureBloodPressure: () -> Unit = {},
-    onMeasureSpO2: () -> Unit = {}
+    onMeasureSpO2: () -> Unit = {},
+    onMeasureStress: () -> Unit = {},
+    onRequestSleep: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Success card
@@ -642,8 +646,23 @@ private fun ConnectedContent(
             item {
                 StressCard(
                     stress = uiState.ringData?.stress ?: 0,
-                    onMeasureClick = { viewModel.startStressMeasurement() }
+                    onMeasureClick = onMeasureStress
                 )
+            }
+            
+            // Sleep Data
+            item {
+                SleepCard(
+                    sleepData = uiState.ringData?.sleepData,
+                    onRequestSleep = onRequestSleep
+                )
+            }
+            
+            // Firmware Info
+            item {
+                val firmwareInfo = uiState.ringData?.firmwareInfo 
+                    ?: com.fitness.app.domain.model.FirmwareInfo()
+                FirmwareCard(firmwareInfo = firmwareInfo)
             }
             
             // Steps
@@ -890,8 +909,13 @@ private fun StressCard(stress: Int, onMeasureClick: () -> Unit = {}) {
             FilledTonalIconButton(
                 onClick = onMeasureClick,
                 colors = IconButtonDefaults.filledTonalIconButtonColors(
+<<<<<<< HEAD
                     containerColor = PrimaryBlue.copy(alpha = 0.15f),
                     contentColor = PrimaryBlue
+=======
+                    containerColor = AccentCyan.copy(alpha = 0.15f),
+                    contentColor = AccentCyan
+>>>>>>> dev
                 )
             ) {
                 Icon(
@@ -1078,6 +1102,198 @@ private fun ConnectingPreview() {
                 .background(DarkBackground)
         ) {
             ConnectingContent()
+        }
+    }
+}
+@Composable
+private fun SleepCard(
+    sleepData: com.fitness.app.domain.model.SleepData?,
+    onRequestSleep: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = GlassWhite
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryPurple.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Custom moon icon using a circle
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(PrimaryPurple)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Sleep",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                        if (sleepData != null && sleepData.totalMinutes > 0) {
+                            val hours = sleepData.totalMinutes / 60
+                            val mins = sleepData.totalMinutes % 60
+                            Text(
+                                text = if (hours > 0) "${hours}h ${mins}m" else "${mins}m",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            Text(
+                                text = "--",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+                
+                // Request Button
+                FilledTonalIconButton(
+                    onClick = onRequestSleep,
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = PrimaryPurple.copy(alpha = 0.15f),
+                        contentColor = PrimaryPurple
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Request Sleep Data",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            
+            if (sleepData != null && sleepData.totalMinutes > 0) {
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    SleepMetric(
+                        label = "Deep",
+                        value = "${sleepData.deepMinutes}m",
+                        color = PrimaryPurple
+                    )
+                    SleepMetric(
+                        label = "Light",
+                        value = "${sleepData.lightMinutes}m",
+                        color = AccentCyan
+                    )
+                    if (sleepData.awakeMinutes > 0) {
+                        SleepMetric(
+                            label = "Awake",
+                            value = "${sleepData.awakeMinutes}m",
+                            color = AccentCyan
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SleepMetric(
+    label: String,
+    value: String,
+    color: Color
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// FIRMWARE CARD
+// ═══════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun FirmwareCard(
+    firmwareInfo: com.fitness.app.domain.model.FirmwareInfo,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = GlassWhite
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Icon
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(AccentBlue.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = AccentBlue,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                // Firmware info
+                Column {
+                    Text(
+                        text = "Firmware",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextSecondary
+                    )
+                    Text(
+                        text = if (firmwareInfo.version.isNotEmpty()) {
+                            "v${firmwareInfo.version}"
+                        } else {
+                            "--"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary
+                    )
+                    if (firmwareInfo.type.isNotEmpty()) {
+                        Text(
+                            text = "Type: ${firmwareInfo.type}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextMuted
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -1,6 +1,36 @@
 package com.fitness.app.domain.model
 
 /**
+ * Sleep data from ring
+ */
+data class SleepData(
+    val totalMinutes: Int = 0,      // Total sleep duration
+    val deepMinutes: Int = 0,        // Deep sleep
+    val lightMinutes: Int = 0,       // Light sleep
+    val awakeMinutes: Int = 0,       // Awake time
+    val startTime: String = "",      // Sleep start time
+    val endTime: String = "",        // Sleep end time
+    val quality: Int = 0             // Sleep quality score (0-100)
+)
+
+/**
+ * Firmware information
+ */
+data class FirmwareInfo(
+    val type: String = "",
+    val version: String = "",
+    val lastUpdate: Long = 0L
+) {
+    val displayText: String get() = if (version.isNotEmpty()) {
+        "v$version"
+    } else {
+        "Unknown"
+    }
+    
+    val hasInfo: Boolean get() = type.isNotEmpty() && version.isNotEmpty()
+}
+
+/**
  * Domain model representing health data from the ring
  * Pure Kotlin class with no Android dependencies
  */
@@ -18,14 +48,14 @@ data class RingHealthData(
     val steps: Int = 0,
     val distance: Int = 0,       // meters
     val calories: Int = 0,       // kcal
-    val deepSleep: Int = 0,      // minutes
-    val lightSleep: Int = 0,     // minutes
-    val lastUpdate: Long = 0L
+    val lastUpdate: Long = 0L,
+    val sleepData: SleepData = SleepData(),
+    val firmwareInfo: FirmwareInfo = FirmwareInfo()
 ) {
     /**
      * Total sleep in minutes
      */
-    val totalSleepMinutes: Int get() = deepSleep + lightSleep
+    val totalSleepMinutes: Int get() = sleepData.totalMinutes
     
     /**
      * Formatted sleep duration string
