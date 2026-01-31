@@ -1093,3 +1093,127 @@ private fun ConnectingPreview() {
         }
     }
 }
+@Composable
+private fun SleepCard(
+    sleepData: com.fitness.app.domain.model.SleepData?,
+    onRequestSleep: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = GlassWhite
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(AccentPurple.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Hotel,
+                            contentDescription = null,
+                            tint = AccentPurple,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Sleep",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                        if (sleepData != null && sleepData.totalMinutes > 0) {
+                            val hours = sleepData.totalMinutes / 60
+                            val mins = sleepData.totalMinutes % 60
+                            Text(
+                                text = if (hours > 0) "${hours}h ${mins}m" else "${mins}m",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            Text(
+                                text = "--",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+                
+                // Request Button
+                FilledTonalIconButton(
+                    onClick = onRequestSleep,
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = AccentPurple.copy(alpha = 0.15f),
+                        contentColor = AccentPurple
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Request Sleep Data",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            
+            if (sleepData != null && sleepData.totalMinutes > 0) {
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    SleepMetric(
+                        label = "Deep",
+                        value = "${sleepData.deepMinutes}m",
+                        color = AccentPurple
+                    )
+                    SleepMetric(
+                        label = "Light",
+                        value = "${sleepData.lightMinutes}m",
+                        color = AccentCyan
+                    )
+                    if (sleepData.awakeMinutes > 0) {
+                        SleepMetric(
+                            label = "Awake",
+                            value = "${sleepData.awakeMinutes}m",
+                            color = WarningAmber
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SleepMetric(
+    label: String,
+    value: String,
+    color: Color
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary
+        )
+    }
+}

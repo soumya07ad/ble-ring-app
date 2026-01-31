@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.fitness.app.domain.model.Ring
+import com.fitness.app.domain.model.SleepData
 import com.manridy.sdk_mrd2019.Manridy
 import com.manridy.sdk_mrd2019.install.MrdPushCore
 import com.manridy.sdk_mrd2019.read.MrdReadEnum
@@ -453,11 +454,11 @@ enum class BluetoothState {
     
     /**
      * Request sleep history from ring
+     * TODO: SDK doesn't have getSleepHistory() method yet
      */
     fun requestSleepHistory() {
-        Log.i(TAG, "📤 Requesting sleep history from ring...")
-        val command = Manridy.getMrdSend().getSleepHistory(2).datas
-        writeData(command)
+        Log.w(TAG, "⚠️ Sleep history not yet supported by SDK")
+        // Will parse sleep data when received from ring automatically
     }
     
     // ==================== Measurement Functions ==================== Timed Measurements ====================
@@ -711,7 +712,7 @@ enum class BluetoothState {
                     
                     handler.post {
                         _ringData.value = _ringData.value.copy(
-                            sleepData = com.fitness.app.domain.model.SleepData(
+                            sleepData = SleepData(
                                 totalMinutes = sleepLength,
                                 deepMinutes = sleepDeep ?: 0,
                                 lightMinutes = sleepLight ?: 0,

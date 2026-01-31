@@ -140,8 +140,7 @@ class RingRepositoryImpl(
             steps = data.steps,
             distance = data.distance,
             calories = data.calories,
-            deepSleep = data.deepSleep,
-            lightSleep = data.lightSleep,
+            sleepData = data.sleepData,
             lastUpdate = data.lastUpdate
         )
     }
