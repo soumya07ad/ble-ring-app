@@ -109,7 +109,8 @@ fun RingSetupScreen(
                         onDone = onSetupComplete,
                         onMeasureHeartRate = { viewModel.startHeartRateMeasurement() },
                         onMeasureBloodPressure = { viewModel.startBloodPressureMeasurement() },
-                        onMeasureSpO2 = { viewModel.startSpO2Measurement() }
+                        onMeasureSpO2 = { viewModel.startSpO2Measurement() },
+                        onMeasureStress = { viewModel.startStressMeasurement() }
                     )
                 }
                 uiState.isConnecting -> {
@@ -516,7 +517,8 @@ private fun ConnectedContent(
     onDone: () -> Unit,
     onMeasureHeartRate: () -> Unit,
     onMeasureBloodPressure: () -> Unit = {},
-    onMeasureSpO2: () -> Unit = {}
+    onMeasureSpO2: () -> Unit = {},
+    onMeasureStress: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Success card
@@ -642,7 +644,7 @@ private fun ConnectedContent(
             item {
                 StressCard(
                     stress = uiState.ringData?.stress ?: 0,
-                    onMeasureClick = { viewModel.startStressMeasurement() }
+                    onMeasureClick = onMeasureStress
                 )
             }
             
@@ -890,8 +892,8 @@ private fun StressCard(stress: Int, onMeasureClick: () -> Unit = {}) {
             FilledTonalIconButton(
                 onClick = onMeasureClick,
                 colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = PrimaryBlue.copy(alpha = 0.15f),
-                    contentColor = PrimaryBlue
+                    containerColor = AccentCyan.copy(alpha = 0.15f),
+                    contentColor = AccentCyan
                 )
             ) {
                 Icon(
