@@ -49,7 +49,8 @@ data class RingHealthData(
     val distance: Int = 0,       // meters
     val calories: Int = 0,       // kcal
     val lastUpdate: Long = 0L,
-    val sleepData: SleepData = SleepData()
+    val sleepData: SleepData = SleepData(),
+    val firmwareInfo: FirmwareInfo = FirmwareInfo()
 ) {
     /**
      * Total sleep in minutes

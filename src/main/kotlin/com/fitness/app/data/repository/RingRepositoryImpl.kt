@@ -141,6 +141,7 @@ class RingRepositoryImpl(
             distance = data.distance,
             calories = data.calories,
             sleepData = data.sleepData,
+            firmwareInfo = data.firmwareInfo,
             lastUpdate = data.lastUpdate
         )
     }
