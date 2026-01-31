@@ -658,6 +658,13 @@ private fun ConnectedContent(
                 )
             }
             
+            // Firmware Info
+            item {
+                FirmwareCard(
+                    firmwareInfo = uiState.ringData?.firmwareInfo ?: com.fitness.app.domain.model.FirmwareInfo()
+                )
+            }
+            
             // Steps
             item {
                 StepsCard(steps = uiState.steps)

@@ -14,6 +14,23 @@ data class SleepData(
 )
 
 /**
+ * Firmware information
+ */
+data class FirmwareInfo(
+    val type: String = "",
+    val version: String = "",
+    val lastUpdate: Long = 0L
+) {
+    val displayText: String get() = if (version.isNotEmpty()) {
+        "v$version"
+    } else {
+        "Unknown"
+    }
+    
+    val hasInfo: Boolean get() = type.isNotEmpty() && version.isNotEmpty()
+}
+
+/**
  * Domain model representing health data from the ring
  * Pure Kotlin class with no Android dependencies
  */

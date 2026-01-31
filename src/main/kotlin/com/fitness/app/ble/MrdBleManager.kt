@@ -793,6 +793,31 @@ enum class BluetoothState {
         }
     }
     
+    /**
+     * Parse firmware information from JSON
+     */
+    private fun parseFirmwareInfo(json: String?): com.fitness.app.domain.model.FirmwareInfo {
+        if (json.isNullOrEmpty()) return com.fitness.app.domain.model.FirmwareInfo()
+        
+        return try {
+            val type = parseJsonString(json, "firmwareType") ?: ""
+            val version = parseJsonString(json, "firmwareVersion") ?: ""
+            
+            if (type.isNotEmpty() || version.isNotEmpty()) {
+                Log.i(TAG, "📱 Firmware: Type=$type, Version=$version")
+            }
+            
+            com.fitness.app.domain.model.FirmwareInfo(
+                type = type,
+                version = version,
+                lastUpdate = System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing firmware info", e)
+            com.fitness.app.domain.model.FirmwareInfo()
+        }
+    }
+    
     private fun bytesToHex(bytes: ByteArray): String {
         return bytes.joinToString("") { "%02x".format(it) }
     }
