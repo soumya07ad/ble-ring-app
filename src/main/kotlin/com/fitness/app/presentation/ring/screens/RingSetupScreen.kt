@@ -1118,7 +1118,7 @@ private fun SleepCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Bedtime,
+                            imageVector = Icons.Default.NightsStay,
                             contentDescription = null,
                             tint = PrimaryPurple,
                             modifier = Modifier.size(24.dp)
