@@ -73,6 +73,7 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
         
         viewModelScope.launch {
             getRingDataUseCase().collect { data ->
+                android.util.Log.d("RingViewModel", "🔄 Ring data updated in ViewModel: steps=${data.steps}, stress=${data.stress}, hr=${data.heartRate}")
                 _uiState.update { it.copy(ringData = data) }
             }
         }
@@ -279,6 +280,20 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun stopSpO2Measurement() {
         container.ringRepository.stopSpO2Measurement()
+    }
+    
+    /**
+     * Start stress measurement
+     */
+    fun startStressMeasurement() {
+        container.ringRepository.startStressMeasurement()
+    }
+    
+    /**
+     * Stop stress measurement
+     */
+    fun stopStressMeasurement() {
+        container.ringRepository.stopStressMeasurement()
     }
     
     // ==================== UI State Updates ====================
