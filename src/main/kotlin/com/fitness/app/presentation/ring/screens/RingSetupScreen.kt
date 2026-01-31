@@ -640,7 +640,10 @@ private fun ConnectedContent(
             
             // Stress Level
             item {
-                StressCard(stress = uiState.ringData?.stress ?: 0)
+                StressCard(
+                    stress = uiState.ringData?.stress ?: 0,
+                    onMeasureClick = { viewModel.startStressMeasurement() }
+                )
             }
             
             // Steps
@@ -823,7 +826,7 @@ private fun SpO2Card(spO2: Float, isMeasuring: Boolean) {
 }
 
 @Composable
-private fun StressCard(stress: Int) {
+private fun StressCard(stress: Int, onMeasureClick: () -> Unit = {}) {
     val stressColor = when {
         stress <= 30 -> SuccessGreen
         stress <= 60 -> WarningAmber
@@ -882,6 +885,20 @@ private fun StressCard(stress: Int) {
                         )
                     }
                 }
+            }
+            // Measure Button
+            FilledTonalIconButton(
+                onClick = onMeasureClick,
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = PrimaryBlue.copy(alpha = 0.15f),
+                    contentColor = PrimaryBlue
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Measure Stress",
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }
