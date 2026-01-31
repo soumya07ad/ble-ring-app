@@ -39,8 +39,6 @@ import com.fitness.app.presentation.ring.RingUiState
 import com.fitness.app.presentation.ring.RingViewModel
 import com.fitness.app.presentation.ring.components.*
 import com.fitness.app.ui.theme.*
-import androidx.compose.material.icons.filled.Hotel
-import androidx.compose.material.icons.filled.Refresh
 
 // ═══════════════════════════════════════════════════════════════════════
 // PREMIUM RING SETUP SCREEN - Modern Fitness App Design
@@ -1116,13 +1114,13 @@ private fun SleepCard(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(AccentPurple.copy(alpha = 0.2f)),
+                            .background(PrimaryPurple.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Hotel,
+                            imageVector = Icons.Default.Bedtime,
                             contentDescription = null,
-                            tint = AccentPurple,
+                            tint = PrimaryPurple,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -1157,8 +1155,8 @@ private fun SleepCard(
                 FilledTonalIconButton(
                     onClick = onRequestSleep,
                     colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = AccentPurple.copy(alpha = 0.15f),
-                        contentColor = AccentPurple
+                        containerColor = PrimaryPurple.copy(alpha = 0.15f),
+                        contentColor = PrimaryPurple
                     )
                 ) {
                     Icon(
@@ -1179,7 +1177,7 @@ private fun SleepCard(
                     SleepMetric(
                         label = "Deep",
                         value = "${sleepData.deepMinutes}m",
-                        color = AccentPurple
+                        color = PrimaryPurple
                     )
                     SleepMetric(
                         label = "Light",
