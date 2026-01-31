@@ -660,9 +660,9 @@ private fun ConnectedContent(
             
             // Firmware Info
             item {
-                FirmwareCard(
-                    firmwareInfo = uiState.ringData?.firmwareInfo ?: com.fitness.app.domain.model.FirmwareInfo()
-                )
+                val firmwareInfo = uiState.ringData?.firmwareInfo 
+                    ?: com.fitness.app.domain.model.FirmwareInfo()
+                FirmwareCard(firmwareInfo = firmwareInfo)
             }
             
             // Steps
