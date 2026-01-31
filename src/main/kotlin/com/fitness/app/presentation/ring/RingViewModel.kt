@@ -73,6 +73,7 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
         
         viewModelScope.launch {
             getRingDataUseCase().collect { data ->
+                android.util.Log.d("RingViewModel", "🔄 Ring data updated in ViewModel: steps=${data.steps}, stress=${data.stress}, hr=${data.heartRate}")
                 _uiState.update { it.copy(ringData = data) }
             }
         }
