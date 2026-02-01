@@ -734,6 +734,15 @@ enum class BluetoothState {
                         Log.d(TAG, "✅ Sleep data updated in ringData state")
                     }
                 }
+                
+                // Parse Firmware Info
+                val firmwareInfo = parseFirmwareInfo(json)
+                if (firmwareInfo.version.isNotEmpty()) {
+                    handler.post {
+                        _ringData.value = _ringData.value.copy(firmwareInfo = firmwareInfo)
+                        Log.d(TAG, "✅ Firmware info updated: v${firmwareInfo.version}")
+                    }
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Parse error: ${e.message}", e)
