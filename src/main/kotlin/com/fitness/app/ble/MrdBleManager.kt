@@ -89,6 +89,15 @@ enum class BluetoothState {
     private var measurementJob: Job? = null
     private var connectionTimeoutJob: Job? = null
     private var keepAliveJob: Job? = null
+    private var reconnectJob: Job? = null
+    
+    // Auto-reconnect configuration
+    private var autoReconnectEnabled = true
+    private var reconnectAttempts = 0
+    private val maxReconnectAttempts = 3
+    private var lastConnectedMac: String? = null
+    private var lastConnectedName: String? = null
+    private var userInitiatedDisconnect = false
     
     // BLE objects
     private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
@@ -273,6 +282,11 @@ enum class BluetoothState {
         Log.i(TAG, "🔗 MRD Connecting to: $macAddress")
         Log.i(TAG, "═══════════════════════════════════")
         
+        // Store for auto-reconnect
+        lastConnectedMac = macAddress
+        lastConnectedName = deviceName
+        userInitiatedDisconnect = false
+        
         _connectionState.value = BleConnectionState.Connecting
         connectedDevice = device
         
@@ -294,7 +308,12 @@ enum class BluetoothState {
     
     @SuppressLint("MissingPermission")
     fun disconnect() {
-        Log.i(TAG, "🔌 MRD Disconnecting")
+        Log.i(TAG, "🔌 MRD Disconnecting (user initiated)")
+        
+        // Mark as user-initiated to prevent auto-reconnect
+        userInitiatedDisconnect = true
+        reconnectJob?.cancel()
+        reconnectAttempts = 0
         
         bluetoothGatt?.let {
             it.disconnect()
@@ -311,16 +330,46 @@ enum class BluetoothState {
     private val gattCallback = object : BluetoothGattCallback() {
         @SuppressLint("MissingPermission")
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+            Log.i(TAG, "🔗 Connection state: newState=$newState, status=$status")
+            
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     Log.i(TAG, "✓ Connected, discovering services...")
+                    reconnectAttempts = 0  // Reset reconnect counter on successful connection
                     gatt.discoverServices()
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
-                    Log.w(TAG, "❌ Disconnected")
-            stopKeepAlive()  // Stop keep-alive when disconnected
-            handler.post {
-                        _connectionState.value = BleConnectionState.Disconnected
+                    val statusMessage = when (status) {
+                        0 -> "Success (user initiated)"
+                        8 -> "GATT_CONN_TIMEOUT - Link supervision timeout"
+                        19 -> "GATT_CONN_TERMINATE_PEER_USER - Remote device terminated"
+                        22 -> "GATT_CONN_TERMINATE_LOCAL_HOST - Local host terminated"
+                        133 -> "GATT_ERROR - Generic error"
+                        else -> "Unknown error: $status"
+                    }
+                    Log.w(TAG, "❌ Disconnected: $statusMessage")
+                    
+                    stopKeepAlive()
+                    
+                    // Close current GATT to clean up resources
+                    gatt.close()
+                    bluetoothGatt = null
+                    
+                    handler.post {
+                        // Check if we should auto-reconnect
+                        val shouldReconnect = autoReconnectEnabled && 
+                                              !userInitiatedDisconnect && 
+                                              lastConnectedMac != null &&
+                                              reconnectAttempts < maxReconnectAttempts &&
+                                              status != 0  // Don't reconnect if graceful disconnect
+                        
+                        if (shouldReconnect) {
+                            _connectionState.value = BleConnectionState.Error("Connection lost. Reconnecting... (${reconnectAttempts + 1}/$maxReconnectAttempts)")
+                            scheduleReconnect()
+                        } else {
+                            _connectionState.value = BleConnectionState.Disconnected
+                            reconnectAttempts = 0
+                        }
                     }
                 }
             }
@@ -864,4 +913,76 @@ enum class BluetoothState {
         keepAliveJob = null
         Log.d(TAG, "💓 Keep-alive stopped")
     }
+    
+    // ==================== Auto-Reconnect ====================
+    
+    /**
+     * Schedule a reconnection attempt with exponential backoff
+     * Delays: 2s, 4s, 8s for attempts 1, 2, 3
+     */
+    private fun scheduleReconnect() {
+        val mac = lastConnectedMac ?: return
+        
+        reconnectJob?.cancel()
+        reconnectJob = ioScope.launch {
+            val delayMs = (2000L * (1 shl reconnectAttempts)).coerceAtMost(8000L)  // 2s, 4s, 8s max
+            Log.i(TAG, "🔄 Scheduling reconnect in ${delayMs}ms (attempt ${reconnectAttempts + 1}/$maxReconnectAttempts)")
+            
+            delay(delayMs)
+            
+            reconnectAttempts++
+            performReconnect(mac)
+        }
+    }
+    
+    /**
+     * Perform the actual reconnection
+     */
+    @SuppressLint("MissingPermission")
+    private fun performReconnect(macAddress: String) {
+        if (!isBluetoothEnabled()) {
+            Log.e(TAG, "❌ Cannot reconnect: Bluetooth disabled")
+            handler.post {
+                _connectionState.value = BleConnectionState.Error("Bluetooth is disabled")
+            }
+            return
+        }
+        
+        Log.i(TAG, "🔄 Attempting reconnect to: $macAddress (attempt $reconnectAttempts/$maxReconnectAttempts)")
+        
+        handler.post {
+            _connectionState.value = BleConnectionState.Connecting
+        }
+        
+        val device = bluetoothAdapter?.getRemoteDevice(macAddress)
+        if (device == null) {
+            Log.e(TAG, "❌ Device not found for reconnect: $macAddress")
+            handler.post {
+                _connectionState.value = BleConnectionState.Error("Device not found")
+            }
+            return
+        }
+        
+        connectedDevice = device
+        bluetoothGatt = device.connectGatt(context, false, gattCallback)
+        MrdPushCore.getInstance().init(bluetoothGatt)
+    }
+    
+    /**
+     * Enable or disable auto-reconnect
+     */
+    fun setAutoReconnectEnabled(enabled: Boolean) {
+        autoReconnectEnabled = enabled
+        Log.i(TAG, "🔄 Auto-reconnect ${if (enabled) "enabled" else "disabled"}")
+        
+        if (!enabled) {
+            reconnectJob?.cancel()
+            reconnectAttempts = 0
+        }
+    }
+    
+    /**
+     * Check if auto-reconnect is enabled
+     */
+    fun isAutoReconnectEnabled(): Boolean = autoReconnectEnabled
 }
