@@ -36,6 +36,7 @@ data class FirmwareInfo(
  */
 data class RingHealthData(
     val battery: Int? = null,    // null = unknown, 0-100 = actual percentage
+    val isCharging: Boolean = false,  // true when ring is on charger
     val heartRate: Int = 0,
     val heartRateMeasuring: Boolean = false,  // true when measuring HR
     val bloodPressureSystolic: Int = 0,       // mmHg (high) - bphp

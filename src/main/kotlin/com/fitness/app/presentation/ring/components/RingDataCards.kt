@@ -26,9 +26,10 @@ import com.fitness.app.ui.theme.*
 // ═══════════════════════════════════════════════════════════════════════
 
 @Composable
-fun BatteryCard(batteryLevel: Int?) {
+fun BatteryCard(batteryLevel: Int?, isCharging: Boolean = false) {
     val battery = batteryLevel ?: 0
     val batteryColor = when {
+        isCharging -> SuccessGreen  // Green when charging
         battery > 50 -> SuccessGreen
         battery > 20 -> WarningAmber
         else -> ErrorRed
@@ -39,7 +40,7 @@ fun BatteryCard(batteryLevel: Int?) {
         initialValue = 1f,
         targetValue = 1.1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = EaseInOutCubic),
+            animation = tween(if (isCharging) 600 else 1000, easing = EaseInOutCubic),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseScale"
@@ -48,10 +49,16 @@ fun BatteryCard(batteryLevel: Int?) {
     PremiumDataCard(
         icon = Icons.Default.Info,  // Battery icon
         iconTint = batteryColor,
-        iconScale = if (battery < 20) pulseScale else 1f,
+        iconScale = if (battery < 20 || isCharging) pulseScale else 1f,
         label = "BATTERY",
-        value = if (batteryLevel != null) "$battery%" else "—",
+        value = when {
+            isCharging && (batteryLevel == null || battery == 0) -> "⚡"
+            isCharging -> "$battery% ⚡"
+            batteryLevel != null -> "$battery%"
+            else -> "—"
+        },
         status = when {
+            isCharging -> "Charging"
             batteryLevel == null -> "Unknown"
             battery > 50 -> "Good"
             battery > 20 -> "Low"
@@ -275,6 +282,10 @@ private fun BatteryCardPreview() {
             BatteryCard(batteryLevel = 25)
             Spacer(modifier = Modifier.height(12.dp))
             BatteryCard(batteryLevel = null)
+            Spacer(modifier = Modifier.height(12.dp))
+            BatteryCard(batteryLevel = 60, isCharging = true)
+            Spacer(modifier = Modifier.height(12.dp))
+            BatteryCard(batteryLevel = null, isCharging = true)
         }
     }
 }

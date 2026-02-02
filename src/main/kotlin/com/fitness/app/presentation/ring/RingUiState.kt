@@ -55,6 +55,9 @@ data class RingUiState(
     val batteryLevel: Int? 
         get() = ringData.battery
     
+    val isCharging: Boolean
+        get() = ringData.isCharging
+    
     val heartRate: Int 
         get() = ringData.heartRate
     

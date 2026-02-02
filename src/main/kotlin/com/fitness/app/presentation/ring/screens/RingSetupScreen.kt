@@ -587,7 +587,10 @@ private fun ConnectedContent(
         ) {
             // Battery
             item {
-                BatteryCard(batteryLevel = uiState.batteryLevel)
+                BatteryCard(
+                    batteryLevel = uiState.batteryLevel,
+                    isCharging = uiState.isCharging
+                )
             }
             
             // Heart Rate

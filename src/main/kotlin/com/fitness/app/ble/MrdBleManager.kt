@@ -643,10 +643,17 @@ enum class BluetoothState {
 
             if (!json.isNullOrEmpty()) {
                 val battery = parseJsonInt(json, "battery")
-                if (battery != null && battery in 1..100) {
-                    Log.i(TAG, "🔋 Battery: $battery%")
+                val batteryState = parseJsonInt(json, "batteryState")
+                val isCharging = batteryState == 1  // 1 = charging, 0 = not charging
+                
+                if (isCharging || (battery != null && battery in 0..100)) {
+                    Log.i(TAG, "🔋 Battery: ${battery ?: 0}% ${if (isCharging) "⚡ CHARGING" else ""}")
                     handler.post {
-                        _ringData.value = _ringData.value.copy(battery = battery, lastUpdate = System.currentTimeMillis())
+                        _ringData.value = _ringData.value.copy(
+                            battery = battery ?: _ringData.value.battery,
+                            isCharging = isCharging,
+                            lastUpdate = System.currentTimeMillis()
+                        )
                     }
                 }
 
