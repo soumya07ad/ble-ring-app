@@ -89,6 +89,7 @@ data class RingData(
     val deviceName: String = "Ring",
     val macAddress: String = "",
     val battery: Int? = null,    // null = unknown, 0-100 = actual percentage
+    val isCharging: Boolean = false,  // true when ring is on charger
     val heartRate: Int = 0,
     val heartRateMeasuring: Boolean = false,  // true when HR measurement in progress
     val bloodPressureSystolic: Int = 0,       // mmHg (high) - bphp
