@@ -404,16 +404,14 @@ enum class BluetoothState {
                             _connectionState.value = BleConnectionState.Connected(ring)
                         }
                         
-                        // Request initial data
-                        Log.i(TAG, "📊 Requesting initial data...")
+                        // Request only battery on connect - other data on user request
+                        // This prevents the ring from immediately going back to sleep
+                        Log.i(TAG, "📊 Connected! Battery will be requested. Tap buttons for other measurements.")
                         handler.postDelayed({
                             requestBattery()
-                            requestSteps()
-                            requestStress()
-                            
-                            // Start periodic keep-alive (every 5 seconds)
+                            // Start gentle keep-alive (every 30 seconds) to maintain connection
                             startKeepAlive()
-                        }, 500)
+                        }, 1000)  // Wait 1 second before first request
                     }
                 } else {
                     Log.e(TAG, "❌ Notify characteristic not found!")
@@ -889,12 +887,12 @@ enum class BluetoothState {
         
         keepAliveJob = ioScope.launch {
             while (isActive) {
-                delay(5000)  // Every 5 seconds
-                Log.d(TAG, "💓 Keep-alive: requesting battery")
+                delay(30000)  // Every 30 seconds - gentle ping to maintain connection
+                Log.d(TAG, "💓 Keep-alive: requesting battery (30s interval)")
                 requestBattery()
             }
         }
-        Log.i(TAG, "💓 Keep-alive started (5s interval)")
+        Log.i(TAG, "💓 Keep-alive started (30s interval - battery friendly)")
     }
     
     /**
