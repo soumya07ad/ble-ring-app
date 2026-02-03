@@ -128,6 +128,7 @@ class RingRepositoryImpl(
     private fun mapRingData(data: RingData): RingHealthData {
         return RingHealthData(
             battery = data.battery,
+            isCharging = data.isCharging,
             heartRate = data.heartRate,
             heartRateMeasuring = data.heartRateMeasuring,
             bloodPressureSystolic = data.bloodPressureSystolic,
