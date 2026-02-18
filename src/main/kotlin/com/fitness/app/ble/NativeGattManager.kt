@@ -601,30 +601,35 @@ class NativeGattManager private constructor(private val context: Context) {
     private fun parseNotification(data: ByteArray) {
         if (data.isEmpty()) return
         
-        // All MRD protocol packets start with 0xFC
-        if (data[0] != HEADER) {
-            Log.d(TAG, "⚠️ Non-FC packet: ${bytesToHex(data)}")
+        var validData = data
+        
+        // Handle packets missing the FC header (raw response from ring)
+        if (data.isNotEmpty() && data[0] != HEADER) {
+             val newData = ByteArray(data.size + 1)
+             newData[0] = HEADER
+             System.arraycopy(data, 0, newData, 1, data.size)
+             validData = newData
+             Log.d(TAG, "🔧 Normalized packet (prepended FC): ${bytesToHex(validData)}")
+        }
+        
+        if (validData.size < 3) {
+            Log.w(TAG, "⚠️ Packet too short: ${validData.size}")
             return
         }
         
-        if (data.size < 3) {
-            Log.w(TAG, "⚠️ Packet too short: ${data.size}")
-            return
-        }
-        
-        val metricId = data[1].toInt() and 0xFF
+        val metricId = validData[1].toInt() and 0xFF
         
         when (metricId) {
-            0x0F -> parseSystemInfo(data)       // Battery + Firmware
-            0x0A -> parseHeartRate(data)         // Heart Rate
-            0x03 -> parseSteps(data)             // Steps, Distance, Calories
-            0x12 -> parseSpO2(data)              // Blood Oxygen
-            0x11 -> parseBloodPressure(data)     // Blood Pressure
-            0x5D -> parseHRV(data)               // HRV → Stress
-            0x40 -> parseTemperature(data)       // Temperature
-            0x0C -> parseSleepHistory(data)       // Sleep History
-            0x23 -> parseSleepSummary(data)       // Sleep Summary
-            0x09 -> parseHealthTest(data)         // Health test responses
+            0x0F -> parseSystemInfo(validData)       // Battery + Firmware
+            0x0A -> parseHeartRate(validData)         // Heart Rate
+            0x03 -> parseSteps(validData)             // Steps, Distance, Calories
+            0x12 -> parseSpO2(validData)              // Blood Oxygen
+            0x11 -> parseBloodPressure(validData)     // Blood Pressure
+            0x5D -> parseHRV(validData)               // HRV → Stress
+            0x40 -> parseTemperature(validData)       // Temperature
+            0x0C -> parseSleepHistory(validData)       // Sleep History
+            0x23 -> parseSleepSummary(validData)       // Sleep Summary
+            0x09 -> parseHealthTest(validData)         // Health test responses
             else -> Log.d(TAG, "📦 Unknown metric: 0x${"%02X".format(metricId)}")
         }
     }
@@ -637,9 +642,9 @@ class NativeGattManager private constructor(private val context: Context) {
         
         when (subCommand) {
             0x06 -> { // Battery
-                if (data.size > 9) {
-                    val battery = data[8].toInt() and 0xFF
-                    val state = data[9].toInt() and 0xFF
+                if (data.size > 10) {
+                    val battery = data[9].toInt() and 0xFF
+                    val state = data[10].toInt() and 0xFF
                     val isCharging = state == 1
                     
                     if (battery in 0..100) {
@@ -687,8 +692,8 @@ class NativeGattManager private constructor(private val context: Context) {
     // 3.7 Heart Rate (0x0A)
     // ───────────────────────────────────────────────
     private fun parseHeartRate(data: ByteArray) {
-        if (data.size > 12) {
-            val hr = data[12].toInt() and 0xFF
+        if (data.size > 13) {
+            val hr = data[13].toInt() and 0xFF
             
             if (hr in 40..220) {
                 Log.i(TAG, "❤️ Heart Rate: $hr bpm")
@@ -715,11 +720,9 @@ class NativeGattManager private constructor(private val context: Context) {
         // Real-time/Last data (subType == 0x00)
         if (subType != 0x80.toInt() && subType != 0xC0.toInt()) {
             // Steps = byte3(data[3], data[4], data[5])
-            // Note: offset by 1 from protocol doc because data[0]=FC, data[1]=03, data[2]=subtype
-            // Actual step data starts at position 2 in the 18-byte payload after FC,03
-            val steps = byte3(data[2], data[3], data[4])
-            val distance = byte3(data[5], data[6], data[7])
-            val calories = byte3(data[8], data[9], data[10])
+            val steps = byte3(data[3], data[4], data[5])
+            val distance = byte3(data[6], data[7], data[8])
+            val calories = byte3(data[9], data[10], data[11])
             
             Log.i(TAG, "👟 Steps: $steps (dist: ${distance}m, cal: ${calories})")
             handler.post {
@@ -741,9 +744,9 @@ class NativeGattManager private constructor(private val context: Context) {
     // 3.2 SpO2 (0x12)
     // ───────────────────────────────────────────────
     private fun parseSpO2(data: ByteArray) {
-        if (data.size > 13) {
-            val intPart = data[12].toInt() and 0xFF
-            val decPart = data[13].toInt() and 0xFF
+        if (data.size > 14) {
+            val intPart = data[13].toInt() and 0xFF
+            val decPart = data[14].toInt() and 0xFF
             val spo2 = intPart + decPart / 10.0f
             
             if (spo2 in 80f..100f) {
@@ -764,10 +767,10 @@ class NativeGattManager private constructor(private val context: Context) {
     // 3.1 Blood Pressure (0x11)
     // ───────────────────────────────────────────────
     private fun parseBloodPressure(data: ByteArray) {
-        if (data.size > 13) {
-            val systolic = data[11].toInt() and 0xFF
-            val diastolic = data[12].toInt() and 0xFF
-            val hr = data[13].toInt() and 0xFF
+        if (data.size > 14) {
+            val systolic = data[12].toInt() and 0xFF
+            val diastolic = data[13].toInt() and 0xFF
+            val hr = data[14].toInt() and 0xFF
             
             if (systolic > 0 && diastolic > 0) {
                 val hrInfo = if (hr > 0) ", HR: $hr bpm" else ""
