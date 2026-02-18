@@ -2,9 +2,11 @@ package com.fitness.app.presentation.ring
 
 import android.Manifest
 import android.app.Application
+import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -87,12 +89,14 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun getRequiredPermissions(): Array<String> {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12+: Only need Bluetooth permissions
+            // (neverForLocation flag in manifest means no location needed)
             arrayOf(
                 Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.ACCESS_FINE_LOCATION
+                Manifest.permission.BLUETOOTH_CONNECT
             )
         } else {
+            // Android 11 and below: Need legacy Bluetooth + Location
             arrayOf(
                 Manifest.permission.BLUETOOTH,
                 Manifest.permission.BLUETOOTH_ADMIN,
@@ -105,12 +109,27 @@ class RingViewModel(application: Application) : AndroidViewModel(application) {
      * Check if all required permissions are granted
      */
     fun checkPermissions(context: Context): Boolean {
-        val allGranted = getRequiredPermissions().all { permission ->
+        val permissions = getRequiredPermissions()
+        val allGranted = permissions.all { permission ->
             ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
         }
         
+        // Also check if Bluetooth is actually enabled
+        val bluetoothEnabled = BluetoothAdapter.getDefaultAdapter()?.isEnabled == true
+        
+        // Log individual permission states for debugging
+        permissions.forEach { perm ->
+            val granted = ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED
+            Log.d("RingViewModel", "Permission $perm: ${if (granted) "GRANTED" else "DENIED"}")
+        }
+        Log.d("RingViewModel", "Bluetooth enabled: $bluetoothEnabled")
+        Log.d("RingViewModel", "All permissions granted: $allGranted")
+        
         _uiState.update { 
-            it.copy(permissionState = if (allGranted) PermissionUiState.Granted else PermissionUiState.NotRequested)
+            it.copy(
+                permissionState = if (allGranted) PermissionUiState.Granted else PermissionUiState.NotRequested,
+                isBluetoothEnabled = bluetoothEnabled
+            )
         }
         
         return allGranted

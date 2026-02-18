@@ -1,0 +1,330 @@
+﻿Starting a Gradle Daemon, 6 stopped Daemons could not be reused, use --status for details
+Configuration on demand is an incubating feature.
+> Task :checkKotlinGradlePluginConfigurationErrors
+> Task :preBuild UP-TO-DATE
+> Task :preDebugBuild UP-TO-DATE
+> Task :checkDebugAarMetadata UP-TO-DATE
+> Task :generateDebugResValues UP-TO-DATE
+> Task :mapDebugSourceSetPaths UP-TO-DATE
+> Task :generateDebugResources UP-TO-DATE
+> Task :mergeDebugResources UP-TO-DATE
+> Task :createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :extractDeepLinksDebug UP-TO-DATE
+> Task :processDebugMainManifest
+> Task :processDebugManifest
+> Task :processDebugManifestForPackage
+> Task :processDebugResources
+> Task :compileDebugKotlin
+.\gradlew.bat : e: file:///C:/Users/adhik/Downloa
+ds/DKGS%20LABS/Ring/FitnessAndroidApp/src/main/ko
+tlin/com/fitness/app/DashboardScreen.kt:38:1 
+Conflicting overloads: public fun 
+DashboardRoute(viewModel: RingViewModel = ...): 
+Unit defined in com.fitness.app in file 
+DashboardScreen.kt, public fun 
+DashboardRoute(viewModel: RingViewModel = ...): 
+Unit defined in com.fitness.app in file 
+DashboardScreen.kt
+At line:1 char:53
++ ... dhik\.jdks\ms-17.0.18'; .\gradlew.bat 
+compileDebugKotlin 2>&1 | Out-F ...
++                             
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e:  
+   file:///C:/U...hboardScreen.kt:String) [], R  
+  emoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:78:33 Unresolved 
+reference: TextSecondary
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:83:56 Unresolved 
+reference: NeonGreen
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:83:71 Unresolved 
+reference: TextMuted
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:99:49 Unresolved 
+reference: ErrorRed
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:99:59 Unresolved 
+reference: NeonPink
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:100:37 Unresolved 
+reference: ErrorRed
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:109:49 Unresolved 
+reference: NeonCyan
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:109:59 Unresolved 
+reference: NeonBlue
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:110:37 Unresolved 
+reference: NeonCyan
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:125:49 Unresolved 
+reference: PrimaryPurple
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:125:64 Unresolved 
+reference: NeonPink
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:126:37 Unresolved 
+reference: PrimaryPurple
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:135:49 Unresolved 
+reference: NeonOrange
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:135:61 Unresolved 
+reference: WarningAmber
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:136:37 Unresolved 
+reference: NeonOrange
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:172:41 Unresolved 
+reference: TextSecondary
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:179:45 Unresolved 
+reference: TextPrimary
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:221:45 Unresolved 
+reference: NeonCyan
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:221:59 Unresolved 
+reference: TextMuted
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:222:47 Unresolved 
+reference: PrimaryPurple
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:222:66 Unresolved 
+reference: TextMuted
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:231:21 Unresolved 
+reference: TextPrimary
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:244:22 None of the 
+following functions can be called with the 
+arguments supplied: 
+public fun Modifier.background(brush: Brush, 
+shape: Shape = ..., alpha: Float = ...): 
+Modifier defined in androidx.compose.foundation
+public fun Modifier.background(color: Color, 
+shape: Shape = ...): Modifier defined in 
+androidx.compose.foundation
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:245:42 Unresolved 
+reference: NeonGreen
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:245:57 Unresolved 
+reference: TextMuted
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:254:25 Unresolved 
+reference: TextSecondary
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:260:29 Unresolved 
+reference: NeonCyan
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:273:25 Unresolved 
+reference: NeonGreen
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:274:25 Unresolved 
+reference: NeonOrange
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:275:17 Unresolved 
+reference: ErrorRed
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:306:29 Unresolved 
+reference: TextSecondary
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:313:33 Unresolved 
+reference: TextPrimary
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:341:21 Unresolved 
+reference: PrimaryPurple
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:347:21 Unresolved 
+reference: TextSecondary
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:370:21 Unresolved 
+reference: TextSecondary
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:376:21 Unresolved 
+reference: TextPrimary
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:387:20 Unresolved 
+reference: NeonGreen
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:388:20 Unresolved 
+reference: NeonOrange
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:389:13 Unresolved 
+reference: ErrorRed
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/DashboardScreen.kt:402:1 Conflicting 
+overloads: public fun DashboardRoute(viewModel: 
+RingViewModel = ...): Unit defined in 
+com.fitness.app in file DashboardScreen.kt, 
+public fun DashboardRoute(viewModel: 
+RingViewModel = ...): Unit defined in 
+com.fitness.app in file DashboardScreen.kt
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/MainActivity.kt:94:13 Overload resolution 
+ambiguity: 
+public fun DashboardRoute(viewModel: 
+RingViewModel = ...): Unit defined in 
+com.fitness.app in file DashboardScreen.kt
+public fun DashboardRoute(viewModel: 
+RingViewModel = ...): Unit defined in 
+com.fitness.app in file DashboardScreen.kt
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/DeviceCard.kt:2
+31:13 Cannot find a parameter with this name: 
+device
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/DeviceCard.kt:2
+33:13 No value passed for parameter 'ring'
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/DeviceCard.kt:2
+43:13 Cannot find a parameter with this name: 
+device
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/DeviceCard.kt:2
+45:13 No value passed for parameter 'ring'
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/DeviceCard.kt:2
+55:13 Cannot find a parameter with this name: 
+device
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/DeviceCard.kt:2
+57:13 No value passed for parameter 'ring'
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:388:21 Cannot find a parameter with this name: 
+battery
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:388:35 No value passed for parameter 
+'batteryLevel'
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:396:21 Cannot find a parameter with this name: 
+battery
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:396:35 No value passed for parameter 
+'batteryLevel'
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:404:60 Cannot find a parameter with this name: 
+onMeasure
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:412:33 Cannot find a parameter with this name: 
+distance
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:412:50 Cannot find a parameter with this name: 
+calories
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:420:25 The floating-point literal does not 
+conform to the expected type Int?
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:420:30 Cannot find a parameter with this name: 
+isMeasuring
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:420:51 Cannot find a parameter with this name: 
+onMeasure
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/screens/RingSetupScreen.kt
+:244:54 Unresolved reference: sp
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/ui/components/PremiumComponents.kt:367:20 
+Unresolved reference: Icons
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/ui/components/PremiumComponents.kt:384:20 
+Unresolved reference: Icons
+
+> Task :compileDebugKotlin FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileDebugKotlin'.
+> A failure occurred while executing org.jetbrain
+s.kotlin.compilerRunner.GradleCompilerRunnerWithW
+orkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack 
+trace.
+> Run with --info or --debug option to get more 
+log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 38s
+13 actionable tasks: 6 executed, 7 up-to-date

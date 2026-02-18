@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.fitness.app.ble.BleConnectionState
 import com.fitness.app.ble.RingData
-import com.fitness.app.ble.MrdBleManager
+import com.fitness.app.ble.NativeGattManager
 import com.fitness.app.ble.MeasurementTimer
 import com.fitness.app.core.util.Result
 import com.fitness.app.domain.model.ConnectionStatus
@@ -22,9 +22,9 @@ import kotlinx.coroutines.launch
 
 /**
  * Implementation of IRingRepository
- * Uses MrdBleManager (Manridy MRD SDK approach)
+ * Uses NativeGattManager (Pure Native BLE — No SDK)
  * 
- * SDK handles all BLE operations: scanning, connection, data retrieval
+ * All BLE operations use raw byte-array commands and native GATT.
  */
 class RingRepositoryImpl(
     private val context: Context
@@ -47,9 +47,9 @@ class RingRepositoryImpl(
     
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
-    // Use MrdBleManager (Manridy MRD SDK approach)
-    private val mrdManager: MrdBleManager by lazy { 
-        MrdBleManager.getInstance(context)
+    // Use NativeGattManager (Pure Native BLE)
+    private val bleManager: NativeGattManager by lazy { 
+        NativeGattManager.getInstance(context)
     }
     
     // Domain state flows
@@ -63,8 +63,7 @@ class RingRepositoryImpl(
     override val ringData: StateFlow<RingHealthData> = _ringData.asStateFlow()
     
     // Track connected ring
-    
-    override val measurementTimer: StateFlow<MeasurementTimer> = mrdManager.measurementTimer
+    override val measurementTimer: StateFlow<MeasurementTimer> = bleManager.measurementTimer
     private var connectedRing: Ring? = null
     
     init {
@@ -72,26 +71,26 @@ class RingRepositoryImpl(
     }
     
     /**
-     * Observe MrdBleManager states and map to domain states
+     * Observe NativeGattManager states and map to domain states
      */
     private fun observeManagerStates() {
         // Observe connection state
         scope.launch {
-            mrdManager.connectionState.collect { state ->
+            bleManager.connectionState.collect { state ->
                 _connectionStatus.value = mapConnectionState(state)
             }
         }
         
         // Observe ring data
         scope.launch {
-            mrdManager.ringData.collect { data ->
+            bleManager.ringData.collect { data ->
                 _ringData.value = mapRingData(data)
             }
         }
         
         // Observe scan results
         scope.launch {
-            mrdManager.scanResults.collect { rings ->
+            bleManager.scanResults.collect { rings ->
                 if (rings.isNotEmpty()) {
                     _scanStatus.value = ScanStatus.DevicesFound(rings)
                 }
@@ -100,7 +99,7 @@ class RingRepositoryImpl(
     }
     
     /**
-     * Map SDK Connection State to domain ConnectionStatus
+     * Map BLE Connection State to domain ConnectionStatus
      */
     private fun mapConnectionState(state: BleConnectionState): ConnectionStatus {
         return when (state) {
@@ -110,12 +109,10 @@ class RingRepositoryImpl(
             }
             is BleConnectionState.Connecting -> ConnectionStatus.Connecting
             is BleConnectionState.Connected -> {
-                // Store connected ring info
                 connectedRing = state.ring.copy(isConnected = true)
                 ConnectionStatus.Connected(connectedRing!!)
             }
             is BleConnectionState.Error -> {
-                // Treat error as disconnected for now
                 connectedRing = null
                 ConnectionStatus.Disconnected
             }
@@ -123,7 +120,7 @@ class RingRepositoryImpl(
     }
     
     /**
-     * Map SDK RingData to domain RingHealthData
+     * Map BLE RingData to domain RingHealthData
      */
     private fun mapRingData(data: RingData): RingHealthData {
         return RingHealthData(
@@ -148,13 +145,13 @@ class RingRepositoryImpl(
     }
     
     override fun initialize() {
-        // MRD SDK initialized in FitnessApplication
+        // No SDK initialization needed — NativeGattManager is self-contained
     }
     
     override suspend fun startScan(durationSeconds: Int): Result<List<Ring>> {
         return try {
             _scanStatus.value = ScanStatus.Scanning
-            mrdManager.startScan(durationSeconds)
+            bleManager.startScan(durationSeconds)
             Result.success(emptyList()) // Results come via flow
         } catch (e: Exception) {
             _scanStatus.value = ScanStatus.Error(e.message ?: "Scan failed")
@@ -163,7 +160,7 @@ class RingRepositoryImpl(
     }
     
     override fun stopScan() {
-        mrdManager.stopScan()
+        bleManager.stopScan()
         _scanStatus.value = ScanStatus.Idle
     }
     
@@ -178,20 +175,13 @@ class RingRepositoryImpl(
             connectedRing = ring
             _connectionStatus.value = ConnectionStatus.Connecting
             
-            // SDK-DRIVEN CONNECTION (like RealSil in Chinese app)
-            // - Trigger connect() ONCE
-            // - SDK owns the connection lifecycle
-            // - SDK handles retries and reconnection internally
-            // - App only observes state via callbacks
             Log.i(TAG, "═══════════════════════════════════")
-            Log.i(TAG, "🔗 Triggering SDK connect: $macAddress")
-            Log.i(TAG, "   SDK owns: connection, retries, reconnect")
+            Log.i(TAG, "🔗 Native BLE connect: $macAddress")
+            Log.i(TAG, "   Pure byte-array protocol")
             Log.i(TAG, "═══════════════════════════════════")
             
-            mrdManager.connectToDevice(macAddress, deviceName)
+            bleManager.connectToDevice(macAddress, deviceName)
             
-            // Return immediately - connection state will be updated via SDK callbacks
-            // NO app-level timeout - SDK manages this
             Result.success(ring)
             
         } catch (e: Exception) {
@@ -202,15 +192,14 @@ class RingRepositoryImpl(
     }
     
     override suspend fun disconnect(): Result<Unit> {
-        mrdManager.disconnect()
+        bleManager.disconnect()
         connectedRing = null
         _connectionStatus.value = ConnectionStatus.Disconnected
         return Result.success(Unit)
     }
     
     override suspend fun getBattery(): Result<Int> {
-        // Request fresh battery data
-        mrdManager.requestBattery()
+        bleManager.requestBattery()
         
         val battery = _ringData.value.battery
         return if (battery != null && battery > 0) {
@@ -221,122 +210,82 @@ class RingRepositoryImpl(
     }
     
     override fun isConnected(): Boolean {
-        return mrdManager.connectionState.value is BleConnectionState.Connected
+        return bleManager.connectionState.value is BleConnectionState.Connected
     }
     
     override fun getConnectedRing(): Ring? = connectedRing
     
-    /**
-     * Start heart rate measurement via SDK
-     */
+    // ═══════════════════════════════════
+    // Measurements (delegate to manager)
+    // ═══════════════════════════════════
+    
     override fun startHeartRateMeasurement() {
-        Log.i(TAG, "Starting HR measurement via MRD SDK")
-        mrdManager.requestHeartRate()
+        Log.i(TAG, "Starting HR measurement (native)")
+        bleManager.requestHeartRate()
     }
     
-    /**
-     * Stop heart rate measurement
-     */
     override fun stopHeartRateMeasurement() {
-        // MRD SDK auto-stops after measurement
+        // Auto-stops after data received
     }
     
-    /**
-     * Start blood pressure measurement
-     * Note: SDK may not support this directly
-     */
     override fun startBloodPressureMeasurement() {
-        Log.i(TAG, "Starting 30-second blood pressure measurement")
-        mrdManager.startBloodPressureMeasurement()
+        Log.i(TAG, "Starting BP measurement (native)")
+        bleManager.startBloodPressureMeasurement()
     }
     
-    /**
-     * Stop blood pressure measurement
-     */
     override fun stopBloodPressureMeasurement() {
-        Log.w(TAG, "Blood pressure measurement not yet implemented in SDK")
+        bleManager.stopMeasurement()
     }
     
-    /**
-     * Start SpO2 measurement
-     * Note: SDK may not support this directly
-     */
     override fun startSpO2Measurement() {
-        Log.i(TAG, "Starting 30-second SpO2 measurement")
-        mrdManager.startSpO2Measurement()
+        Log.i(TAG, "Starting SpO2 measurement (native)")
+        bleManager.startSpO2Measurement()
     }
     
-    /**
-     * Stop SpO2 measurement
-     */
     override fun stopSpO2Measurement() {
-        Log.w(TAG, "SpO2 measurement not yet implemented in SDK")
+        bleManager.stopMeasurement()
     }
     
-    /**
-     * Start stress measurement
-     */
     override fun startStressMeasurement() {
-        Log.i(TAG, "Starting 30-second stress measurement")
-        mrdManager.startStressMeasurement()
+        Log.i(TAG, "Starting stress measurement (native)")
+        bleManager.startStressMeasurement()
     }
     
-    /**
-     * Stop stress measurement
-     */
     override fun stopStressMeasurement() {
-        mrdManager.stopMeasurement()
+        bleManager.stopMeasurement()
     }
     
-    /**
-     * Request sleep history from ring
-     */
     override fun requestSleepHistory() {
-        Log.i(TAG, "Requesting sleep history from ring")
-        mrdManager.requestSleepHistory()
+        Log.i(TAG, "Requesting sleep history (native)")
+        bleManager.requestSleepHistory()
     }
     
-    /**
-     * Refresh device info (battery, device info)
-     */
     fun refreshDeviceInfo() {
-        mrdManager.requestBattery()
+        bleManager.requestBattery()
     }
     
-    /**
-     * Refresh steps data
-     */
     fun refreshStepsData() {
-        mrdManager.requestSteps()
+        bleManager.requestSteps()
     }
     
-    /**
-     * Refresh blood pressure data
-     */
     fun refreshBloodPressure() {
-        mrdManager.requestBloodPressure()
+        bleManager.requestBloodPressure()
     }
     
-    /**
-     * Refresh stress/HRV data
-     */
     fun refreshStress() {
-        mrdManager.requestStress()
+        bleManager.requestStress()
     }
     
-    /**
-     * Refresh all health data from ring
-     */
     fun refreshAllData() {
-        mrdManager.requestBattery()
-        mrdManager.requestHeartRate()
-        mrdManager.requestSteps()
-        mrdManager.requestSpO2()
-        mrdManager.requestBloodPressure()
-        mrdManager.requestStress()
+        bleManager.requestBattery()
+        bleManager.requestHeartRate()
+        bleManager.requestSteps()
+        bleManager.requestSpO2()
+        bleManager.requestBloodPressure()
+        bleManager.requestStress()
     }
     
     override fun stopMeasurement() {
-        mrdManager.stopMeasurement()
+        bleManager.stopMeasurement()
     }
 }

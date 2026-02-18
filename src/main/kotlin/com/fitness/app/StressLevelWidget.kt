@@ -1,5 +1,6 @@
 package com.fitness.app
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -9,18 +10,19 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.fitness.app.ui.theme.FitnessAppTheme
 
 @Composable
-fun StressLevelWidget(stressLevel: State<Int>) {
-    val level = stressLevel.value
+fun StressLevelWidget(stressLevel: Int) {
+    val level = stressLevel
     
     // Color based on stress level
     val levelColor = when {
@@ -193,16 +195,39 @@ fun StressLevelWidget(stressLevel: State<Int>) {
     }
 }
 
-// For preview and testing
+// ═══════════════════════════════════════════════════════════════════════
+// PREVIEWS
+// ═══════════════════════════════════════════════════════════════════════
+
+@Preview(name = "Low Stress", showBackground = true)
 @Composable
-fun StressLevelWidgetPreview() {
-    val mockStressState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(65) }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF8F7FF))
-            .padding(16.dp)
-    ) {
-        StressLevelWidget(mockStressState)
+private fun StressLowPreview() {
+    FitnessAppTheme {
+        StressLevelWidget(stressLevel = 20)
     }
 }
+
+@Preview(name = "Medium Stress", showBackground = true)
+@Composable
+private fun StressMediumPreview() {
+    FitnessAppTheme {
+        StressLevelWidget(stressLevel = 50)
+    }
+}
+
+@Preview(name = "High Stress", showBackground = true)
+@Composable
+private fun StressHighPreview() {
+    FitnessAppTheme {
+        StressLevelWidget(stressLevel = 85)
+    }
+}
+
+@Preview(name = "Dark Mode", uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true)
+@Composable
+private fun StressDarkPreview() {
+    FitnessAppTheme(darkTheme = true) {
+        StressLevelWidget(stressLevel = 45)
+    }
+}
+

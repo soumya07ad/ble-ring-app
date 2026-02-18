@@ -12,6 +12,7 @@ import com.fitness.app.domain.model.ScanStatus
 data class RingUiState(
     // Permission state
     val permissionState: PermissionUiState = PermissionUiState.NotRequested,
+    val isBluetoothEnabled: Boolean = true,
     
     // Scanning
     val scanStatus: ScanStatus = ScanStatus.Idle,

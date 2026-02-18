@@ -12,6 +12,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
@@ -20,69 +21,129 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
 // ═══════════════════════════════════════════════════════════════════════
-// PREMIUM DARK COLOR SCHEME - Modern Fitness App Design
+// CINEMATIC DARK COLOR SCHEME — Silicon Valley Health-Tech
 // ═══════════════════════════════════════════════════════════════════════
 
-// Primary Colors
+// ── Ultra-dark backgrounds ──────────────────────────────────────────
+val DarkBackground = Color(0xFF050508)        // Near-black
+val DarkSurface = Color(0xFF0A0A10)           // Slightly lifted
+val DarkSurfaceVariant = Color(0xFF111118)    // Card base
+val DarkCard = Color(0xFF0D0D14)              // Floating card bg
+
+// ── Primary: Electric Purple ────────────────────────────────────────
 val PrimaryPurple = Color(0xFF8B5CF6)
 val PrimaryPurpleLight = Color(0xFFA78BFA)
 val PrimaryPurpleDark = Color(0xFF7C3AED)
 
-// Accent Colors
-val AccentCyan = Color(0xFF06B6D4)
-val AccentPink = Color(0xFFF472B6)
-val AccentOrange = Color(0xFFFB923C)
-val AccentBlue = Color(0xFF3B82F6)
+// ── Neon Accents ────────────────────────────────────────────────────
+val NeonCyan = Color(0xFF00F0FF)
+val NeonPurple = Color(0xFFBF5AF2)
+val NeonPink = Color(0xFFFF2D78)
+val NeonGreen = Color(0xFF30D158)
+val NeonBlue = Color(0xFF0A84FF)
+val NeonOrange = Color(0xFFFF9F0A)
 
-// Status Colors
-val SuccessGreen = Color(0xFF22C55E)
-val WarningAmber = Color(0xFFF59E0B)
-val ErrorRed = Color(0xFFEF4444)
+// ── Original accent names (kept for backward compatibility) ─────────
+val AccentCyan = NeonCyan
+val AccentPink = NeonPink
+val AccentOrange = NeonOrange
+val AccentBlue = NeonBlue
 
-// Background & Surface Colors (Dark Mode)
-val DarkBackground = Color(0xFF0F172A)      // Deep Navy
-val DarkSurface = Color(0xFF1E293B)         // Slate
-val DarkSurfaceVariant = Color(0xFF334155)  // Light Slate
-val DarkCard = Color(0xFF1E293B)
+// ── Status Colors ───────────────────────────────────────────────────
+val SuccessGreen = Color(0xFF30D158)
+val WarningAmber = Color(0xFFFFD60A)
+val ErrorRed = Color(0xFFFF453A)
 
-// Glass Effect Colors
-val GlassWhite = Color(0x1AFFFFFF)          // 10% white
-val GlassBorder = Color(0x33FFFFFF)         // 20% white
+// ── Glass Effect Colors ─────────────────────────────────────────────
+val GlassWhite = Color(0x0DFFFFFF)           // 5% white
+val GlassBorder = Color(0x1AFFFFFF)          // 10% white
+val GlassHighlight = Color(0x26FFFFFF)       // 15% white
+val GlassOverlay = Color(0x33FFFFFF)         // 20% white
 
-// Text Colors (Dark Mode)
-val TextPrimary = Color(0xFFF8FAFC)
-val TextSecondary = Color(0xFF94A3B8)
-val TextMuted = Color(0xFF64748B)
+// ── Depth & Glow ────────────────────────────────────────────────────
+val DepthShadow = Color(0xFF000000)
+val NeonGlow = Color(0x4D00F0FF)             // 30% cyan glow
+val PurpleGlow = Color(0x4D8B5CF6)           // 30% purple glow
+val PinkGlow = Color(0x4DFF2D78)             // 30% pink glow
+
+// ── Text Colors (Dark Mode) ─────────────────────────────────────────
+val TextPrimary = Color(0xFFF5F5F7)          // Apple-style white
+val TextSecondary = Color(0xFF8E8E93)        // iOS secondary
+val TextMuted = Color(0xFF48484A)            // iOS tertiary
+
+// ═══════════════════════════════════════════════════════════════════════
+// GRADIENT & BRUSH HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+
+val CinematicGradient = Brush.verticalGradient(
+    colors = listOf(
+        Color(0xFF050508),
+        Color(0xFF080810),
+        Color(0xFF0A0A14),
+        Color(0xFF050508)
+    )
+)
+
+val NeonCyanGradient = Brush.horizontalGradient(
+    colors = listOf(NeonCyan, NeonBlue)
+)
+
+val NeonPurpleGradient = Brush.horizontalGradient(
+    colors = listOf(PrimaryPurple, NeonPink)
+)
+
+val NeonGreenGradient = Brush.horizontalGradient(
+    colors = listOf(NeonGreen, NeonCyan)
+)
+
+val CardGlassBrush = Brush.verticalGradient(
+    colors = listOf(
+        Color(0x0DFFFFFF),
+        Color(0x05FFFFFF)
+    )
+)
+
+fun neonEdgeGlow(color: Color = NeonCyan) = Brush.radialGradient(
+    colors = listOf(
+        color.copy(alpha = 0.4f),
+        color.copy(alpha = 0.15f),
+        Color.Transparent
+    )
+)
+
+// ═══════════════════════════════════════════════════════════════════════
+// MATERIAL COLOR SCHEME
+// ═══════════════════════════════════════════════════════════════════════
 
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryPurple,
     onPrimary = Color.White,
     primaryContainer = PrimaryPurpleDark,
     onPrimaryContainer = Color.White,
-    
-    secondary = AccentCyan,
-    onSecondary = Color.White,
-    secondaryContainer = AccentCyan.copy(alpha = 0.3f),
-    onSecondaryContainer = AccentCyan,
-    
-    tertiary = AccentPink,
+
+    secondary = NeonCyan,
+    onSecondary = Color.Black,
+    secondaryContainer = NeonCyan.copy(alpha = 0.15f),
+    onSecondaryContainer = NeonCyan,
+
+    tertiary = NeonPink,
     onTertiary = Color.White,
-    tertiaryContainer = AccentPink.copy(alpha = 0.3f),
-    onTertiaryContainer = AccentPink,
-    
+    tertiaryContainer = NeonPink.copy(alpha = 0.15f),
+    onTertiaryContainer = NeonPink,
+
     background = DarkBackground,
     onBackground = TextPrimary,
-    
+
     surface = DarkSurface,
     onSurface = TextPrimary,
     surfaceVariant = DarkSurfaceVariant,
     onSurfaceVariant = TextSecondary,
-    
+
     error = ErrorRed,
     onError = Color.White,
-    
+
     outline = GlassBorder,
-    outlineVariant = Color(0xFF475569)
+    outlineVariant = Color(0xFF1C1C1E)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -102,18 +163,19 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun FitnessAppTheme(
-    darkTheme: Boolean = true,  // Default to dark theme for premium look
+    darkTheme: Boolean = true,  // Always dark for cinematic look
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as? Activity)?.window
             window?.let {
-                it.statusBarColor = colorScheme.background.toArgb()
-                WindowCompat.getInsetsController(it, view).isAppearanceLightStatusBars = !darkTheme
+                it.statusBarColor = Color.Transparent.toArgb()
+                it.navigationBarColor = DarkBackground.toArgb()
+                WindowCompat.getInsetsController(it, view).isAppearanceLightStatusBars = false
             }
         }
     }
@@ -123,161 +185,4 @@ fun FitnessAppTheme(
         typography = Typography,
         content = content
     )
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// THEME PREVIEWS
-// ═══════════════════════════════════════════════════════════════════════
-
-@Preview(showBackground = true, backgroundColor = 0xFF0F172A, widthDp = 400)
-@Composable
-private fun ColorPalettePreview() {
-    FitnessAppTheme(darkTheme = true) {
-        Column(
-            modifier = Modifier
-                .background(DarkBackground)
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "🎨 Color Palette",
-                style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            
-            // Primary colors
-            Text("Primary Colors", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ColorSwatch("Purple", PrimaryPurple)
-                ColorSwatch("Light", PrimaryPurpleLight)
-                ColorSwatch("Dark", PrimaryPurpleDark)
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Accent colors
-            Text("Accent Colors", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ColorSwatch("Cyan", AccentCyan)
-                ColorSwatch("Pink", AccentPink)
-                ColorSwatch("Orange", AccentOrange)
-                ColorSwatch("Blue", AccentBlue)
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Status colors
-            Text("Status Colors", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ColorSwatch("Success", SuccessGreen)
-                ColorSwatch("Warning", WarningAmber)
-                ColorSwatch("Error", ErrorRed)
-            }
-        }
-    }
-}
-
-@Composable
-private fun ColorSwatch(name: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(color)
-                .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = name,
-            style = MaterialTheme.typography.labelSmall,
-            color = TextSecondary
-        )
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF0F172A, widthDp = 400)
-@Composable
-private fun DarkThemePreview() {
-    FitnessAppTheme(darkTheme = true) {
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.background)
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "🌙 Dark Theme",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Surface Card", style = MaterialTheme.typography.titleMedium)
-                    Text("This is how cards look in dark mode", 
-                         style = MaterialTheme.typography.bodySmall,
-                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Button(
-                onClick = {},
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple)
-            ) {
-                Text("Primary Button")
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true, widthDp = 400)
-@Composable
-private fun LightThemePreview() {
-    FitnessAppTheme(darkTheme = false) {
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.background)
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "☀️ Light Theme",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 2.dp
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Surface Card", style = MaterialTheme.typography.titleMedium)
-                    Text("This is how cards look in light mode", 
-                         style = MaterialTheme.typography.bodySmall,
-                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Button(
-                onClick = {},
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple)
-            ) {
-                Text("Primary Button")
-            }
-        }
-    }
 }
