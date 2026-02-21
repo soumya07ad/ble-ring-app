@@ -2,6 +2,7 @@ package com.fitness.app.presentation.ring.screens
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -13,8 +14,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -23,182 +26,202 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fitness.app.PreviewData
 import com.fitness.app.domain.model.Ring
 import com.fitness.app.domain.model.SignalQuality
 import com.fitness.app.presentation.ring.PermissionUiState
 import com.fitness.app.presentation.ring.RingUiState
 import com.fitness.app.presentation.ring.RingViewModel
 import com.fitness.app.presentation.ring.components.*
+import com.fitness.app.ui.components.*
 import com.fitness.app.ui.theme.*
+import androidx.compose.ui.unit.sp
 
 // ═══════════════════════════════════════════════════════════════════════
-// PREMIUM RING SETUP SCREEN - Modern Fitness App Design
+// RING SETUP — Route / Screen / Preview
+// ═══════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════
+// ROUTE — ViewModel-owning wrapper (use in navigation)
 // ═══════════════════════════════════════════════════════════════════════
 
 @Composable
-fun RingSetupScreen(
+fun RingSetupRoute(
     onSetupComplete: () -> Unit,
     onSkip: () -> Unit,
     viewModel: RingViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    
+
+    // Permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
+        contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val allGranted = permissions.values.all { it }
-        val shouldShowRationale = if (!allGranted && context is Activity) {
-            viewModel.getRequiredPermissions().any { perm ->
-                context.shouldShowRequestPermissionRationale(perm)
-            }
-        } else true
-        viewModel.onPermissionResult(allGranted, shouldShowRationale)
+        viewModel.onPermissionResult(allGranted)
     }
-    
+
+    // Check permissions on launch
     LaunchedEffect(Unit) {
         viewModel.checkPermissions(context)
     }
-    
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DarkBackground)
-    ) {
-        // Animated background
-        AnimatedBackground()
-        
+
+    RingSetupScreen(
+        uiState = uiState,
+        onSetupComplete = onSetupComplete,
+        onSkip = onSkip,
+        onRequestPermission = {
+            permissionLauncher.launch(viewModel.getRequiredPermissions())
+        },
+        onOpenSettings = {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+            }
+            (context as Activity).startActivity(intent)
+        },
+        onStartScan = { viewModel.startScan() },
+        onStopScan = { viewModel.stopScan() },
+        onDeviceSelected = { viewModel.connectToDevice(it) },
+        onManualEntry = { viewModel.toggleManualEntry() },
+        onMacChange = { viewModel.updateManualMacAddress(it) },
+        onConnectByMac = { viewModel.connectByMacAddress(uiState.manualMacAddress) },
+        onDisconnect = { viewModel.disconnect() },
+        onMeasureHeartRate = {
+            if (uiState.ringData.heartRateMeasuring) viewModel.stopHeartRateMeasurement()
+            else viewModel.startHeartRateMeasurement()
+        },
+        onMeasureBloodPressure = {
+            if (uiState.ringData.bloodPressureMeasuring) viewModel.stopBloodPressureMeasurement()
+            else viewModel.startBloodPressureMeasurement()
+        },
+        onMeasureSpO2 = {
+            if (uiState.ringData.spO2Measuring) viewModel.stopSpO2Measurement()
+            else viewModel.startSpO2Measurement()
+        },
+        onMeasureStress = { viewModel.startStressMeasurement() },
+        onRequestSleep = { viewModel.requestSleepHistory() },
+        onClearError = { viewModel.clearError() }
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SCREEN — Pure UI composable (previewable, no ViewModel)
+// ═══════════════════════════════════════════════════════════════════════
+
+@Composable
+fun RingSetupScreen(
+    uiState: RingUiState,
+    onSetupComplete: () -> Unit = {},
+    onSkip: () -> Unit = {},
+    onRequestPermission: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
+    onStartScan: () -> Unit = {},
+    onStopScan: () -> Unit = {},
+    onDeviceSelected: (Ring) -> Unit = {},
+    onManualEntry: () -> Unit = {},
+    onMacChange: (String) -> Unit = {},
+    onConnectByMac: () -> Unit = {},
+    onDisconnect: () -> Unit = {},
+    onMeasureHeartRate: () -> Unit = {},
+    onMeasureBloodPressure: () -> Unit = {},
+    onMeasureSpO2: () -> Unit = {},
+    onMeasureStress: () -> Unit = {},
+    onRequestSleep: () -> Unit = {},
+    onClearError: () -> Unit = {}
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Cinematic background
+        CinematicBackground()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp)
+                .statusBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
-            // Header
+            // Hero header
             PremiumSetupHeader()
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            // Content based on state
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Main content based on state
             when {
                 !uiState.hasPermissions -> {
                     PermissionContent(
                         permissionState = uiState.permissionState,
-                        onRequestPermission = {
-                            permissionLauncher.launch(viewModel.getRequiredPermissions())
-                        },
-                        onOpenSettings = {
-                            context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", context.packageName, null)
-                            })
-                        }
+                        onRequestPermission = onRequestPermission,
+                        onOpenSettings = onOpenSettings
                     )
                 }
-                uiState.isConnected -> {
-                    ConnectedContent(
-                        uiState = uiState,
-                        onDisconnect = { viewModel.disconnect() },
-                        onDone = onSetupComplete,
-                        onMeasureHeartRate = { viewModel.startHeartRateMeasurement() },
-                        onMeasureBloodPressure = { viewModel.startBloodPressureMeasurement() },
-                        onMeasureSpO2 = { viewModel.startSpO2Measurement() },
-                        onMeasureStress = { viewModel.startStressMeasurement() },
-                        onRequestSleep = { viewModel.requestSleepHistory() }
+                uiState.showManualEntry -> {
+                    ManualEntryContent(
+                        macAddress = uiState.manualMacAddress,
+                        onMacChange = onMacChange,
+                        onConnect = onConnectByMac,
+                        onBack = onManualEntry
                     )
                 }
                 uiState.isConnecting -> {
                     ConnectingContent()
                 }
-                uiState.showManualEntry -> {
-                    ManualEntryContent(
-                        macAddress = uiState.manualMacAddress,
-                        onMacChange = { viewModel.updateManualMacAddress(it) },
-                        onConnect = { viewModel.connectByMacAddress(uiState.manualMacAddress) },
-                        onBack = { viewModel.toggleManualEntry() }
+                uiState.isConnected -> {
+                    ConnectedContent(
+                        uiState = uiState,
+                        onDisconnect = onDisconnect,
+                        onDone = onSetupComplete,
+                        onMeasureHeartRate = onMeasureHeartRate,
+                        onMeasureBloodPressure = onMeasureBloodPressure,
+                        onMeasureSpO2 = onMeasureSpO2,
+                        onMeasureStress = onMeasureStress,
+                        onRequestSleep = onRequestSleep
                     )
                 }
                 else -> {
                     ScanContent(
                         uiState = uiState,
-                        onStartScan = { viewModel.startScan() },
-                        onStopScan = { viewModel.stopScan() },
-                        onDeviceSelected = { viewModel.connectToDevice(it) },
-                        onManualEntry = { viewModel.toggleManualEntry() },
+                        onStartScan = onStartScan,
+                        onStopScan = onStopScan,
+                        onDeviceSelected = onDeviceSelected,
+                        onManualEntry = onManualEntry,
                         onSkip = onSkip
                     )
                 }
             }
-            
-            // Error snackbar
-            uiState.errorMessage?.let { error ->
-                Spacer(modifier = Modifier.height(16.dp))
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = ErrorRed.copy(alpha = 0.2f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,  // Using Warning instead of Error
-                            contentDescription = null,
-                            tint = ErrorRed
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = error,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextPrimary,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(onClick = { viewModel.clearError() }) {
-                            Text("Dismiss", color = AccentCyan)
-                        }
+        }
+
+        // Error snackbar
+        uiState.errorMessage?.let { error ->
+            Snackbar(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp),
+                containerColor = DarkCard,
+                contentColor = TextPrimary,
+                action = {
+                    TextButton(onClick = onClearError) {
+                        Text("DISMISS", color = NeonCyan)
                     }
                 }
+            ) {
+                Text(error)
             }
         }
     }
 }
 
-@Composable
-private fun AnimatedBackground() {
-    val infiniteTransition = rememberInfiniteTransition(label = "bg")
-    val animatedOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 500f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(15000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "offset"
-    )
-    
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        PrimaryPurple.copy(alpha = 0.15f),
-                        Color.Transparent
-                    ),
-                    center = Offset(animatedOffset, 300f),
-                    radius = 600f
-                )
-            )
-    )
-}
+// ═══════════════════════════════════════════════════════════════════════
+// HERO HEADER — Animated ring + title
+// ═══════════════════════════════════════════════════════════════════════
 
 @Composable
 private fun PremiumSetupHeader() {
@@ -206,61 +229,41 @@ private fun PremiumSetupHeader() {
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Animated ring icon
-        val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-        val pulseScale by infiniteTransition.animateFloat(
-            initialValue = 1f,
-            targetValue = 1.1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(1500, easing = EaseInOutCubic),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "scale"
+        // 3D Ring Animation
+        AnimatedRing3D(
+            modifier = Modifier.size(140.dp),
+            primaryColor = NeonCyan,
+            secondaryColor = PrimaryPurple
         )
-        
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .scale(pulseScale)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            PrimaryPurple.copy(alpha = 0.3f),
-                            PrimaryPurple.copy(alpha = 0.1f)
-                        )
-                    )
-                )
-                .border(2.dp, PrimaryPurple.copy(alpha = 0.5f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Settings,  // Device icon
-                contentDescription = "Ring",
-                tint = PrimaryPurple,
-                modifier = Modifier.size(48.dp)
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
-            text = "Pair Your Smart Ring",
-            style = MaterialTheme.typography.headlineLarge,
+            text = "SMART RING",
+            style = MaterialTheme.typography.labelLarge,
+            color = NeonCyan,
+            letterSpacing = 4.sp
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Setup",
+            style = MaterialTheme.typography.displaySmall,
             color = TextPrimary,
             fontWeight = FontWeight.Bold
         )
-        
         Spacer(modifier = Modifier.height(8.dp))
-        
         Text(
-            text = "Connect your fitness ring for real-time health data",
+            text = "Connect your ring to unlock health insights",
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary,
             textAlign = TextAlign.Center
         )
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// PERMISSION CONTENT
+// ═══════════════════════════════════════════════════════════════════════
 
 @Composable
 private fun PermissionContent(
@@ -272,58 +275,139 @@ private fun PermissionContent(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
-        
+        Spacer(modifier = Modifier.height(32.dp))
+
         Box(
             modifier = Modifier
-                .size(80.dp)
+                .size(72.dp)
                 .clip(CircleShape)
-                .background(WarningAmber.copy(alpha = 0.2f)),
+                .background(
+                    Brush.radialGradient(
+                        colors = when (permissionState) {
+                            PermissionUiState.PermanentlyDenied -> listOf(ErrorRed.copy(alpha = 0.2f), ErrorRed.copy(alpha = 0.03f))
+                            PermissionUiState.Denied -> listOf(NeonOrange.copy(alpha = 0.2f), NeonOrange.copy(alpha = 0.03f))
+                            else -> listOf(NeonCyan.copy(alpha = 0.2f), NeonCyan.copy(alpha = 0.03f))
+                        }
+                    )
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.Lock,
+                imageVector = when (permissionState) {
+                    PermissionUiState.PermanentlyDenied -> Icons.Default.Lock
+                    PermissionUiState.Denied -> Icons.Default.Warning
+                    else -> Icons.Default.Settings
+                },
                 contentDescription = null,
-                tint = WarningAmber,
-                modifier = Modifier.size(40.dp)
+                tint = when (permissionState) {
+                    PermissionUiState.PermanentlyDenied -> ErrorRed
+                    PermissionUiState.Denied -> NeonOrange
+                    else -> NeonCyan
+                },
+                modifier = Modifier.size(32.dp)
             )
         }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         Text(
             text = when (permissionState) {
                 PermissionUiState.PermanentlyDenied -> "Permissions Required"
+                PermissionUiState.Denied -> "Bluetooth Access Denied"
                 else -> "Allow Bluetooth Access"
             },
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary
         )
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text(
             text = when (permissionState) {
-                PermissionUiState.PermanentlyDenied -> 
-                    "Please enable Bluetooth permissions in Settings to use this feature."
-                else -> 
-                    "We need Bluetooth permissions to scan for and connect to your ring."
+                PermissionUiState.PermanentlyDenied ->
+                    "Bluetooth permissions were permanently denied. Please enable them in Settings → App → Permissions → Nearby devices."
+                PermissionUiState.Denied ->
+                    "Bluetooth access is needed to find and connect to your smart ring. Please grant the permission to continue."
+                else ->
+                    "Your ring communicates via Bluetooth. Tap below to allow access so we can scan for and connect to your ring."
             },
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
-        
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Permission details
+        if (permissionState != PermissionUiState.PermanentlyDenied) {
+            NeonGlassCard(
+                glowColor = NeonCyan,
+                showGlow = false
+            ) {
+                PermissionItem(
+                    icon = Icons.Default.Settings,
+                    title = "Nearby Devices",
+                    description = "Scan for & connect to your ring"
+                )
+                if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    PermissionItem(
+                        icon = Icons.Default.LocationOn,
+                        title = "Location",
+                        description = "Required for Bluetooth on Android 11 and below"
+                    )
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
-        
-        PremiumButton(
-            text = if (permissionState == PermissionUiState.PermanentlyDenied) 
-                "Open Settings" else "Grant Permission",
-            onClick = if (permissionState == PermissionUiState.PermanentlyDenied) 
+
+        NeonButton(
+            text = if (permissionState == PermissionUiState.PermanentlyDenied)
+                "OPEN SETTINGS" else "GRANT BLUETOOTH ACCESS",
+            onClick = if (permissionState == PermissionUiState.PermanentlyDenied)
                 onOpenSettings else onRequestPermission
         )
     }
 }
+
+@Composable
+private fun PermissionItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = NeonCyan,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SCAN CONTENT — Energy pulse + floating device cards
+// ═══════════════════════════════════════════════════════════════════════
 
 @Composable
 private fun ScanContent(
@@ -335,31 +419,45 @@ private fun ScanContent(
     onSkip: () -> Unit
 ) {
     var selectedDevice by remember { mutableStateOf<Ring?>(null) }
-    
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Scan button
-        PremiumButton(
-            text = if (uiState.isScanning) "Stop Scanning" else "Scan for Devices",
+        NeonButton(
+            text = if (uiState.isScanning) "STOP SCANNING" else "SCAN FOR DEVICES",
             onClick = if (uiState.isScanning) onStopScan else onStartScan,
             isLoading = uiState.isScanning,
-            icon = if (uiState.isScanning) null else Icons.Default.Search
+            icon = if (uiState.isScanning) null else Icons.Default.Search,
+            colors = if (uiState.isScanning)
+                listOf(ErrorRed.copy(alpha = 0.8f), ErrorRed)
+            else
+                listOf(PrimaryPurple, NeonPurple)
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
-        // Device list or empty state
+
+        // Device list or animated state
         if (uiState.scannedDevices.isNotEmpty()) {
-            Text(
-                text = "Found Devices",
-                style = MaterialTheme.typography.titleMedium,
-                color = TextPrimary
-            )
-            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "DISCOVERED DEVICES",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                StatusBadge(
+                    text = "${uiState.scannedDevices.size} found",
+                    color = NeonGreen
+                )
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(uiState.scannedDevices) { device ->
                     DeviceCard(
@@ -369,15 +467,82 @@ private fun ScanContent(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
-            PremiumButton(
-                text = "Connect",
+
+            NeonButton(
+                text = "CONNECT",
                 onClick = { selectedDevice?.let { onDeviceSelected(it) } },
-                enabled = selectedDevice != null
+                enabled = selectedDevice != null,
+                icon = Icons.Default.Check,
+                colors = listOf(NeonCyan.copy(alpha = 0.9f), NeonBlue)
             )
-        } else if (!uiState.isScanning) {
+        } else if (uiState.isScanning) {
+            // Scanning animation
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                // Energy pulse waves
+                EnergyPulseWave(
+                    modifier = Modifier.size(200.dp),
+                    color = NeonCyan
+                )
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Pulsing ring icon
+                    val infiniteTransition = rememberInfiniteTransition(label = "scanPulse")
+                    val pulse by infiniteTransition.animateFloat(
+                        initialValue = 0.95f,
+                        targetValue = 1.05f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1000),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "scanPulseScale"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .scale(pulse)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        NeonCyan.copy(alpha = 0.2f),
+                                        NeonCyan.copy(alpha = 0.05f)
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(40.dp),
+                            color = NeonCyan,
+                            strokeWidth = 3.dp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Scanning",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Keep your ring nearby",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+            }
+        } else {
+            // Empty state
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -385,12 +550,27 @@ private fun ScanContent(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        tint = TextMuted,
-                        modifier = Modifier.size(64.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        TextMuted.copy(alpha = 0.15f),
+                                        Color.Transparent
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            tint = TextMuted,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "Tap 'Scan for Devices' to find your ring",
@@ -400,50 +580,22 @@ private fun ScanContent(
                     )
                 }
             }
-        } else {
-            // Scanning animation
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(56.dp),
-                        color = PrimaryPurple,
-                        strokeWidth = 4.dp
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(
-                        text = "Scanning for devices...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = TextPrimary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Make sure your ring is nearby",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-                }
-            }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Bottom buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SecondaryButton(
-                text = "Enter MAC",
+            NeonSecondaryButton(
+                text = "ENTER MAC",
                 onClick = onManualEntry,
                 modifier = Modifier.weight(1f)
             )
-            SecondaryButton(
-                text = "Skip",
+            NeonSecondaryButton(
+                text = "SKIP",
                 onClick = onSkip,
                 modifier = Modifier.weight(1f)
             )
@@ -451,65 +603,94 @@ private fun ScanContent(
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// CONNECTING CONTENT — Full-screen cinematic ring animation
+// ═══════════════════════════════════════════════════════════════════════
+
 @Composable
 private fun ConnectingContent() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        // Pulse waves background
+        EnergyPulseWave(
+            modifier = Modifier.size(300.dp),
+            color = NeonCyan.copy(alpha = 0.5f),
+            pulseCount = 4
+        )
+
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Pulsing animation
+            // Rotating ring
             val infiniteTransition = rememberInfiniteTransition(label = "connect")
             val scale by infiniteTransition.animateFloat(
                 initialValue = 0.9f,
                 targetValue = 1.1f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(1000),
+                    animation = tween(1500, easing = EaseInOutCubic),
                     repeatMode = RepeatMode.Reverse
                 ),
                 label = "scale"
             )
-            
+
             Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .scale(scale)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                AccentCyan.copy(alpha = 0.3f),
-                                AccentCyan.copy(alpha = 0.1f)
-                            )
-                        )
-                    ),
+                modifier = Modifier.scale(scale),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(48.dp),
-                    color = AccentCyan,
-                    strokeWidth = 4.dp
+                AnimatedRing3D(
+                    modifier = Modifier.size(160.dp),
+                    primaryColor = NeonCyan,
+                    secondaryColor = PrimaryPurple,
+                    isScanning = true
                 )
             }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
+
+            Spacer(modifier = Modifier.height(40.dp))
+
             Text(
-                text = "Connecting...",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary
+                text = "Connecting",
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
-                text = "Please wait while we pair your ring",
+                text = "Establishing secure link to your ring",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Progress dots
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                repeat(3) { index ->
+                    val dotAlpha by infiniteTransition.animateFloat(
+                        initialValue = 0.3f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(600, delayMillis = index * 200),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "dot_$index"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(NeonCyan.copy(alpha = dotAlpha))
+                    )
+                }
+            }
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// CONNECTED CONTENT — Floating metrics dashboard
+// ═══════════════════════════════════════════════════════════════════════
 
 @Composable
 private fun ConnectedContent(
@@ -522,180 +703,187 @@ private fun ConnectedContent(
     onMeasureStress: () -> Unit = {},
     onRequestSleep: () -> Unit = {}
 ) {
+    // Particle explosion on first render
+    var showParticles by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(1500)
+        showParticles = false
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
-        // Success card
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            SuccessGreen.copy(alpha = 0.2f),
-                            SuccessGreen.copy(alpha = 0.05f)
-                        )
-                    ),
-                    RoundedCornerShape(20.dp)
-                )
-                .border(1.dp, SuccessGreen.copy(alpha = 0.3f), RoundedCornerShape(20.dp)),
-            shape = RoundedCornerShape(20.dp),
-            color = Color.Transparent
-        ) {
-            Row(
-                modifier = Modifier.padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(SuccessGreen),
-                    contentAlignment = Alignment.Center
+        // Success card with particle overlay
+        Box {
+            NeonGlassCard(glowColor = NeonGreen) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(
-                        text = "Ring Connected!",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = SuccessGreen,
-                        fontWeight = FontWeight.Bold
-                    )
-                    uiState.connectedRing?.let { ring ->
-                        Text(
-                            text = "${ring.name} • ${ring.macAddress}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(NeonGreen, NeonGreen.copy(alpha = 0.6f))
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(24.dp)
                         )
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column {
+                        Text(
+                            text = "Ring Connected",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = NeonGreen,
+                            fontWeight = FontWeight.Bold
+                        )
+                        uiState.connectedRing?.let { ring ->
+                            Text(
+                                text = "${ring.name} • ${ring.macAddress}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
                     }
                 }
             }
+
+            // Particle celebration
+            ParticleExplosion(
+                modifier = Modifier.matchParentSize(),
+                isActive = showParticles,
+                colors = listOf(NeonGreen, NeonCyan, PrimaryPurple)
+            )
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
-        // Scrollable health data section
+
+        // Scrollable health data
         LazyColumn(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Battery
             item {
-                BatteryCard(batteryLevel = uiState.batteryLevel)
+                BatteryCard(
+                    batteryLevel = uiState.batteryLevel,
+                    isCharging = uiState.isCharging
+                )
             }
-            
+
             // Heart Rate
             item {
                 HeartRateCard(
                     heartRate = uiState.heartRate,
-                    isMeasuring = uiState.ringData?.heartRateMeasuring == true
+                    isMeasuring = uiState.ringData.heartRateMeasuring
                 )
             }
             item {
                 MeasurementButton(
-                    text = if (uiState.ringData?.heartRateMeasuring == true) "Measuring HR..." else "Measure Heart Rate",
+                    text = if (uiState.ringData.heartRateMeasuring) "Measuring HR..." else "Measure Heart Rate",
                     icon = Icons.Default.Favorite,
                     color = ErrorRed,
                     onClick = onMeasureHeartRate,
-                    enabled = uiState.ringData?.heartRateMeasuring != true
+                    enabled = !uiState.ringData.heartRateMeasuring
                 )
             }
-            
+
             // Blood Pressure
             item {
                 BloodPressureCard(
-                    systolic = uiState.ringData?.bloodPressureSystolic ?: 0,
-                    diastolic = uiState.ringData?.bloodPressureDiastolic ?: 0,
-                    isMeasuring = uiState.ringData?.bloodPressureMeasuring == true
+                    systolic = uiState.ringData.bloodPressureSystolic,
+                    diastolic = uiState.ringData.bloodPressureDiastolic,
+                    isMeasuring = uiState.ringData.bloodPressureMeasuring
                 )
             }
             item {
                 MeasurementButton(
-                    text = if (uiState.ringData?.bloodPressureMeasuring == true) "Measuring BP..." else "Measure Blood Pressure",
+                    text = if (uiState.ringData.bloodPressureMeasuring) "Measuring BP..." else "Measure Blood Pressure",
                     icon = Icons.Default.FavoriteBorder,
                     color = PrimaryPurple,
                     onClick = onMeasureBloodPressure,
-                    enabled = uiState.ringData?.bloodPressureMeasuring != true
+                    enabled = !uiState.ringData.bloodPressureMeasuring
                 )
             }
-            
+
             // Blood Oxygen (SpO2)
             item {
-                SpO2Card(
-                    spO2 = uiState.ringData?.spO2 ?: 0f,
-                    isMeasuring = uiState.ringData?.spO2Measuring == true
-                )
+                SpO2Card(spO2 = uiState.ringData.spO2.toInt())
             }
             item {
                 MeasurementButton(
-                    text = if (uiState.ringData?.spO2Measuring == true) "Measuring SpO2..." else "Measure Blood Oxygen",
+                    text = if (uiState.ringData.spO2Measuring) "Measuring SpO2..." else "Measure Blood Oxygen",
                     icon = Icons.Default.ThumbUp,
-                    color = AccentCyan,
+                    color = NeonCyan,
                     onClick = onMeasureSpO2,
-                    enabled = uiState.ringData?.spO2Measuring != true
+                    enabled = !uiState.ringData.spO2Measuring
                 )
             }
-            
+
             // Stress Level
             item {
                 StressCard(
-                    stress = uiState.ringData?.stress ?: 0,
+                    stress = uiState.ringData.stress,
                     onMeasureClick = onMeasureStress
                 )
             }
-            
+
             // Sleep Data
             item {
                 SleepCard(
-                    sleepData = uiState.ringData?.sleepData,
+                    sleepData = uiState.ringData.sleepData,
                     onRequestSleep = onRequestSleep
                 )
             }
-            
+
             // Firmware Info
             item {
-                val firmwareInfo = uiState.ringData?.firmwareInfo 
-                    ?: com.fitness.app.domain.model.FirmwareInfo()
-                FirmwareCard(firmwareInfo = firmwareInfo)
+                FirmwareCard(firmwareInfo = uiState.ringData.firmwareInfo)
             }
-            
+
             // Steps
             item {
                 StepsCard(steps = uiState.steps)
             }
-            
-            // Spacer for bottom buttons
+
+            // Bottom spacer
             item {
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
-        
+
         Spacer(modifier = Modifier.height(12.dp))
-        
+
         // Buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SecondaryButton(
-                text = "Disconnect",
+            NeonSecondaryButton(
+                text = "DISCONNECT",
                 onClick = onDisconnect,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                borderColor = ErrorRed.copy(alpha = 0.4f)
             )
-            PremiumButton(
-                text = "Done",
+            NeonButton(
+                text = "DONE",
                 onClick = onDone,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                colors = listOf(NeonGreen.copy(alpha = 0.9f), NeonCyan)
             )
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// MEASUREMENT BUTTON — Neon styled
+// ═══════════════════════════════════════════════════════════════════════
 
 @Composable
 private fun MeasurementButton(
@@ -709,18 +897,19 @@ private fun MeasurementButton(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp),
+            .height(44.dp),
         enabled = enabled,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = color.copy(alpha = 0.8f),
-            disabledContainerColor = color.copy(alpha = 0.3f)
-        )
+            containerColor = color.copy(alpha = 0.15f),
+            disabledContainerColor = color.copy(alpha = 0.08f)
+        ),
+        contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
         if (!enabled) {
             CircularProgressIndicator(
-                modifier = Modifier.size(18.dp),
-                color = Color.White,
+                modifier = Modifier.size(16.dp),
+                color = color,
                 strokeWidth = 2.dp
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -728,62 +917,68 @@ private fun MeasurementButton(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(18.dp),
+                tint = color
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            color = Color.White
+            color = if (enabled) color else color.copy(alpha = 0.5f)
         )
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// BLOOD PRESSURE CARD
+// ═══════════════════════════════════════════════════════════════════════
+
 @Composable
 private fun BloodPressureCard(systolic: Int, diastolic: Int, isMeasuring: Boolean) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = GlassWhite
-    ) {
+    NeonGlassCard(glowColor = PrimaryPurple) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
-                    .background(PrimaryPurple.copy(alpha = 0.2f)),
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(PrimaryPurple.copy(alpha = 0.2f), PrimaryPurple.copy(alpha = 0.03f))
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.FavoriteBorder,
                     contentDescription = null,
                     tint = PrimaryPurple,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Blood Pressure",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "BLOOD PRESSURE",
+                    style = MaterialTheme.typography.labelMedium,
                     color = TextSecondary
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (isMeasuring) "Measuring..." 
-                           else if (systolic > 0) "$systolic/$diastolic mmHg" 
-                           else "-- / -- mmHg",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = if (isMeasuring) "Measuring..."
+                    else if (systolic > 0) "$systolic/$diastolic mmHg"
+                    else "-- / -- mmHg",
+                    style = MaterialTheme.typography.headlineSmall,
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold
                 )
             }
             if (isMeasuring) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(20.dp),
                     color = PrimaryPurple,
                     strokeWidth = 2.dp
                 )
@@ -792,63 +987,16 @@ private fun BloodPressureCard(systolic: Int, diastolic: Int, isMeasuring: Boolea
     }
 }
 
-@Composable
-private fun SpO2Card(spO2: Float, isMeasuring: Boolean) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = GlassWhite
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(AccentCyan.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ThumbUp,
-                    contentDescription = null,
-                    tint = AccentCyan,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Blood Oxygen (SpO2)",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
-                )
-                Text(
-                    text = if (isMeasuring) "Measuring..." 
-                           else if (spO2 > 0) "$spO2%" 
-                           else "--%",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            if (isMeasuring) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = AccentCyan,
-                    strokeWidth = 2.dp
-                )
-            }
-        }
-    }
-}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STRESS CARD
+// ═══════════════════════════════════════════════════════════════════════
 
 @Composable
 private fun StressCard(stress: Int, onMeasureClick: () -> Unit = {}) {
     val stressColor = when {
-        stress <= 30 -> SuccessGreen
-        stress <= 60 -> WarningAmber
+        stress <= 30 -> NeonGreen
+        stress <= 60 -> NeonOrange
         else -> ErrorRed
     }
     val stressLabel = when {
@@ -856,59 +1004,56 @@ private fun StressCard(stress: Int, onMeasureClick: () -> Unit = {}) {
         stress <= 60 -> "Medium"
         else -> "High"
     }
-    
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = GlassWhite
-    ) {
+
+    NeonGlassCard(glowColor = stressColor.copy(alpha = 0.6f)) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
-                    .background(stressColor.copy(alpha = 0.2f)),
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(stressColor.copy(alpha = 0.2f), stressColor.copy(alpha = 0.03f))
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Face,
                     contentDescription = null,
                     tint = stressColor,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Stress Level",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "STRESS LEVEL",
+                    style = MaterialTheme.typography.labelMedium,
                     color = TextSecondary
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = if (stress > 0) "$stress" else "--",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.headlineSmall,
                         color = TextPrimary,
                         fontWeight = FontWeight.Bold
                     )
                     if (stress > 0) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stressLabel,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = stressColor,
-                            fontWeight = FontWeight.Medium
-                        )
+                        StatusBadge(text = stressLabel, color = stressColor)
                     }
                 }
             }
-            // Measure Button
+            // Measure button
             FilledTonalIconButton(
                 onClick = onMeasureClick,
                 colors = IconButtonDefaults.filledTonalIconButtonColors(
+<<<<<<< HEAD
 <<<<<<< HEAD
                     containerColor = PrimaryBlue.copy(alpha = 0.15f),
                     contentColor = PrimaryBlue
@@ -916,17 +1061,25 @@ private fun StressCard(stress: Int, onMeasureClick: () -> Unit = {}) {
                     containerColor = AccentCyan.copy(alpha = 0.15f),
                     contentColor = AccentCyan
 >>>>>>> dev
+=======
+                    containerColor = NeonCyan.copy(alpha = 0.1f),
+                    contentColor = NeonCyan
+>>>>>>> dev
                 )
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = "Measure Stress",
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// MANUAL ENTRY CONTENT
+// ═══════════════════════════════════════════════════════════════════════
 
 @Composable
 private fun ManualEntryContent(
@@ -941,17 +1094,17 @@ private fun ManualEntryContent(
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Text(
-            text = "Enter the MAC address of your ring (found in Settings)",
+            text = "Enter the MAC address of your ring",
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         OutlinedTextField(
             value = macAddress,
             onValueChange = onMacChange,
@@ -960,251 +1113,128 @@ private fun ManualEntryContent(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryPurple,
+                focusedBorderColor = NeonCyan,
                 unfocusedBorderColor = GlassBorder,
                 focusedTextColor = TextPrimary,
                 unfocusedTextColor = TextPrimary,
-                cursorColor = PrimaryPurple
+                cursorColor = NeonCyan,
+                focusedLabelColor = NeonCyan
             ),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(14.dp)
         )
-        
+
         Spacer(modifier = Modifier.weight(1f))
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SecondaryButton(
-                text = "Back",
+            NeonSecondaryButton(
+                text = "BACK",
                 onClick = onBack,
                 modifier = Modifier.weight(1f)
             )
-            PremiumButton(
-                text = "Connect",
+            NeonButton(
+                text = "CONNECT",
                 onClick = onConnect,
                 modifier = Modifier.weight(1f),
-                enabled = macAddress.length >= 17
+                enabled = macAddress.length >= 17,
+                colors = listOf(NeonCyan.copy(alpha = 0.9f), NeonBlue)
             )
         }
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// PREMIUM BUTTONS
+// SLEEP CARD
 // ═══════════════════════════════════════════════════════════════════════
 
-@Composable
-fun PremiumButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    isLoading: Boolean = false,
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        enabled = enabled && !isLoading,
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = PrimaryPurple,
-            disabledContainerColor = PrimaryPurple.copy(alpha = 0.3f)
-        )
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = Color.White,
-                strokeWidth = 2.dp
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-        } else if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = Color.White
-        )
-    }
-}
-
-@Composable
-fun SecondaryButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier
-            .height(56.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = TextPrimary
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge
-        )
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// PREVIEWS - Only using default RingUiState constructor
-// ═══════════════════════════════════════════════════════════════════════
-
-@Preview(showBackground = true, backgroundColor = 0xFF0F172A, widthDp = 400, heightDp = 800)
-@Composable
-private fun SetupHeaderPreview() {
-    FitnessAppTheme(darkTheme = true) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            PremiumSetupHeader()
-        }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF0F172A, widthDp = 400)
-@Composable
-private fun ButtonsPreview() {
-    FitnessAppTheme(darkTheme = true) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            PremiumButton(text = "Primary Button", onClick = {})
-            PremiumButton(text = "With Icon", onClick = {}, icon = Icons.Default.Settings)
-            PremiumButton(text = "Loading", onClick = {}, isLoading = true)
-            PremiumButton(text = "Disabled", onClick = {}, enabled = false)
-            SecondaryButton(text = "Secondary", onClick = {})
-        }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF0F172A, widthDp = 400)
-@Composable
-private fun ConnectingPreview() {
-    FitnessAppTheme(darkTheme = true) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(DarkBackground)
-        ) {
-            ConnectingContent()
-        }
-    }
-}
 @Composable
 private fun SleepCard(
     sleepData: com.fitness.app.domain.model.SleepData?,
     onRequestSleep: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = GlassWhite
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+    NeonGlassCard(glowColor = NeonPurple.copy(alpha = 0.6f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(NeonPurple.copy(alpha = 0.2f), NeonPurple.copy(alpha = 0.03f))
+                        )
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(PrimaryPurple.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Custom moon icon using a circle
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(PrimaryPurple)
-                        )
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = null,
+                    tint = NeonPurple,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "SLEEP",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                if (sleepData != null && sleepData.totalMinutes > 0) {
+                    val hours = sleepData.totalMinutes / 60
+                    val mins = sleepData.totalMinutes % 60
+                    Text(
+                        text = "${hours}h ${mins}m",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        SleepMetric("Deep", "${sleepData.deepMinutes}m", NeonPurple)
+                        SleepMetric("Light", "${sleepData.lightMinutes}m", NeonCyan)
+                        SleepMetric("Awake", "${sleepData.awakeMinutes}m", NeonOrange)
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Sleep",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-                        if (sleepData != null && sleepData.totalMinutes > 0) {
-                            val hours = sleepData.totalMinutes / 60
-                            val mins = sleepData.totalMinutes % 60
+                    if (sleepData.quality > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = if (hours > 0) "${hours}h ${mins}m" else "${mins}m",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = TextPrimary,
-                                fontWeight = FontWeight.Bold
+                                text = "Quality: ",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
                             )
-                        } else {
-                            Text(
-                                text = "--",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = TextPrimary,
-                                fontWeight = FontWeight.Bold
+                            StatusBadge(
+                                text = "${sleepData.quality}%",
+                                color = if (sleepData.quality >= 70) NeonGreen else NeonOrange
                             )
                         }
                     }
-                }
-                
-                // Request Button
-                FilledTonalIconButton(
-                    onClick = onRequestSleep,
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = PrimaryPurple.copy(alpha = 0.15f),
-                        contentColor = PrimaryPurple
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Request Sleep Data",
-                        modifier = Modifier.size(20.dp)
+                } else {
+                    Text(
+                        text = "No data",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = TextMuted,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
-            
-            if (sleepData != null && sleepData.totalMinutes > 0) {
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    SleepMetric(
-                        label = "Deep",
-                        value = "${sleepData.deepMinutes}m",
-                        color = PrimaryPurple
-                    )
-                    SleepMetric(
-                        label = "Light",
-                        value = "${sleepData.lightMinutes}m",
-                        color = AccentCyan
-                    )
-                    if (sleepData.awakeMinutes > 0) {
-                        SleepMetric(
-                            label = "Awake",
-                            value = "${sleepData.awakeMinutes}m",
-                            color = AccentCyan
-                        )
-                    }
-                }
+            FilledTonalIconButton(
+                onClick = onRequestSleep,
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = NeonPurple.copy(alpha = 0.1f),
+                    contentColor = NeonPurple
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Refresh Sleep",
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
     }
@@ -1219,14 +1249,14 @@ private fun SleepMetric(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             color = color,
             fontWeight = FontWeight.Bold
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary
+            style = MaterialTheme.typography.labelSmall,
+            color = TextMuted
         )
     }
 }
@@ -1236,64 +1266,99 @@ private fun SleepMetric(
 // ═══════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun FirmwareCard(
-    firmwareInfo: com.fitness.app.domain.model.FirmwareInfo,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = GlassWhite
+private fun FirmwareCard(firmwareInfo: com.fitness.app.domain.model.FirmwareInfo) {
+    NeonGlassCard(
+        glowColor = TextMuted,
+        showGlow = false
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Icon
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(AccentBlue.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = AccentBlue,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                // Firmware info
-                Column {
-                    Text(
-                        text = "Firmware",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = TextSecondary
-                    )
-                    Text(
-                        text = if (firmwareInfo.version.isNotEmpty()) {
-                            "v${firmwareInfo.version}"
-                        } else {
-                            "--"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextPrimary
-                    )
-                    if (firmwareInfo.type.isNotEmpty()) {
-                        Text(
-                            text = "Type: ${firmwareInfo.type}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextMuted
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(TextMuted.copy(alpha = 0.15f), Color.Transparent)
                         )
-                    }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Build,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "FIRMWARE",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = firmwareInfo.displayText,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (firmwareInfo.type.isNotEmpty()) {
+                    Text(
+                        text = "Type: ${firmwareInfo.type}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
                 }
             }
         }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PREVIEWS — Multi-state, ViewModel-free
+// ═══════════════════════════════════════════════════════════════════════
+
+@Preview(name = "Permissions", showBackground = true, backgroundColor = 0xFF050508, device = Devices.PIXEL_6)
+@Composable
+private fun SetupPermissionsPreview() {
+    FitnessAppTheme(darkTheme = true) {
+        RingSetupScreen(uiState = PreviewData.permissionsNeededState)
+    }
+}
+
+@Preview(name = "Scanning", showBackground = true, backgroundColor = 0xFF050508, device = Devices.PIXEL_6)
+@Composable
+private fun SetupScanningPreview() {
+    FitnessAppTheme(darkTheme = true) {
+        RingSetupScreen(uiState = PreviewData.scanningState)
+    }
+}
+
+@Preview(name = "Connecting", showBackground = true, backgroundColor = 0xFF050508)
+@Composable
+private fun SetupConnectingPreview() {
+    FitnessAppTheme(darkTheme = true) {
+        RingSetupScreen(uiState = PreviewData.connectingState)
+    }
+}
+
+@Preview(name = "Connected", showBackground = true, backgroundColor = 0xFF050508, device = Devices.PIXEL_6)
+@Composable
+private fun SetupConnectedPreview() {
+    FitnessAppTheme(darkTheme = true) {
+        RingSetupScreen(uiState = PreviewData.connectedState)
+    }
+}
+
+@Preview(name = "Dark Mode", uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true)
+@Composable
+private fun SetupDarkModePreview() {
+    FitnessAppTheme(darkTheme = true) {
+        RingSetupScreen(uiState = PreviewData.scanningState)
     }
 }

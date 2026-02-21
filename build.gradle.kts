@@ -78,9 +78,4 @@ dependencies {
     
     // WorkManager for background sync
     implementation("androidx.work:work-runtime-ktx:2.9.1")
-    
-    // ══════════════════════════════════════════════════════════
-    // Manridy MRD SDK (for R9 Ring) - WORKING SDK!
-    // ══════════════════════════════════════════════════════════
-    implementation(files("libs/sdk_mrd20240218_1.1.5.aar"))
 }

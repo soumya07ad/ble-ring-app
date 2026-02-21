@@ -1,0 +1,91 @@
+﻿Starting a Gradle Daemon, 6 stopped Daemons could not be reused, use --status for details
+Configuration on demand is an incubating feature.
+> Task :checkKotlinGradlePluginConfigurationErrors
+> Task :preBuild UP-TO-DATE
+> Task :preDebugBuild UP-TO-DATE
+> Task :checkDebugAarMetadata UP-TO-DATE
+> Task :generateDebugResValues UP-TO-DATE
+> Task :mapDebugSourceSetPaths UP-TO-DATE
+> Task :generateDebugResources UP-TO-DATE
+> Task :mergeDebugResources UP-TO-DATE
+> Task :createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :extractDeepLinksDebug UP-TO-DATE
+> Task :processDebugMainManifest UP-TO-DATE
+> Task :processDebugManifest UP-TO-DATE
+> Task :processDebugManifestForPackage UP-TO-DATE
+> Task :processDebugResources UP-TO-DATE
+> Task :compileDebugKotlin
+.\gradlew.bat : e: file:///C:/Users/adhik/Downloa
+ds/DKGS%20LABS/Ring/FitnessAndroidApp/src/main/ko
+tlin/com/fitness/app/presentation/ring/components
+/RingDataCards.kt:404:60 Cannot find a parameter 
+with this name: onMeasure
+At line:1 char:53
++ ... dhik\.jdks\ms-17.0.18'; .\gradlew.bat 
+compileDebugKotlin 2>&1 | Out-F ...
++                             
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e:  
+   file:///C:/U...name: onMeasure:String) [], R  
+  emoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:412:33 Cannot find a parameter with this name: 
+distance
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:412:50 Cannot find a parameter with this name: 
+calories
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:420:25 The floating-point literal does not 
+conform to the expected type Int?
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:420:30 Cannot find a parameter with this name: 
+isMeasuring
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/components/RingDataCards.k
+t:420:51 Cannot find a parameter with this name: 
+onMeasure
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/presentation/ring/screens/RingSetupScreen.kt
+:244:54 Unresolved reference: sp
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/ui/components/PremiumComponents.kt:368:33 
+Unresolved reference: Favorite
+e: file:///C:/Users/adhik/Downloads/DKGS%20LABS/R
+ing/FitnessAndroidApp/src/main/kotlin/com/fitness
+/app/ui/components/PremiumComponents.kt:385:33 
+Unresolved reference: BluetoothSearching
+
+> Task :compileDebugKotlin FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileDebugKotlin'.
+> A failure occurred while executing org.jetbrain
+s.kotlin.compilerRunner.GradleCompilerRunnerWithW
+orkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack 
+trace.
+> Run with --info or --debug option to get more 
+log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 17s
+13 actionable tasks: 2 executed, 11 up-to-date
