@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,11 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        html {
+            height: 100%;
+            background: #050508;
         }
 
         :root {
@@ -33,16 +39,22 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             background: var(--bg-gradient);
+            height: 100%;
             min-height: 100vh;
             color: var(--text-light);
+            overflow-x: hidden;
         }
 
         #root {
             width: 100%;
             min-height: 100vh;
+            min-height: -webkit-fill-available;
+            background: #050508;
         }
 
-        input[type="email"], input[type="password"], input[type="text"] {
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
             width: 100%;
             padding: 0.875rem 1rem;
             border: 1.5px solid var(--glass-border);
@@ -55,14 +67,18 @@
             transition: all 0.3s ease;
         }
 
-        input[type="email"]:focus, input[type="password"]:focus, input[type="text"]:focus {
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="text"]:focus {
             outline: none;
             border-color: var(--teal-accent);
             background: rgba(255, 255, 255, 0.15);
             box-shadow: 0 0 20px rgba(20, 184, 166, 0.3);
         }
 
-        input[type="email"]::placeholder, input[type="password"]::placeholder, input[type="text"]::placeholder {
+        input[type="email"]::placeholder,
+        input[type="password"]::placeholder,
+        input[type="text"]::placeholder {
             color: var(--text-secondary);
         }
 
@@ -99,6 +115,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -110,6 +127,7 @@
                 transform: translateX(-50%) translateY(100%);
                 opacity: 0;
             }
+
             to {
                 transform: translateX(-50%) translateY(0);
                 opacity: 1;
@@ -117,18 +135,23 @@
         }
 
         @keyframes glow {
-            0%, 100% {
+
+            0%,
+            100% {
                 box-shadow: 0 0 20px rgba(20, 184, 166, 0.5);
             }
+
             50% {
                 box-shadow: 0 0 30px rgba(20, 184, 166, 0.8);
             }
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
-        
+
         /* Loading Spinner Styles */
         .loading-spinner {
             display: inline-block;
@@ -139,7 +162,7 @@
             border-top-color: var(--teal-accent);
             animation: spin 1s linear infinite;
         }
-        
+
         .loading-container {
             display: flex;
             justify-content: center;
@@ -147,7 +170,7 @@
             min-height: 100vh;
             background: var(--bg-gradient);
         }
-        
+
         .loading-text {
             margin-top: 1.5rem;
             color: var(--text-secondary);
@@ -155,7 +178,7 @@
             font-size: 1.125rem;
             letter-spacing: 0.5px;
         }
-        
+
         /* Glassmorphism Card Styles */
         .glass-card {
             background: var(--glass-light);
@@ -172,7 +195,7 @@
             box-shadow: 0 12px 48px rgba(20, 184, 166, 0.2);
             transform: translateY(-4px);
         }
-        
+
         /* Error Toast */
         .error-toast {
             position: fixed;
@@ -189,7 +212,7 @@
             z-index: 1000;
             backdrop-filter: blur(10px);
         }
-        
+
         .success-toast {
             position: fixed;
             bottom: 2rem;
@@ -205,7 +228,7 @@
             z-index: 1000;
             backdrop-filter: blur(10px);
         }
-        
+
         /* Meditation Card Styles */
         .meditation-card {
             display: flex;
@@ -220,14 +243,14 @@
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
-        
+
         .meditation-card:hover {
             background: rgba(255, 255, 255, 0.15);
             border-color: var(--teal-accent);
             box-shadow: 0 8px 30px rgba(20, 184, 166, 0.2);
             transform: translateX(4px);
         }
-        
+
         .meditation-start-btn {
             background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%);
             color: white;
@@ -239,7 +262,7 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
         }
-        
+
         .meditation-start-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 25px rgba(20, 184, 166, 0.5);
@@ -249,14 +272,14 @@
         .meditation-start-btn:active {
             transform: translateY(0);
         }
-        
+
         /* Button Loading State */
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none !important;
         }
-        
+
         .retry-button {
             background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%);
             color: white;
@@ -274,7 +297,7 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5);
         }
-        
+
         .error-message {
             color: #fca5a5;
             font-size: 0.95rem;
@@ -302,6 +325,7 @@
         }
     </style>
 </head>
+
 <body>
     <div id="root"></div>
     <script>
@@ -311,7 +335,7 @@
         let isLoggedIn = false;
         let isLoading = false;
         let lastError = null;
-        
+
         // PageBridge fallback for testing/development
         if (typeof window.PageBridge === 'undefined') {
             window.PageBridge = {
@@ -320,31 +344,31 @@
                 resumeMeditation: () => console.log('Meditation resumed'),
                 stopMeditation: () => console.log('Meditation stopped'),
                 onMeditationComplete: (sessionId, duration) => console.log('Meditation complete:', sessionId, duration),
-                sendOtp: (phone) => JSON.stringify({status: 'pending', message: `OTP sent to ${phone}`}),
-                loginWithOtp: (phone, otp) => JSON.stringify({success: true, message: 'Logged in', token: 'sample_token'}),
-                getUserProfile: () => JSON.stringify({id: '123', name: 'User', email: 'user@example.com'}),
+                sendOtp: (phone) => JSON.stringify({ status: 'pending', message: `OTP sent to ${phone}` }),
+                loginWithOtp: (phone, otp) => JSON.stringify({ success: true, message: 'Logged in', token: 'sample_token' }),
+                getUserProfile: () => JSON.stringify({ id: '123', name: 'User', email: 'user@example.com' }),
                 getSteps: () => {
-                    try { return window.MainActivity.getRemoteSteps(); } 
-                    catch(e) { return JSON.stringify({steps: 5000, goal: 10000, progress: 0.5}); }
+                    try { return window.MainActivity.getRemoteSteps(); }
+                    catch (e) { return JSON.stringify({ steps: 5000, goal: 10000, progress: 0.5 }); }
                 },
                 getCalories: () => {
-                    try { return window.MainActivity.getRemoteCalories(); } 
-                    catch(e) { return JSON.stringify({calories: 1000, goal: 750, progress: 1.33}); }
+                    try { return window.MainActivity.getRemoteCalories(); }
+                    catch (e) { return JSON.stringify({ calories: 1000, goal: 750, progress: 1.33 }); }
                 },
                 getHeartRate: () => {
-                    try { return window.MainActivity.getRemoteHeartRate(); } 
-                    catch(e) { return JSON.stringify({bpm: 80, avg: 80, min: 70, max: 95}); }
+                    try { return window.MainActivity.getRemoteHeartRate(); }
+                    catch (e) { return JSON.stringify({ bpm: 80, avg: 80, min: 70, max: 95 }); }
                 }
             };
         }
-        
+
         // LoginBridge fallback for testing/development
         if (typeof window.LoginBridge === 'undefined') {
             window.LoginBridge = {
                 notifyLoginSuccess: () => console.log('Login successful notification sent')
             };
         }
-        
+
         // Get page from URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         const pageParam = urlParams.get('page');
@@ -361,41 +385,201 @@
                 </div>
             `;
         }
-        
+
         function showError(message, onRetry = null) {
             lastError = message;
             const root = document.getElementById("root");
             const errorHtml = `
-                <div style="min-height: 100vh; background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 50%, #eef2ff 100%); display: flex; align-items: center; justify-content: center; padding: 1rem;">
-                    <div style="background: white; border-radius: 2rem; padding: 2rem; box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1); max-width: 420px; width: 100%; text-align: center;">
+                <div style="min-height: 100vh; background: linear-gradient(180deg, #050508 0%, #080810 35%, #0A0A14 65%, #050508 100%); display: flex; align-items: center; justify-content: center; padding: 1rem;">
+                    <div style="background: rgba(13, 13, 20, 0.9); border: 1px solid rgba(255, 69, 58, 0.2); border-radius: 1.5rem; padding: 2.5rem; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 40px rgba(255, 69, 58, 0.05); max-width: 420px; width: 100%; text-align: center; backdrop-filter: blur(20px);">
                         <p style="font-size: 3rem; margin-bottom: 1rem;">⚠️</p>
-                        <h2 style="color: rgb(17, 24, 39); margin-bottom: 1rem;">Error</h2>
-                        <p class="error-message" style="margin-bottom: 1rem; color: rgb(107, 114, 128);">${message}</p>
-                        ${onRetry ? `<button class="retry-button" onclick="${onRetry}">Retry</button>` : ''}
+                        <h2 style="color: #F5F5F7; margin-bottom: 1rem; font-weight: 700;">Error</h2>
+                        <p class="error-message" style="margin-bottom: 1.5rem; color: #FF453A; font-size: 0.95rem;">${message}</p>
+                        ${onRetry ? `<button class="retry-button" onclick="${onRetry}" style="background: linear-gradient(135deg, #30D158 0%, #00F0FF 100%); color: #000; border: none; padding: 0.875rem 2rem; border-radius: 2rem; font-weight: 700; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 20px rgba(48, 209, 88, 0.3);">Retry</button>` : ''}
                     </div>
                 </div>
             `;
             root.innerHTML = errorHtml;
         }
-        
+
         function showToast(message, isError = false) {
             const toast = document.createElement('div');
             toast.className = isError ? 'error-toast' : 'success-toast';
             toast.textContent = message;
             document.body.appendChild(toast);
-            
+
             setTimeout(() => {
                 toast.remove();
             }, 3000);
         }
 
+        function showSignUpPage() {
+            const root = document.getElementById("root");
+            root.innerHTML = renderSignUpPage();
+            setupSignUpEventListeners(root);
+        }
+
+        function renderSignUpPage() {
+            return `
+                <style>
+                    @keyframes neonPulse {
+                        0%, 100% { filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.4)) drop-shadow(0 0 30px rgba(48, 209, 88, 0.2)); }
+                        50% { filter: drop-shadow(0 0 25px rgba(0, 240, 255, 0.6)) drop-shadow(0 0 50px rgba(48, 209, 88, 0.35)); }
+                    }
+                    @keyframes floatOrb {
+                        0%, 100% { transform: translate(0, 0) scale(1); }
+                        33% { transform: translate(15px, -20px) scale(1.05); }
+                        66% { transform: translate(-10px, 10px) scale(0.95); }
+                    }
+                    .auth-input-dark {
+                        width: 100%;
+                        padding: 1rem 1.25rem;
+                        border: 1.5px solid rgba(255, 255, 255, 0.08);
+                        border-radius: 1rem;
+                        font-size: 1rem;
+                        background: rgba(13, 13, 20, 0.8);
+                        color: #F5F5F7;
+                        transition: all 0.3s ease;
+                        font-weight: 500;
+                        backdrop-filter: blur(10px);
+                        font-family: inherit;
+                    }
+                    .auth-input-dark:focus {
+                        outline: none;
+                        border-color: #00F0FF;
+                        box-shadow: 0 0 20px rgba(0, 240, 255, 0.15), 0 0 40px rgba(0, 240, 255, 0.05);
+                        background: rgba(13, 13, 20, 0.95);
+                    }
+                    .auth-input-dark::placeholder { color: #48484A; }
+                    .auth-btn-primary {
+                        padding: 1rem 1.5rem;
+                        background: linear-gradient(135deg, #30D158 0%, #00F0FF 100%);
+                        color: #000000;
+                        border: none;
+                        border-radius: 2rem;
+                        font-weight: 800;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        box-shadow: 0 4px 20px rgba(48, 209, 88, 0.3), 0 0 40px rgba(0, 240, 255, 0.1);
+                        transition: all 0.3s ease;
+                        letter-spacing: 1px;
+                        text-transform: uppercase;
+                        font-family: inherit;
+                        width: 100%;
+                    }
+                    .auth-btn-secondary {
+                        padding: 1rem 1.5rem;
+                        background: transparent;
+                        color: #30D158;
+                        border: 1.5px solid rgba(48, 209, 88, 0.4);
+                        border-radius: 2rem;
+                        font-weight: 700;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        transition: all 0.3s ease;
+                        letter-spacing: 0.5px;
+                        text-transform: uppercase;
+                        font-family: inherit;
+                        width: 100%;
+                    }
+                </style>
+                <div style="min-height: 100vh; background: linear-gradient(180deg, #050508 0%, #080810 35%, #0A0A14 65%, #050508 100%); display: flex; align-items: center; justify-content: center; padding: 1.5rem; overflow: hidden; position: relative;">
+                    <!-- Ambient glow orbs -->
+                    <div style="position: absolute; top: -80px; right: -80px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(48, 209, 88, 0.06) 0%, transparent 70%); border-radius: 50%; z-index: 0; animation: floatOrb 8s ease-in-out infinite;"></div>
+                    <div style="position: absolute; bottom: -120px; left: -120px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0, 240, 255, 0.05) 0%, transparent 70%); border-radius: 50%; z-index: 0; animation: floatOrb 10s ease-in-out infinite reverse;"></div>
+
+                    <div style="max-width: 420px; width: 100%; position: relative; z-index: 1;">
+                        <!-- Back button -->
+                        <button onclick="render(document.getElementById('root'))" style="display: flex; align-items: center; gap: 0.5rem; background: transparent; border: none; color: #8E8E93; font-size: 0.9rem; cursor: pointer; padding: 0.5rem 0; margin-bottom: 1.5rem; font-family: inherit;">
+                            ← Back to Login
+                        </button>
+
+                        <!-- Header -->
+                        <div style="text-align: center; margin-bottom: 2rem;">
+                            <div style="display: inline-block; animation: neonPulse 3s ease-in-out infinite;">
+                                <svg width="72" height="72" viewBox="0 0 80 80" style="margin: 0 auto 1rem;">
+                                    <defs>
+                                        <linearGradient id="signupRingStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" style="stop-color:#30D158;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#00F0FF;stop-opacity:1" />
+                                        </linearGradient>
+                                    </defs>
+                                    <rect x="0" y="0" width="80" height="80" rx="20" fill="#0D0D14" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                                    <circle cx="40" cy="40" r="26" fill="none" stroke="url(#signupRingStroke)" stroke-width="4" opacity="0.9"/>
+                                    <circle cx="40" cy="40" r="6" fill="#30D158"/>
+                                </svg>
+                            </div>
+                            <h1 style="font-size: 1.75rem; font-weight: 800; color: #F5F5F7; margin-bottom: 0.5rem; letter-spacing: -0.3px;">Create Account</h1>
+                            <p style="color: #8E8E93; font-size: 0.875rem;">Start your wellness journey today</p>
+                        </div>
+
+                        <!-- Sign Up Form -->
+                        <form id="signUpForm" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            <div>
+                                <label style="display: block; color: #8E8E93; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.625rem; letter-spacing: 2px; text-transform: uppercase;">Full Name</label>
+                                <input type="text" id="signUpName" class="auth-input-dark" placeholder="Enter your full name" required>
+                            </div>
+                            <div>
+                                <label style="display: block; color: #8E8E93; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.625rem; letter-spacing: 2px; text-transform: uppercase;">Phone Number</label>
+                                <input type="tel" id="signUpPhone" class="auth-input-dark" placeholder="Enter 10-digit number" pattern="[0-9]{10}" maxlength="10" required>
+                            </div>
+
+                            <div style="margin-top: 0.5rem;">
+                                <button type="submit" id="signUpSubmitBtn" class="auth-btn-primary">
+                                    <span id="signUpSubmitText">Create Account</span>
+                                </button>
+                            </div>
+
+                            <button type="button" class="auth-btn-secondary" onclick="render(document.getElementById('root'))">
+                                Already have an account? Sign In
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setupSignUpEventListeners(root) {
+            const form = document.getElementById('signUpForm');
+            if (!form) return;
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const name = document.getElementById('signUpName').value;
+                const phone = document.getElementById('signUpPhone').value;
+
+                if (phone.length !== 10) {
+                    showToast('Please enter a valid 10-digit phone number', true);
+                    return;
+                }
+
+                // Simulate account creation then go to OTP
+                const btn = document.getElementById('signUpSubmitBtn');
+                const btnText = document.getElementById('signUpSubmitText');
+                btn.disabled = true;
+                btnText.textContent = 'Sending OTP...';
+
+                setTimeout(() => {
+                    window.phoneNumber = phone;
+                    window.otpSent = true;
+                    const loginRoot = document.getElementById("root");
+                    loginRoot.innerHTML = renderLoginPage();
+                    setupEventListeners(loginRoot);
+                    btn.disabled = false;
+                    btnText.textContent = 'Create Account';
+                    showToast('OTP sent to ' + phone);
+                }, 800);
+            });
+        }
+
         function main() {
+
             const root = document.getElementById("root");
             if (!root) {
                 console.error("Root element not found");
                 return;
             }
-            
+
             // Set page based on URL parameter
             if (pageParam === 'login') {
                 isLoggedIn = false;
@@ -403,7 +587,7 @@
                 isLoggedIn = true;
                 currentPage = 'dashboard';
             }
-            
+
             try {
                 render(root);
                 setupEventListeners(root);
@@ -428,91 +612,197 @@
 
         function renderLoginPage() {
             const showOtpInput = window.otpSent || false;
-            
+
             return `
-                <div style="min-height: 100vh; background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 50%, #eef2ff 100%); display: flex; align-items: center; justify-content: center; padding: 1.5rem; overflow: hidden;">
-                    <div style="position: absolute; top: -100px; right: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(20, 184, 166, 0.1) 0%, transparent 70%); border-radius: 50%; z-index: 0;"></div>
-                    <div style="position: absolute; bottom: -150px; left: -150px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 70%); border-radius: 50%; z-index: 0;"></div>
+                <style>
+                    @keyframes neonPulse {
+                        0%, 100% { filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.4)) drop-shadow(0 0 30px rgba(48, 209, 88, 0.2)); }
+                        50% { filter: drop-shadow(0 0 25px rgba(0, 240, 255, 0.6)) drop-shadow(0 0 50px rgba(48, 209, 88, 0.35)); }
+                    }
+                    @keyframes floatOrb {
+                        0%, 100% { transform: translate(0, 0) scale(1); }
+                        33% { transform: translate(15px, -20px) scale(1.05); }
+                        66% { transform: translate(-10px, 10px) scale(0.95); }
+                    }
+                    @keyframes shimmer {
+                        0% { background-position: -200% center; }
+                        100% { background-position: 200% center; }
+                    }
+                    .auth-input-dark {
+                        width: 100%;
+                        padding: 1rem 1.25rem;
+                        border: 1.5px solid rgba(255, 255, 255, 0.08);
+                        border-radius: 1rem;
+                        font-size: 1rem;
+                        background: rgba(13, 13, 20, 0.8);
+                        color: #F5F5F7;
+                        transition: all 0.3s ease;
+                        font-weight: 500;
+                        backdrop-filter: blur(10px);
+                        font-family: inherit;
+                    }
+                    .auth-input-dark:focus {
+                        outline: none;
+                        border-color: #00F0FF;
+                        box-shadow: 0 0 20px rgba(0, 240, 255, 0.15), 0 0 40px rgba(0, 240, 255, 0.05);
+                        background: rgba(13, 13, 20, 0.95);
+                    }
+                    .auth-input-dark::placeholder {
+                        color: #48484A;
+                    }
+                    .otp-input-dark {
+                        width: 48px;
+                        height: 56px;
+                        text-align: center;
+                        font-size: 1.5rem;
+                        border: 1.5px solid rgba(255, 255, 255, 0.08);
+                        border-radius: 0.875rem;
+                        font-weight: 700;
+                        background: rgba(13, 13, 20, 0.8);
+                        color: #F5F5F7;
+                        transition: all 0.3s ease;
+                        backdrop-filter: blur(10px);
+                        font-family: inherit;
+                    }
+                    .otp-input-dark:focus {
+                        outline: none;
+                        border-color: #00F0FF;
+                        box-shadow: 0 0 20px rgba(0, 240, 255, 0.15), 0 0 40px rgba(0, 240, 255, 0.05);
+                        background: rgba(13, 13, 20, 0.95);
+                    }
+                    .auth-btn-primary {
+                        padding: 1rem 1.5rem;
+                        background: linear-gradient(135deg, #30D158 0%, #00F0FF 100%);
+                        color: #000000;
+                        border: none;
+                        border-radius: 2rem;
+                        font-weight: 800;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        box-shadow: 0 4px 20px rgba(48, 209, 88, 0.3), 0 0 40px rgba(0, 240, 255, 0.1);
+                        transition: all 0.3s ease;
+                        letter-spacing: 1px;
+                        text-transform: uppercase;
+                        font-family: inherit;
+                        width: 100%;
+                    }
+                    .auth-btn-primary:hover:not(:disabled) {
+                        transform: translateY(-2px);
+                        box-shadow: 0 8px 30px rgba(48, 209, 88, 0.4), 0 0 60px rgba(0, 240, 255, 0.15);
+                    }
+                    .auth-btn-primary:active:not(:disabled) {
+                        transform: translateY(0);
+                    }
+                    .auth-btn-secondary {
+                        padding: 1rem 1.5rem;
+                        background: transparent;
+                        color: #30D158;
+                        border: 1.5px solid rgba(48, 209, 88, 0.4);
+                        border-radius: 2rem;
+                        font-weight: 700;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        transition: all 0.3s ease;
+                        letter-spacing: 0.5px;
+                        text-transform: uppercase;
+                        font-family: inherit;
+                        width: 100%;
+                    }
+                    .auth-btn-secondary:hover:not(:disabled) {
+                        background: rgba(48, 209, 88, 0.08);
+                        border-color: rgba(48, 209, 88, 0.6);
+                        box-shadow: 0 0 20px rgba(48, 209, 88, 0.1);
+                        transform: translateY(-2px);
+                    }
+                </style>
+                <div style="min-height: 100vh; background: linear-gradient(180deg, #050508 0%, #080810 35%, #0A0A14 65%, #050508 100%); display: flex; align-items: center; justify-content: center; padding: 1.5rem; overflow: hidden; position: relative;">
+                    <!-- Ambient glow orbs -->
+                    <div style="position: absolute; top: -80px; right: -80px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(0, 240, 255, 0.06) 0%, transparent 70%); border-radius: 50%; z-index: 0; animation: floatOrb 8s ease-in-out infinite;"></div>
+                    <div style="position: absolute; bottom: -120px; left: -120px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%); border-radius: 50%; z-index: 0; animation: floatOrb 10s ease-in-out infinite reverse;"></div>
+                    <div style="position: absolute; top: 40%; left: 50%; width: 250px; height: 250px; background: radial-gradient(circle, rgba(48, 209, 88, 0.03) 0%, transparent 70%); border-radius: 50%; z-index: 0; transform: translate(-50%, -50%);"></div>
                     
                     <div style="max-width: 420px; width: 100%; position: relative; z-index: 1;">
                         ${!showOtpInput ? `
                             <!-- Logo Section -->
-                            <div style="text-align: center; margin-bottom: 1.5rem;">
-                                <svg width="70" height="70" viewBox="0 0 80 80" style="margin: 0 auto; margin-bottom: 0.75rem; filter: drop-shadow(0 8px 24px rgba(20, 184, 166, 0.4));">
-                                    <defs>
-                                        <radialGradient id="logoBg" cx="50%" cy="50%" r="50%">
-                                            <stop offset="0%" style="stop-color:#20c997;stop-opacity:1" />
-                                            <stop offset="100%" style="stop-color:#14b8a6;stop-opacity:1" />
-                                        </radialGradient>
-                                    </defs>
-                                    <rect x="0" y="0" width="80" height="80" rx="18" fill="url(#logoBg)"/>
-                                    <circle cx="40" cy="40" r="26" fill="none" stroke="#ffffff" stroke-width="5" opacity="1"/>
-                                    <circle cx="40" cy="40" r="24" fill="none" stroke="#f0f9ff" stroke-width="1.5" opacity="0.4"/>
-                                </svg>
-                                <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a; margin-bottom: 0.25rem; letter-spacing: -0.5px;">Wellness</h1>
-                                <p style="font-size: 0.95rem; font-weight: 600; color: #14b8a6;">Your Health Companion</p>
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <div style="display: inline-block; animation: neonPulse 3s ease-in-out infinite;">
+                                    <svg width="80" height="80" viewBox="0 0 80 80" style="margin: 0 auto; margin-bottom: 1rem;">
+                                        <defs>
+                                            <radialGradient id="logoBgDark" cx="50%" cy="50%" r="50%">
+                                                <stop offset="0%" style="stop-color:#0D0D14;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#111118;stop-opacity:1" />
+                                            </radialGradient>
+                                            <linearGradient id="ringStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#30D158;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#00F0FF;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                        <rect x="0" y="0" width="80" height="80" rx="20" fill="url(#logoBgDark)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                                        <circle cx="40" cy="40" r="26" fill="none" stroke="url(#ringStroke)" stroke-width="4" opacity="0.9"/>
+                                        <circle cx="40" cy="40" r="22" fill="none" stroke="rgba(0, 240, 255, 0.15)" stroke-width="1.5"/>
+                                        <circle cx="40" cy="40" r="6" fill="#30D158"/>
+                                    </svg>
+                                </div>
+                                <h1 style="font-size: 2rem; font-weight: 800; color: #F5F5F7; margin-bottom: 0.25rem; letter-spacing: -0.5px;">Wellness</h1>
+                                <p style="font-size: 0.9rem; font-weight: 600; color: #30D158; letter-spacing: 2px; text-transform: uppercase;">Your Health Companion</p>
                             </div>
                             
-                            <div style="text-align: center; margin-bottom: 1.75rem;">
-                                <h2 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.3;">Track What Matters</h2>
-                                <p style="color: #64748b; font-size: 0.85rem; line-height: 1.5;">Start your journey to smarter wellness with intelligent health tracking.</p>
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <h2 style="font-size: 1.2rem; font-weight: 600; color: #F5F5F7; margin-bottom: 0.5rem; line-height: 1.4;">Track What Matters</h2>
+                                <p style="color: #8E8E93; font-size: 0.85rem; line-height: 1.6;">Start your journey to smarter wellness with intelligent health tracking.</p>
                             </div>
                             
                             <!-- Login Form -->
-                            <form id="phoneForm" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem;">
+                            <form id="phoneForm" style="display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1.5rem;">
                                 <div>
-                                    <label style="display: block; color: #334155; font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.5px;">PHONE NUMBER</label>
-                                    <input type="tel" id="phoneInput" placeholder="Enter 10-digit number" pattern="[0-9]{10}" maxlength="10" required style="width: 100%; padding: 1rem 1.25rem; border: 2px solid #e2e8f0; border-radius: 1rem; font-size: 1rem; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); color: #0f172a; transition: all 0.3s ease; font-weight: 500;">
-                                    <style>
-                                        input[type="tel"]:focus {
-                                            outline: none;
-                                            border-color: #14b8a6;
-                                            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
-                                            background: #ffffff;
-                                        }
-                                        input[type="tel"]::placeholder {
-                                            color: #cbd5e1;
-                                        }
-                                    </style>
+                                    <label style="display: block; color: #8E8E93; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.625rem; letter-spacing: 2px; text-transform: uppercase;">Phone Number</label>
+                                    <input type="tel" id="phoneInput" class="auth-input-dark" placeholder="Enter 10-digit number" pattern="[0-9]{10}" maxlength="10" required>
                                 </div>
                                 
-                                <button type="submit" id="sendOtpBtn" style="padding: 1rem 1.5rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 1rem; font-weight: 700; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3); transition: all 0.3s ease; letter-spacing: 0.5px; text-transform: uppercase;">
-                                    <span id="sendOtpText">Send OTP</span>
-                                </button>
+                                <div style="margin-top: 0.5rem;">
+                                    <button type="submit" id="sendOtpBtn" class="auth-btn-primary">
+                                        <span id="sendOtpText">Send OTP</span>
+                                    </button>
+                                </div>
                                 
-                                <button type="button" style="padding: 1rem 1.5rem; background: transparent; color: #14b8a6; border: 2px solid #14b8a6; border-radius: 1rem; font-weight: 700; cursor: pointer; font-size: 1rem; transition: all 0.3s ease; letter-spacing: 0.5px; text-transform: uppercase;">
+                                <button type="button" class="auth-btn-secondary" id="signUpBtn" onclick="showSignUpPage()">
                                     Sign Up
                                 </button>
                                 
-                                <p style="text-align: center; color: #94a3b8; font-size: 0.875rem; font-weight: 500; margin-top: 1rem;">Demo: Use any 10-digit number</p>
+                                <p style="text-align: center; color: #48484A; font-size: 0.8rem; font-weight: 500; margin-top: 0.5rem;">Demo: Use any 10-digit number</p>
                             </form>
                         ` : `
-                            <!-- Ring Display on OTP Page -->
-                            <div style="text-align: center; margin-bottom: 2rem;">
-                                <h1 style="font-size: 1.75rem; font-weight: 700; color: #0f172a; margin-bottom: 1rem;">Verify Phone</h1>
-                                <p style="color: #64748b; margin-bottom: 0.5rem;">OTP sent to</p>
-                                <p style="font-weight: 700; color: #14b8a6; font-size: 1.1rem;">${window.phoneNumber}</p>
+                            <!-- OTP Verification Header -->
+                            <div style="text-align: center; margin-bottom: 2.5rem;">
+                                <div style="display: inline-block; margin-bottom: 1.5rem; animation: neonPulse 3s ease-in-out infinite;">
+                                    <svg width="64" height="64" viewBox="0 0 64 64">
+                                        <defs>
+                                            <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#30D158;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#00F0FF;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                        <rect x="0" y="0" width="64" height="64" rx="16" fill="rgba(13, 13, 20, 0.8)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                                        <path d="M32 14 L46 22 V34 C46 42 40 48 32 50 C24 48 18 42 18 34 V22 Z" fill="none" stroke="url(#shieldGrad)" stroke-width="2.5" stroke-linejoin="round"/>
+                                        <path d="M26 33 L30 37 L38 29" fill="none" stroke="#30D158" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <h1 style="font-size: 1.75rem; font-weight: 800; color: #F5F5F7; margin-bottom: 0.75rem; letter-spacing: -0.3px;">Verify Phone</h1>
+                                <p style="color: #8E8E93; margin-bottom: 0.375rem; font-size: 0.9rem;">OTP sent to</p>
+                                <p style="font-weight: 700; color: #30D158; font-size: 1.15rem; letter-spacing: 1px;">${window.phoneNumber}</p>
                             </div>
                             
                             <!-- OTP Inputs -->
                             <form id="otpForm" style="display: flex; flex-direction: column; gap: 2rem;">
-                                <div style="display: flex; gap: 0.75rem; justify-content: center;">
-                                    ${[1, 2, 3, 4, 5, 6].map(i => `<input type="text" class="otp-input" maxlength="1" style="width: 50px; height: 50px; text-align: center; font-size: 1.5rem; border: 2px solid #e2e8f0; border-radius: 0.75rem; font-weight: 600; background: #ffffff; color: #0f172a; transition: all 0.3s ease;" required>`).join('')}
+                                <div style="display: flex; gap: 0.625rem; justify-content: center;">
+                                    ${[1, 2, 3, 4, 5, 6].map(i => '<input type="text" class="otp-input otp-input-dark" maxlength="1" required>').join('')}
                                 </div>
-                                <style>
-                                    .otp-input:focus {
-                                        outline: none;
-                                        border-color: #14b8a6;
-                                        box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
-                                        background: #f8fafc;
-                                    }
-                                </style>
                                 
-                                <button type="submit" id="verifyOtpBtn" style="padding: 1rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 1rem; font-weight: 700; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3); transition: all 0.3s ease; letter-spacing: 0.5px; text-transform: uppercase;">
+                                <button type="submit" id="verifyOtpBtn" class="auth-btn-primary">
                                     <span id="verifyOtpText">Verify OTP</span>
                                 </button>
                                 
-                                <button type="button" id="resendBtn" style="padding: 0.875rem; background: transparent; color: #14b8a6; border: 2px solid #14b8a6; border-radius: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; font-size: 0.95rem; letter-spacing: 0.5px; text-transform: uppercase;">
+                                <button type="button" id="resendBtn" class="auth-btn-secondary">
                                     Resend OTP
                                 </button>
                             </form>
@@ -524,7 +814,7 @@
 
         function renderMainApp() {
             const content = getPageContent(currentPage);
-            
+
             return `
                 <div style="min-height: 100vh; background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 50%, #eef2ff 100%); transition: background 0.5s ease;">
                     <div style="max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; position: relative;">
@@ -538,7 +828,7 @@
         }
 
         function getPageContent(page) {
-            switch(page) {
+            switch (page) {
                 case "dashboard": return renderDashboard();
                 case "sleep": return renderSleepTracker();
                 case "mental": return renderMentalHealth();
@@ -551,243 +841,369 @@
             }
         }
 
+        // ── Theme/Mode State ──────────────────────────────────────
+        let appTheme = 'default'; // 'dark' | 'light' | 'default'
+
+        function getThemeColors() {
+            switch (appTheme) {
+                case 'dark': return {
+                    bg: 'linear-gradient(180deg,#050508 0%,#080810 50%,#0A0A14 100%)',
+                    card: 'rgba(13,13,20,0.85)',
+                    cardBorder: 'rgba(255,255,255,0.07)',
+                    text: '#F5F5F7',
+                    textSub: '#8E8E93',
+                    textLabel: '#6E6E73',
+                    accent: '#30D158',
+                    accentBlue: '#00F0FF',
+                    chartBg: 'rgba(13,13,20,0.9)',
+                    chartBorder: 'rgba(48,209,88,0.15)',
+                    gridLine: 'rgba(255,255,255,0.06)',
+                    barColor: 'rgba(48,209,88,0.35)',
+                    barBorder: 'rgba(48,209,88,0.5)',
+                    insightBg: 'rgba(13,13,20,0.9)',
+                    insightBorder: 'rgba(48,209,88,0.2)',
+                    navBg: 'rgba(5,5,8,0.95)',
+                    navBorder: 'rgba(255,255,255,0.06)',
+                    surfaceBg: '#050508'
+                };
+                case 'light': return {
+                    bg: 'linear-gradient(180deg,#f0faf5 0%,#e8f5f0 50%,#d4ede8 100%)',
+                    card: 'rgba(255,255,255,0.95)',
+                    cardBorder: 'rgba(20,184,166,0.15)',
+                    text: '#0f172a',
+                    textSub: '#64748b',
+                    textLabel: '#94a3b8',
+                    accent: '#0d9488',
+                    accentBlue: '#0891b2',
+                    chartBg: '#ffffff',
+                    chartBorder: 'rgba(20,184,166,0.2)',
+                    gridLine: 'rgba(20,184,166,0.15)',
+                    barColor: 'rgba(20,184,166,0.35)',
+                    barBorder: 'rgba(20,184,166,0.5)',
+                    insightBg: 'linear-gradient(135deg,rgba(14,165,233,0.08) 0%,rgba(20,184,166,0.1) 100%)',
+                    insightBorder: 'rgba(14,165,233,0.2)',
+                    navBg: 'rgba(255,255,255,0.98)',
+                    navBorder: 'rgba(20,184,166,0.15)',
+                    surfaceBg: '#f0faf5'
+                };
+                default: return { // system default (white/off-white)
+                    bg: 'linear-gradient(180deg,#ffffff 0%,#f5f7ff 50%,#eef2ff 100%)',
+                    card: 'rgba(255,255,255,0.9)',
+                    cardBorder: 'rgba(20,184,166,0.12)',
+                    text: '#0f172a',
+                    textSub: '#64748b',
+                    textLabel: '#94a3b8',
+                    accent: '#14b8a6',
+                    accentBlue: '#0891b2',
+                    chartBg: '#ffffff',
+                    chartBorder: 'rgba(20,184,166,0.2)',
+                    gridLine: 'rgba(20,184,166,0.12)',
+                    barColor: 'rgba(20,184,166,0.3)',
+                    barBorder: 'rgba(20,184,166,0.45)',
+                    insightBg: 'linear-gradient(135deg,rgba(14,165,233,0.08) 0%,rgba(20,184,166,0.08) 100%)',
+                    insightBorder: 'rgba(14,165,233,0.18)',
+                    navBg: 'rgba(255,255,255,0.96)',
+                    navBorder: 'rgba(20,184,166,0.12)',
+                    surfaceBg: '#ffffff'
+                };
+            }
+        }
+
+        function cycleTheme() {
+            const modes = ['default', 'light', 'dark'];
+            const idx = modes.indexOf(appTheme);
+            appTheme = modes[(idx + 1) % modes.length];
+            const root = document.getElementById('root');
+            root.innerHTML = renderMainApp();
+            setupEventListeners(root);
+            if (currentPage === 'dashboard') setTimeout(() => loadDashboardData(), 100);
+        }
+
+        function getThemeIcon() {
+            switch (appTheme) {
+                case 'dark': return '🌙';
+                case 'light': return '☀️';
+                default: return '⚙️';
+            }
+        }
+
+        function getThemeLabel() {
+            switch (appTheme) {
+                case 'dark': return 'Dark';
+                case 'light': return 'Light';
+                default: return 'Auto';
+            }
+        }
+
         function renderDashboard() {
+            const t = getThemeColors();
+            const moodData = [
+                { day: 'Mon', value: 65, mood: 'Good' },
+                { day: 'Tue', value: 72, mood: 'Great' },
+                { day: 'Wed', value: 58, mood: 'Okay' },
+                { day: 'Thu', value: 85, mood: 'Excellent' },
+                { day: 'Fri', value: 78, mood: 'Great' },
+                { day: 'Sat', value: 92, mood: 'Excellent' },
+                { day: 'Sun', value: 75, mood: 'Great' }
+            ];
+            const chartH = 160;
+            const chartW = 280;
+            const padLeft = 0, padBottom = 24, padTop = 10;
+            const innerH = chartH - padBottom - padTop;
+            const innerW = chartW;
+            const barW = 26;
+            const cols = moodData.length;
+
+            // Build SVG chart points
+            const pts = moodData.map((d, i) => {
+                const x = (i / (cols - 1)) * innerW;
+                const y = padTop + innerH * (1 - d.value / 100);
+                return { x, y, ...d };
+            });
+            const polyPoints = pts.map(p => `${p.x},${p.y}`).join(' ');
+            const areaPoints = `${pts[0].x},${padTop + innerH} ${polyPoints} ${pts[cols - 1].x},${padTop + innerH}`;
+
             return `
-                <div style="padding: 1.5rem; padding-bottom: 8rem;">
-                    <div style="margin-bottom: -0.5rem;">
-                        <p style="color: #64748b; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 0.25rem;">WELCOME BACK</p>
-                        <h1 style="font-size: 2.5rem; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin: 0;">Your Status</h1>
+                <style>
+                    @keyframes barRise {
+                        from { transform: scaleY(0); transform-origin: bottom; }
+                        to   { transform: scaleY(1); transform-origin: bottom; }
+                    }
+                    @keyframes dotPop {
+                        0%   { r: 0; opacity: 0; }
+                        60%  { r: 7px; opacity: 1; }
+                        100% { r: 5px; opacity: 1; }
+                    }
+                    .mood-bar { animation: barRise 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+                    .mood-dot { animation: dotPop 0.4s ease both; }
+                    .mode-pill {
+                        display: inline-flex; align-items: center; gap: 0.4rem;
+                        padding: 0.35rem 0.75rem; border-radius: 2rem;
+                        background: ${appTheme === 'dark' ? 'rgba(48,209,88,0.12)' : 'rgba(20,184,166,0.1)'};
+                        border: 1px solid ${appTheme === 'dark' ? 'rgba(48,209,88,0.3)' : 'rgba(20,184,166,0.25)'};
+                        cursor: pointer; transition: all 0.25s ease;
+                        font-size: 0.78rem; font-weight: 700;
+                        color: ${t.accent};
+                        letter-spacing: 0.5px; user-select: none;
+                    }
+                    .mode-pill:hover { transform: scale(1.05); }
+                    .insight-row {
+                        display: flex; justify-content: space-between; align-items: center;
+                        padding: 0.875rem 0;
+                        border-bottom: 1px solid ${appTheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(14,165,233,0.12)'};
+                    }
+                    .insight-row:last-child { border-bottom: none; padding-bottom: 0; }
+                    .insight-label { display: flex; align-items: center; gap: 0.625rem; color: ${t.textSub}; font-size: 0.9rem; font-weight: 500; }
+                    .insight-value { font-weight: 750; font-size: 0.925rem; }
+                </style>
+
+                <div style="padding: 1.5rem; padding-bottom: 8rem; background: ${t.bg}; min-height: 100vh; color: ${t.text}; transition: background 0.4s ease, color 0.4s ease;">
+
+                    <!-- Header row -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                        <div>
+                            <p style="color:${t.textSub}; font-size:0.8rem; font-weight:700; letter-spacing:1.5px; margin-bottom:0.2rem;">WELCOME BACK</p>
+                            <h1 style="font-size:2.2rem; font-weight:800; color:${t.text}; letter-spacing:-0.5px; margin:0; line-height:1;">Your Status</h1>
+                        </div>
+                        <!-- Mode toggle pill -->
+                        <button class="mode-pill" onclick="cycleTheme()" title="Toggle theme">
+                            ${getThemeIcon()} ${getThemeLabel()}
+                        </button>
                     </div>
-                    
+
                     <!-- Ring Showcase Card -->
-                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.5rem 0 2rem 0; margin: 0; box-shadow: none;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                    <div style="background:${t.card}; border:1px solid ${t.cardBorder}; border-radius:1.5rem; padding:1.25rem 1.25rem 1rem; margin-bottom:1.25rem; box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
                             <div>
-                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-                                    <p style="color: #10b981; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">CONNECTED DEVICE</p>
-                                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></div>
+                                <div style="display:flex; align-items:center; gap:0.4rem; margin-bottom:0.5rem;">
+                                    <div style="width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;"></div>
+                                    <p style="color:#10b981;font-size:0.72rem;font-weight:700;letter-spacing:1px;">CONNECTED DEVICE</p>
                                 </div>
-                                <h2 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Wellness Ring</h2>
-                                <p style="color: #10b981; font-size: 0.875rem; font-weight: 600; margin-top: 0.5rem;">Connected & Syncing</p>
+                                <h2 style="font-size:1.45rem;font-weight:800;color:${t.text};">Wellness Ring</h2>
+                                <p style="color:#10b981;font-size:0.8rem;font-weight:600;margin-top:0.25rem;">Connected & Syncing</p>
                             </div>
-                            <svg width="100" height="100" viewBox="0 0 100 100" style="filter: drop-shadow(0 4px 12px rgba(20, 184, 166, 0.2));">
+                            <svg width="80" height="80" viewBox="0 0 100 100" style="filter:drop-shadow(0 4px 12px rgba(20,184,166,0.25));">
                                 <defs>
-                                    <radialGradient id="ringGrad" cx="50%" cy="50%">
-                                        <stop offset="0%" style="stop-color:#14b8a6;stop-opacity:1" />
-                                        <stop offset="100%" style="stop-color:#0891b2;stop-opacity:1" />
+                                    <radialGradient id="rg2" cx="50%" cy="50%">
+                                        <stop offset="0%" style="stop-color:#14b8a6;stop-opacity:1"/>
+                                        <stop offset="100%" style="stop-color:#0891b2;stop-opacity:1"/>
                                     </radialGradient>
                                 </defs>
-                                <!-- Outer Ring -->
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="url(#ringGrad)" stroke-width="8" opacity="0.8"/>
-                                <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(20, 184, 166, 0.3)" stroke-width="2"/>
-                                <!-- Inner Circle -->
-                                <circle cx="50" cy="50" r="28" fill="white" stroke="url(#ringGrad)" stroke-width="2"/>
-                                <!-- Center Dot -->
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="url(#rg2)" stroke-width="8" opacity="0.85"/>
+                                <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(20,184,166,0.25)" stroke-width="2"/>
+                                <circle cx="50" cy="50" r="28" fill="${appTheme === 'dark' ? '#0D0D14' : 'white'}" stroke="url(#rg2)" stroke-width="2"/>
                                 <circle cx="50" cy="50" r="6" fill="#14b8a6"/>
                             </svg>
                         </div>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
-                            <div style="background: transparent; border-radius: 1rem; padding: 1rem; text-align: center; border: none;">
-                                <p style="color: #64748b; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;">BATTERY</p>
-                                <p style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0.25rem 0;">87%</p>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+                            <div style="text-align:center;padding:0.625rem;background:${appTheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(20,184,166,0.05)'};border-radius:0.75rem;">
+                                <p style="color:${t.textLabel};font-size:0.68rem;font-weight:700;letter-spacing:0.5px;">BATTERY</p>
+                                <p style="font-size:1.35rem;font-weight:800;color:${t.text};margin:0.2rem 0;">87%</p>
                             </div>
-                            <div style="background: transparent; border-radius: 1rem; padding: 1rem; text-align: center; border: none;">
-                                <p style="color: #64748b; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;">STATUS</p>
-                                <p style="font-size: 1rem; font-weight: 800; color: #10b981; margin: 0.25rem 0;">Excellent</p>
+                            <div style="text-align:center;padding:0.625rem;background:${appTheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(20,184,166,0.05)'};border-radius:0.75rem;">
+                                <p style="color:${t.textLabel};font-size:0.68rem;font-weight:700;letter-spacing:0.5px;">STATUS</p>
+                                <p style="font-size:1rem;font-weight:800;color:#10b981;margin:0.2rem 0;">Excellent</p>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 1rem;">
-                            <button style="flex: 1; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; padding: 0.75rem 1rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.9rem; cursor: pointer; box-shadow: 0 2px 8px rgba(20, 184, 166, 0.2);" onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">Connect</button>
-                            <button style="flex: 1; background: transparent; color: #64748b; border: 1px solid rgba(20, 184, 166, 0.3); padding: 0.75rem 1rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.9rem; cursor: pointer;" onmouseover="this.style.background='rgba(20, 184, 166, 0.05)';" onmouseout="this.style.background='transparent';">Skip</button>
+                        <div style="display:flex;gap:0.75rem;">
+                            <button style="flex:1;background:linear-gradient(135deg,#14b8a6 0%,#0891b2 100%);color:white;border:none;padding:0.65rem 0.875rem;border-radius:0.75rem;font-weight:700;font-size:0.875rem;cursor:pointer;box-shadow:0 2px 10px rgba(20,184,166,0.25);">Connect</button>
+                            <button style="flex:1;background:transparent;color:${t.textSub};border:1px solid ${t.cardBorder};padding:0.65rem 0.875rem;border-radius:0.75rem;font-weight:600;font-size:0.875rem;cursor:pointer;">Skip</button>
                         </div>
                     </div>
-                    
+
                     <!-- Stress Level Card -->
-                    <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 2rem; margin-bottom: 0.5rem; box-shadow: none;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                    <div style="background:${t.card};border:1px solid ${t.cardBorder};border-radius:1.5rem;padding:1.25rem;margin-bottom:1.25rem;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
                             <div>
-                                <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 0.5rem;">STRESS ANALYSIS</p>
-                                <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">Relaxed</h2>
-                                <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Optimal State</p>
+                                <p style="color:${t.textLabel};font-size:0.72rem;font-weight:700;letter-spacing:1px;margin-bottom:0.4rem;">STRESS ANALYSIS</p>
+                                <h2 style="font-size:1.35rem;font-weight:700;color:${t.text};">Relaxed</h2>
+                                <p style="color:${t.textSub};font-size:0.8rem;margin-top:0.2rem;">Optimal State</p>
                             </div>
-                            <div style="width: 1px; height: 80px; background: rgba(59, 130, 246, 0.2);"></div>
-                            <div style="text-align: right;">
-                                <p style="color: #3b82f6; font-size: 0.875rem; font-weight: 700; letter-spacing: 0.5px;">LEVEL</p>
-                                <p style="font-size: 2rem; font-weight: 800; color: #0f172a; margin: 0.25rem 0;">32/100</p>
-                                <p style="color: #64748b; font-size: 0.75rem;">Good</p>
+                            <div style="text-align:right;">
+                                <p style="color:#3b82f6;font-size:0.8rem;font-weight:700;letter-spacing:0.5px;">LEVEL</p>
+                                <p style="font-size:1.75rem;font-weight:800;color:${t.text};margin:0.2rem 0;">32<span style="font-size:1rem;color:${t.textSub};">/100</span></p>
+                                <p style="color:${t.textSub};font-size:0.72rem;">Good</p>
                             </div>
                         </div>
-                        <div style="height: 4px; background: rgba(59, 130, 246, 0.2); border-radius: 2px; overflow: hidden;">
-                            <div style="height: 100%; background: linear-gradient(90deg, #3b82f6 0%, #0ea5e9 100%); width: 32%; border-radius: 2px;"></div>
+                        <div style="height:6px;background:${appTheme === 'dark' ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.12)'};border-radius:3px;overflow:hidden;">
+                            <div style="height:100%;background:linear-gradient(90deg,#3b82f6 0%,#0ea5e9 100%);width:32%;border-radius:3px;"></div>
                         </div>
                     </div>
-                    
+
                     <!-- Metrics Grid -->
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
-                        <!-- Steps -->
-                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
-                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">STEPS</p>
-                            <p style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">8,432</p>
-                            <div style="font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between;">
-                                <span>of 10,000</span>
-                                <span>84%</span>
-                            </div>
-                            <div style="height: 3px; background: rgba(34, 197, 94, 0.2); border-radius: 1.5px; margin-top: 0.5rem; overflow: hidden;">
-                                <div style="height: 100%; background: linear-gradient(90deg, #10b981 0%, #14b8a6 100%); width: 84%;"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Heart Rate -->
-                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
-                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">HEART RATE</p>
-                            <p style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">72 <span style="font-size: 1rem;">bpm</span></p>
-                            <p style="font-size: 0.75rem; color: #64748b;">Resting Rate</p>
-                        </div>
-                        
-                        <!-- Calories -->
-                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
-                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">CALORIES</p>
-                            <p style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">524 <span style="font-size: 1rem;">kcal</span></p>
-                            <div style="font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between;">
-                                <span>of 750</span>
-                                <span>70%</span>
-                            </div>
-                            <div style="height: 3px; background: rgba(99, 102, 241, 0.2); border-radius: 1.5px; margin-top: 0.5rem; overflow: hidden;">
-                                <div style="height: 100%; background: linear-gradient(90deg, #6366f1 0%, #14b8a6 100%); width: 70%;"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Sleep -->
-                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
-                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">SLEEP</p>
-                            <p style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">7h 30m</p>
-                            <p style="font-size: 0.75rem; color: #64748b;">Last Night</p>
-                        </div>
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1.25rem;">
+                        ${[
+                    { label: 'STEPS', value: '8,432', sub: 'of 10,000 · 84%', color: '#10b981', pct: 84 },
+                    { label: 'HEART RATE', value: '72 bpm', sub: 'Resting Rate', color: '#ef4444', pct: null },
+                    { label: 'CALORIES', value: '524 kcal', sub: 'of 750 · 70%', color: '#6366f1', pct: 70 },
+                    { label: 'SLEEP', value: '7h 30m', sub: 'Last Night', color: '#8b5cf6', pct: null }
+                ].map(m => `
+                        <div style="background:${t.card};border:1px solid ${t.cardBorder};border-radius:1.25rem;padding:1.125rem;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+                            <p style="color:${t.textLabel};font-size:0.68rem;font-weight:700;letter-spacing:0.5px;margin-bottom:0.5rem;">${m.label}</p>
+                            <p style="font-size:1.5rem;font-weight:800;color:${t.text};margin-bottom:0.4rem;">${m.value}</p>
+                            <p style="font-size:0.72rem;color:${t.textSub};">${m.sub}</p>
+                            ${m.pct != null ? `<div style="height:3px;background:${appTheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'};border-radius:2px;margin-top:0.5rem;overflow:hidden;"><div style="height:100%;background:${m.color};width:${m.pct}%;border-radius:2px;"></div></div>` : ''}
+                        </div>`).join('')}
                     </div>
-                    
-                    <!-- Blood Pressure & Water -->
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
-                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
-                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">BLOOD PRESSURE</p>
-                            <p style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">120/80</p>
-                            <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">mmHg</p>
-                        </div>
-                        
-                        <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.5rem; box-shadow: none;">
-                            <p style="color: #64748b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.75rem;">WATER INTAKE</p>
-                            <p style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">6/8</p>
-                            <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">cups</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Weekly Emotions Chart -->
-                    <div style="background: transparent; border: none; border-radius: 1.25rem; padding: 1.75rem; box-shadow: none; margin-bottom: 2rem;">
-                        <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1.5rem; color: #0f172a; letter-spacing: -0.3px;">Weekly Emotions Trend</h2>
-                        
-                        <!-- Chart Container -->
-                        <div style="background: white; border-radius: 1rem; padding: 1.5rem; position: relative;">
+
+                    <!-- ══════════════════════════════════════════ -->
+                    <!-- Weekly Emotions Trend Chart               -->
+                    <!-- ══════════════════════════════════════════ -->
+                    <div style="background:${t.card};border:1px solid ${t.cardBorder};border-radius:1.5rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+                        <h2 style="font-size:1rem;font-weight:700;color:${t.text};margin-bottom:1.25rem;letter-spacing:-0.2px;">Weekly Emotions Trend</h2>
+
+                        <!-- SVG Chart -->
+                        <div style="background:${t.chartBg};border:1px solid ${t.chartBorder};border-radius:1rem;padding:1rem 0.75rem 0.5rem 2.5rem;position:relative;overflow:hidden;">
+
                             <!-- Y-axis labels -->
-                            <div style="position: absolute; left: 0; top: 0; height: 100%; width: 35px; display: flex; flex-direction: column; justify-content: space-between; text-align: right; padding: 1.5rem 0.5rem; font-size: 0.7rem; color: #94a3b8; font-weight: 600;">
-                                <span>100</span>
-                                <span>75</span>
-                                <span>50</span>
-                                <span>25</span>
-                                <span>0</span>
+                            <div style="position:absolute;left:0.25rem;top:1rem;bottom:1.75rem;display:flex;flex-direction:column;justify-content:space-between;font-size:0.62rem;color:${t.textLabel};font-weight:600;text-align:right;width:2rem;">
+                                <span>100</span><span>75</span><span>50</span><span>25</span><span>0</span>
                             </div>
-                            
-                            <!-- Grid lines -->
-                            <div style="position: absolute; left: 35px; top: 1.5rem; right: 1rem; height: calc(100% - 3rem); display: flex; flex-direction: column; justify-content: space-between; pointer-events: none;">
-                                <div style="border-top: 1px dashed rgba(20, 184, 166, 0.2);"></div>
-                                <div style="border-top: 1px dashed rgba(20, 184, 166, 0.2);"></div>
-                                <div style="border-top: 1px dashed rgba(20, 184, 166, 0.2);"></div>
-                                <div style="border-top: 1px dashed rgba(20, 184, 166, 0.2);"></div>
-                            </div>
-                            
-                            <!-- Chart content -->
-                            <div style="margin-left: 35px; height: 220px; position: relative; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 2.5rem;">
-                                ${[
-                                    {day: 'Mon', value: 65, mood: 'Good'},
-                                    {day: 'Tue', value: 72, mood: 'Great'},
-                                    {day: 'Wed', value: 58, mood: 'Okay'},
-                                    {day: 'Thu', value: 85, mood: 'Excellent'},
-                                    {day: 'Fri', value: 78, mood: 'Great'},
-                                    {day: 'Sat', value: 92, mood: 'Excellent'},
-                                    {day: 'Sun', value: 75, mood: 'Great'}
-                                ].map(d => `
-                                    <div style="position: relative; width: 12%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.5rem;">
-                                        <!-- Line point -->
-                                        <div style="position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #14b8a6; border: 2px solid white; box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3); top: ${100 - d.value}%; z-index: 2;"></div>
-                                        
-                                        <!-- Bar -->
-                                        <div style="width: 100%; background: linear-gradient(135deg, rgba(20, 184, 166, 0.4) 0%, rgba(14, 165, 233, 0.3) 100%); border-radius: 0.25rem 0.25rem 0 0; height: ${d.value}%; position: relative; border: 1px solid rgba(20, 184, 166, 0.3); border-bottom: none; opacity: 0.6;"></div>
-                                        
-                                        <!-- Day label -->
-                                        <span style="font-size: 0.7rem; color: #64748b; font-weight: 600; white-space: nowrap;">${d.day}</span>
-                                    </div>
+
+                            <svg viewBox="0 0 ${chartW} ${chartH}" style="width:100%;height:auto;overflow:visible;" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="${t.accent}" stop-opacity="0.55"/>
+                                        <stop offset="100%" stop-color="${t.accentBlue}" stop-opacity="0.2"/>
+                                    </linearGradient>
+                                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="${t.accent}" stop-opacity="0.18"/>
+                                        <stop offset="100%" stop-color="${t.accent}" stop-opacity="0.01"/>
+                                    </linearGradient>
+                                </defs>
+
+                                <!-- Grid lines -->
+                                ${[0, 25, 50, 75, 100].map(v => {
+                    const y = padTop + innerH * (1 - v / 100);
+                    return `<line x1="0" y1="${y}" x2="${chartW}" y2="${y}" stroke="${t.gridLine}" stroke-width="1" stroke-dasharray="4,4"/>`;
+                }).join('')}
+
+                                <!-- Area fill -->
+                                <polygon points="${areaPoints}" fill="url(#areaGrad)"/>
+
+                                <!-- Bars -->
+                                ${pts.map((p, i) => {
+                    const bx = p.x - barW / 2;
+                    const bh = innerH * (p.value / 100);
+                    const by = padTop + innerH - bh;
+                    return `<rect class="mood-bar" x="${bx}" y="${by}" width="${barW}" height="${bh}" rx="5" fill="url(#barGrad)" style="animation-delay:${i * 0.07}s"/>`;
+                }).join('')}
+
+                                <!-- Line -->
+                                <polyline points="${polyPoints}" fill="none" stroke="${t.accent}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+
+                                <!-- Dots -->
+                                ${pts.map((p, i) => `
+                                    <circle class="mood-dot" cx="${p.x}" cy="${p.y}" r="5" fill="${t.accent}" stroke="${appTheme === 'dark' ? '#0D0D14' : 'white'}" stroke-width="2.5" style="animation-delay:${0.3 + i * 0.07}s"/>
                                 `).join('')}
-                            </div>
-                            
-                            <!-- Connection line -->
-                            <svg style="position: absolute; left: 35px; top: 1.5rem; right: 1rem; bottom: 2.5rem; width: calc(100% - 36px - 1rem); height: calc(100% - 3rem); pointer-events: none;">
-                                <polyline points="${
-                                    [65, 72, 58, 85, 78, 92, 75]
-                                    .map((v, i) => {
-                                        const x = (i * 100) / 6;
-                                        const y = 100 - v;
-                                        return `${x}%, ${y}%`;
-                                    })
-                                    .join(' ')
-                                }" fill="none" stroke="#14b8a6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.7;"/>
+
+                                <!-- X-axis labels -->
+                                ${pts.map(p => `
+                                    <text x="${p.x}" y="${chartH - 4}" text-anchor="middle" font-size="10" fill="${t.textLabel}" font-weight="600" font-family="inherit">${p.day}</text>
+                                `).join('')}
                             </svg>
                         </div>
-                        
+
                         <!-- Legend -->
-                        <div style="display: flex; gap: 2rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(14, 165, 233, 0.15);">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <div style="width: 12px; height: 12px; border-radius: 50%; background: #14b8a6;"></div>
-                                <span style="font-size: 0.85rem; color: #64748b;">Mood Level</span>
+                        <div style="display:flex;gap:1.5rem;margin-top:1rem;padding-top:0.875rem;border-top:1px solid ${t.cardBorder};">
+                            <div style="display:flex;align-items:center;gap:0.5rem;">
+                                <div style="width:10px;height:10px;border-radius:50%;background:${t.accent};"></div>
+                                <span style="font-size:0.8rem;color:${t.textSub};font-weight:500;">Mood Level</span>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <div style="width: 24px; height: 4px; background: linear-gradient(135deg, rgba(20, 184, 166, 0.4) 0%, rgba(14, 165, 233, 0.3) 100%); border-radius: 2px;"></div>
-                                <span style="font-size: 0.85rem; color: #64748b;">Daily Value</span>
+                            <div style="display:flex;align-items:center;gap:0.5rem;">
+                                <div style="width:22px;height:4px;background:linear-gradient(90deg,${t.accent}70,${t.accentBlue}50);border-radius:2px;"></div>
+                                <span style="font-size:0.8rem;color:${t.textSub};font-weight:500;">Daily Value</span>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Daily Summary -->
-                    <div style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%); border: 1.5px solid rgba(14, 165, 233, 0.2); border-radius: 1.25rem; padding: 1.75rem; box-shadow: 0 4px 16px rgba(14, 165, 233, 0.06);">
-                        <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1.25rem; color: #0f172a; letter-spacing: -0.3px;">Daily Insights</h2>
-                        <div style="display: flex; flex-direction: column; gap: 1rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid rgba(14, 165, 233, 0.15);">
-                                <span style="display: flex; align-items: center; gap: 0.75rem; color: #64748b; font-weight: 500;">
-                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #14b8a6;"></span>
-                                    Active Time
+
+                    <!-- ══════════════════════════════════════════ -->
+                    <!-- Daily Insights                            -->
+                    <!-- ══════════════════════════════════════════ -->
+                    <div style="background:${t.insightBg};border:1.5px solid ${t.insightBorder};border-radius:1.5rem;padding:1.5rem;box-shadow:0 4px 16px rgba(14,165,233,0.06);margin-bottom:1.25rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                            <h2 style="font-size:1rem;font-weight:700;color:${t.text};letter-spacing:-0.2px;">Daily Insights</h2>
+                            <span style="font-size:0.72rem;color:${t.textSub};font-weight:500;">Today</span>
+                        </div>
+                        <div>
+                            ${[
+                    { dot: '#14b8a6', label: 'Active Time', value: '45 mins', color: '#14b8a6' },
+                    { dot: '#3b82f6', label: 'Calories Burned', value: '524 kcal', color: '#3b82f6' },
+                    { dot: '#8b5cf6', label: 'Meditation Time', value: '12 mins', color: '#8b5cf6' },
+                    { dot: '#10b981', label: 'Steps Taken', value: '8,432', color: '#10b981' },
+                    { dot: '#ef4444', label: 'Heart Rate Avg', value: '72 bpm', color: '#ef4444' }
+                ].map(r => `
+                            <div class="insight-row">
+                                <span class="insight-label">
+                                    <span style="width:9px;height:9px;border-radius:50%;background:${r.dot};flex-shrink:0;"></span>
+                                    ${r.label}
                                 </span>
-                                <span style="font-weight: 700; color: #14b8a6;">45 mins</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid rgba(14, 165, 233, 0.15);">
-                                <span style="display: flex; align-items: center; gap: 0.75rem; color: #64748b; font-weight: 500;">
-                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6;"></span>
-                                    Calories Burned
-                                </span>
-                                <span style="font-weight: 700; color: #3b82f6;">524 kcal</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="display: flex; align-items: center; gap: 0.75rem; color: #64748b; font-weight: 500;">
-                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #0891b2;"></span>
-                                    Meditation Time
-                                </span>
-                                <span style="font-weight: 700; color: #0891b2;">12 mins</span>
-                            </div>
+                                <span class="insight-value" style="color:${r.color};">${r.value}</span>
+                            </div>`).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Blood Pressure & Water -->
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1rem;">
+                        <div style="background:${t.card};border:1px solid ${t.cardBorder};border-radius:1.25rem;padding:1.125rem;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+                            <p style="color:${t.textLabel};font-size:0.68rem;font-weight:700;letter-spacing:0.5px;margin-bottom:0.5rem;">BLOOD PRESSURE</p>
+                            <p style="font-size:1.5rem;font-weight:800;color:${t.text};">120/80</p>
+                            <p style="font-size:0.72rem;color:${t.textSub};margin-top:0.4rem;">mmHg · Normal</p>
+                        </div>
+                        <div style="background:${t.card};border:1px solid ${t.cardBorder};border-radius:1.25rem;padding:1.125rem;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+                            <p style="color:${t.textLabel};font-size:0.68rem;font-weight:700;letter-spacing:0.5px;margin-bottom:0.5rem;">WATER INTAKE</p>
+                            <p style="font-size:1.5rem;font-weight:800;color:${t.text};">6/8</p>
+                            <p style="font-size:0.72rem;color:${t.textSub};margin-top:0.4rem;">cups · On track</p>
                         </div>
                     </div>
                 </div>
             `;
         }
 
+
         function renderSleepTracker() {
             return `
-                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+            < div style = "padding: 1.5rem; padding-bottom: 8rem;" >
                     <h1 style="font-size: 1.875rem; font-weight: 700; color: #0f172a; margin-bottom: 1.5rem;">Sleep Tracker</h1>
                     
                     <div style="background: transparent; border: none; border-radius: 1rem; padding: 1.5rem 0; box-shadow: none; margin-bottom: 1.5rem;">
@@ -853,10 +1269,10 @@
                             <li style="display: flex; align-items: center; gap: 0.5rem; color: #0f172a;"><span style="color: #14b8a6; font-weight: 700; font-size: 1.25rem;">•</span> Exercise regularly but not before bed</li>
                         </ul>
                     </div>
-                </div>
+                </div >
             `;
         }
-        
+
         // Load and update dashboard data dynamically
         function loadDashboardData() {
             try {
@@ -865,22 +1281,22 @@
                 const stepsData = JSON.parse(stepsStr);
                 const stepsValue = stepsData.steps;
                 const stepsPercent = Math.round((stepsValue / stepsData.goal) * 100);
-                
+
                 // Get calories data
                 const caloriesStr = window.PageBridge.getCalories();
                 const caloriesData = JSON.parse(caloriesStr);
                 const caloriesValue = caloriesData.calories;
                 const caloriesPercent = Math.round((caloriesValue / caloriesData.goal) * 100);
-                
+
                 // Get heart rate data
                 const heartRateStr = window.PageBridge.getHeartRate();
                 const heartRateData = JSON.parse(heartRateStr);
                 const heartRateValue = heartRateData.bpm;
-                
+
                 // Update DOM elements
                 const root = document.getElementById("root");
                 if (!root) return;
-                
+
                 // Update steps
                 const stepsElements = root.querySelectorAll("p");
                 for (let el of stepsElements) {
@@ -891,13 +1307,13 @@
                         el.textContent = stepsPercent + "%";
                     }
                 }
-                
+
                 // Update progress bar width for steps
                 const progressBars = root.querySelectorAll("div[style*='width: 84%']");
                 if (progressBars.length > 0) {
                     progressBars[0].style.width = stepsPercent + "%";
                 }
-                
+
                 // Update calories
                 const caloriesElements = root.querySelectorAll("p");
                 for (let el of caloriesElements) {
@@ -908,13 +1324,13 @@
                         el.textContent = caloriesPercent + "%";
                     }
                 }
-                
+
                 // Update progress bar width for calories
                 const progressBars2 = root.querySelectorAll("div[style*='width: 70%']");
                 if (progressBars2.length > 0) {
                     progressBars2[0].style.width = caloriesPercent + "%";
                 }
-                
+
                 // Update heart rate
                 const heartRateElements = root.querySelectorAll("p");
                 for (let el of heartRateElements) {
@@ -922,17 +1338,17 @@
                         el.innerHTML = heartRateValue + ' <span style="font-size: 1rem;">bpm</span>';
                     }
                 }
-            } catch(e) {
+            } catch (e) {
                 console.log("Error loading dashboard data:", e);
             }
         }
 
         function renderMentalHealth() {
             return `
-                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+            < div style = "padding: 1.5rem; padding-bottom: 8rem;" >
                     <h1 style="font-size: 1.875rem; font-weight: 700; color: #0f172a; margin-bottom: 1.5rem;">Mental Wellness</h1>
                     
-                    <!-- How are you feeling section -->
+                    <!--How are you feeling section-- >
                     <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 0 0 2rem 0; box-shadow: none; margin-bottom: 2rem;">
                         <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; color: #0f172a; letter-spacing: -0.3px;">How are you feeling?</h2>
                         <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1.5rem;">Select an emotion that best describes your current state</p>
@@ -940,15 +1356,15 @@
                         <!-- Emotion Grid - 2x4 Layout -->
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
                             ${[
-                                {icon: '😊', label: 'Happy', color: '#fbbf24', bgColor: 'rgba(251, 191, 36, 0.1)', borderColor: 'rgba(251, 191, 36, 0.3)'},
-                                {icon: '🍃', label: 'Calm', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)'},
-                                {icon: '⚡', label: 'Excited', color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.3)'},
-                                {icon: '❤️', label: 'Grateful', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)'},
-                                {icon: '⚠️', label: 'Anxious', color: '#f97316', bgColor: 'rgba(249, 115, 22, 0.1)', borderColor: 'rgba(249, 115, 22, 0.3)'},
-                                {icon: '☁️', label: 'Sad', color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)'},
-                                {icon: '😤', label: 'Frustrated', color: '#f97316', bgColor: 'rgba(249, 115, 22, 0.1)', borderColor: 'rgba(249, 115, 22, 0.3)'},
-                                {icon: '☀️', label: 'Peaceful', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)'}
-                            ].map(emotion => `
+                    { icon: '😊', label: 'Happy', color: '#fbbf24', bgColor: 'rgba(251, 191, 36, 0.1)', borderColor: 'rgba(251, 191, 36, 0.3)' },
+                    { icon: '🍃', label: 'Calm', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)' },
+                    { icon: '⚡', label: 'Excited', color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.3)' },
+                    { icon: '❤️', label: 'Grateful', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)' },
+                    { icon: '⚠️', label: 'Anxious', color: '#f97316', bgColor: 'rgba(249, 115, 22, 0.1)', borderColor: 'rgba(249, 115, 22, 0.3)' },
+                    { icon: '☁️', label: 'Sad', color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)' },
+                    { icon: '😤', label: 'Frustrated', color: '#f97316', bgColor: 'rgba(249, 115, 22, 0.1)', borderColor: 'rgba(249, 115, 22, 0.3)' },
+                    { icon: '☀️', label: 'Peaceful', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)' }
+                ].map(emotion => `
                                 <button class="emotion-btn" data-emotion="${emotion.label}" style="background: ${emotion.bgColor}; border: 2px solid ${emotion.borderColor}; border-radius: 1.25rem; padding: 1.5rem; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; color: #0f172a; text-decoration: none; user-select: none;">
                                     <span style="font-size: 2.5rem; line-height: 1;">${emotion.icon}</span>
                                     <span style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">${emotion.label}</span>
@@ -957,7 +1373,7 @@
                         </div>
                     </div>
                     
-                    <!-- Ring Health Summary -->
+                    <!--Ring Health Summary-- >
                     <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 2rem 0; box-shadow: none; margin-bottom: 2rem;">
                         <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; color: #0f172a;">Wellness Insights</h2>
                         
@@ -1005,11 +1421,11 @@
                         <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Calming Activities</h2>
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
                             ${[
-                                {name: 'Deep Breathing', icon: '🌬️', color: '#3b82f6'},
-                                {name: 'Progressive Relax', icon: '🧘', color: '#10b981'},
-                                {name: 'Journaling', icon: '📝', color: '#f59e0b'},
-                                {name: 'Nature Walk', icon: '🌿', color: '#14b8a6'}
-                            ].map(a => `
+                    { name: 'Deep Breathing', icon: '🌬️', color: '#3b82f6' },
+                    { name: 'Progressive Relax', icon: '🧘', color: '#10b981' },
+                    { name: 'Journaling', icon: '📝', color: '#f59e0b' },
+                    { name: 'Nature Walk', icon: '🌿', color: '#14b8a6' }
+                ].map(a => `
                                 <button style="padding: 1.5rem; background: transparent; border: 1px solid rgba(20, 184, 166, 0.2); border-radius: 1rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; transition: all 0.3s ease; color: #0f172a; text-decoration: none; user-select: none;">
                                     <span style="font-size: 2rem;">${a.icon}</span>
                                     <span style="font-weight: 700; font-size: 0.9rem;">${a.name}</span>
@@ -1024,13 +1440,13 @@
                         <button id="saveThoughtBtn" style="width: 100%; margin-top: 1rem; padding: 0.75rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 0.875rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; letter-spacing: 0.5px;">Save Thought</button>
                         <div id="thoughtHistory" style="margin-top: 1.5rem;"></div>
                     </div>
-                </div>
+                </div >
             `;
         }
 
         function renderStreaks() {
             return `
-                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+            < div style = "padding: 1.5rem; padding-bottom: 8rem;" >
                     <h1 style="font-size: 1.875rem; font-weight: 700; color: rgb(17, 24, 39); margin-bottom: 1.5rem;">Streaks</h1>
                     
                     <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.5rem; box-shadow: none; margin-bottom: 1.5rem;">
@@ -1044,7 +1460,7 @@
                     
                     <div style="background: transparent; border: none; border-radius: 1.5rem; padding: 1.5rem; box-shadow: none; margin-bottom: 1.5rem;">
                         <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Active Streaks</h2>
-                        ${[{title: '🏃 Running', days: 15}, {title: '💧 Water Intake', days: 23}, {title: '🧘 Meditation', days: 8}, {title: '💪 Gym', days: 12}].map(s => `
+                        ${[{ title: '🏃 Running', days: 15 }, { title: '💧 Water Intake', days: 23 }, { title: '🧘 Meditation', days: 8 }, { title: '💪 Gym', days: 12 }].map(s => `
                             <div style="padding: 1rem; border: 1.5px solid rgba(20, 184, 166, 0.2); border-radius: 0.875rem; margin-bottom: 1rem; background: white;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                                     <span style="font-weight: 600; color: #0f172a;">${s.title}</span>
@@ -1061,13 +1477,13 @@
                         <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Your Badges</h2>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
                             ${[
-                                {name: '7-Day Streak', icon: '🥉', color: 'rgb(184, 134, 11)'},
-                                {name: '30-Day Master', icon: '🥈', color: 'rgb(192, 192, 192)'},
-                                {name: '100-Day Legend', icon: '🥇', color: 'rgb(255, 215, 0)'},
-                                {name: 'Water Warrior', icon: '💧', color: 'rgb(59, 130, 246)'},
-                                {name: 'Fitness Champion', icon: '🏆', color: 'rgb(251, 146, 60)'},
-                                {name: 'Consistency King', icon: '👑', color: '#14b8a6'}
-                            ].map(b => `
+                    { name: '7-Day Streak', icon: '🥉', color: 'rgb(184, 134, 11)' },
+                    { name: '30-Day Master', icon: '🥈', color: 'rgb(192, 192, 192)' },
+                    { name: '100-Day Legend', icon: '🥇', color: 'rgb(255, 215, 0)' },
+                    { name: 'Water Warrior', icon: '💧', color: 'rgb(59, 130, 246)' },
+                    { name: 'Fitness Champion', icon: '🏆', color: 'rgb(251, 146, 60)' },
+                    { name: 'Consistency King', icon: '👑', color: '#14b8a6' }
+                ].map(b => `
                                 <div style="padding: 1rem; background: linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(14, 165, 233, 0.1) 100%); border: 1.5px solid rgba(20, 184, 166, 0.2); border-radius: 0.875rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
                                     <span style="font-size: 2.5rem;">${b.icon}</span>
                                     <p style="font-size: 0.875rem; font-weight: 600; color: #0f172a;">${b.name}</p>
@@ -1080,11 +1496,11 @@
                         <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Milestones</h2>
                         <div style="display: flex; flex-direction: column; gap: 1rem;">
                             ${[
-                                {milestone: '7 Day Streak', progress: 15, goal: 7, color: '#10b981'},
-                                {milestone: '30 Day Streak', progress: 23, goal: 30, color: '#14b8a6'},
-                                {milestone: '100 Day Streak', progress: 43, goal: 100, color: '#0891b2'},
-                                {milestone: '365 Day Streak', progress: 127, goal: 365, color: '#3b82f6'}
-                            ].map(m => `
+                    { milestone: '7 Day Streak', progress: 15, goal: 7, color: '#10b981' },
+                    { milestone: '30 Day Streak', progress: 23, goal: 30, color: '#14b8a6' },
+                    { milestone: '100 Day Streak', progress: 43, goal: 100, color: '#0891b2' },
+                    { milestone: '365 Day Streak', progress: 127, goal: 365, color: '#3b82f6' }
+                ].map(m => `
                                 <div style="padding: 1rem; border: 1.5px solid rgba(20, 184, 166, 0.2); border-radius: 0.875rem; background: white;">
                                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                                         <span style="font-weight: 600; color: #0f172a;">${m.milestone}</span>
@@ -1102,11 +1518,11 @@
                         <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #0f172a;">Rewards Unlocked</h2>
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
                             ${[
-                                {reward: 'First Streak', description: 'Complete 7 day streak', icon: '🎉'},
-                                {reward: 'Persistence', description: 'Complete 30 day streak', icon: '💪'},
-                                {reward: 'Dedication', description: 'Complete 100 day streak', icon: '⭐'},
-                                {reward: 'Champion', description: 'Complete 365 day streak', icon: '🏆'}
-                            ].map(r => `
+                    { reward: 'First Streak', description: 'Complete 7 day streak', icon: '🎉' },
+                    { reward: 'Persistence', description: 'Complete 30 day streak', icon: '💪' },
+                    { reward: 'Dedication', description: 'Complete 100 day streak', icon: '⭐' },
+                    { reward: 'Champion', description: 'Complete 365 day streak', icon: '🏆' }
+                ].map(r => `
                                 <div style="padding: 1rem; background: transparent; border-radius: 0.875rem; border: none;">
                                     <p style="font-size: 2rem; margin-bottom: 0.5rem;">${r.icon}</p>
                                     <p style="font-weight: 700; color: #0f172a; margin-bottom: 0.25rem; font-size: 0.95rem;">${r.reward}</p>
@@ -1115,13 +1531,13 @@
                             `).join('')}
                         </div>
                     </div>
-                </div>
+                </div >
             `;
         }
 
         function renderAIChat() {
             return `
-                <div style="padding: 1.5rem; padding-bottom: 8rem; display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto;">
+            < div style = "padding: 1.5rem; padding-bottom: 8rem; display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto;" >
                     <h1 style="font-size: 1.875rem; font-weight: 700; color: rgb(60, 40, 80); margin-bottom: 0.5rem;">Wellness Coach</h1>
                     <p style="font-size: 0.875rem; color: rgb(120, 100, 140); margin-bottom: 1.5rem;">Your personal wellness companion</p>
                     
@@ -1144,13 +1560,13 @@
                         <input type="text" id="chatInput" placeholder="Ask me anything..." style="flex: 1; padding: 0.75rem 1rem; border: 2px solid rgb(230, 220, 240); border-radius: 0.75rem; font-size: 1rem; font-family: inherit; transition: border-color 0.2s; background: white; color: rgb(60, 40, 80);" />
                         <button id="sendChatBtn" style="background: linear-gradient(135deg, rgb(220, 190, 240) 0%, rgb(210, 180, 230) 100%); color: rgb(80, 40, 120); border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; font-size: 1.25rem;">→</button>
                     </div>
-                </div>
+                </div >
             `;
         }
 
         function renderPairing() {
             return `
-                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+            < div style = "padding: 1.5rem; padding-bottom: 8rem;" >
                     <div style="text-align: center; margin-bottom: 2rem;">
                         <svg width="80" height="80" viewBox="0 0 80 80" style="margin: 0 auto; margin-bottom: 1rem;">
                             <circle cx="40" cy="40" r="35" fill="none" stroke="#14b8a6" stroke-width="3"/>
@@ -1208,13 +1624,13 @@
                         <button style="padding: 0.875rem; background: #f3f4f6; color: #374151; border: none; border-radius: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease;">Back</button>
                         <button style="padding: 0.875rem; background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); color: white; border: none; border-radius: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease;">Pair Device</button>
                     </div>
-                </div>
+                </div >
             `;
         }
 
         function renderSettings() {
             return `
-                <div style="padding: 1.5rem; padding-bottom: 8rem;">
+            < div style = "padding: 1.5rem; padding-bottom: 8rem;" >
                     <h1 style="font-size: 1.875rem; font-weight: 700; color: rgb(17, 24, 39); margin-bottom: 1.5rem;">Settings</h1>
                     
                     <div style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-bottom: 1.5rem;">
@@ -1371,14 +1787,14 @@
 
         function renderNavigation() {
             const navItems = [
-                {id: 'dashboard', label: 'Dashboard'},
-                {id: 'sleep', label: 'Sleep'},
-                {id: 'mental', label: 'Wellness'},
-                {id: 'streaks', label: 'Streaks'},
-                {id: 'chat', label: 'Coach'},
-                {id: 'settings', label: 'Settings'}
+                { id: 'dashboard', label: 'Dashboard' },
+                { id: 'sleep', label: 'Sleep' },
+                { id: 'mental', label: 'Wellness' },
+                { id: 'streaks', label: 'Streaks' },
+                { id: 'chat', label: 'Coach' },
+                { id: 'settings', label: 'Settings' }
             ];
-            
+
             const navHtml = navItems.map(item => {
                 const isActive = currentPage === item.id;
                 const bgColor = isActive ? 'linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, rgba(14, 165, 233, 0.15) 100%)' : 'transparent';
@@ -1386,7 +1802,7 @@
                 const textColor = isActive ? '#0f172a' : '#0f172a';
                 return `<button class="nav-btn ${isActive ? 'active' : ''}" data-page="${item.id}" style="flex: 1; padding: 0.875rem 0.5rem; border: none; background: ${bgColor}; border-top: 2px solid ${borderColor}; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; color: ${textColor}; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; opacity: ${isActive ? '1' : '0.7'};">${item.label}</span></button>`;
             }).join('');
-            
+
             return `
                 <nav style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 100%); border-top: 1px solid rgba(20, 184, 166, 0.1); box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06); z-index: 999;">
                     <div style="max-width: 480px; margin: 0 auto; display: flex;">
@@ -1404,17 +1820,17 @@
                     e.preventDefault();
                     const phoneInput = root.querySelector('#phoneInput');
                     const phone = phoneInput.value;
-                    
+
                     showLoading('Sending OTP...');
-                    
+
                     try {
                         // Call backend API
                         const result = PageBridge.sendOtp(phone);
-                        
+
                         window.phoneNumber = phone;
                         window.otpSent = true;
                         showToast('OTP sent successfully!');
-                        
+
                         // Re-render login page with OTP input
                         const rootEl = document.getElementById("root");
                         rootEl.innerHTML = renderLoginPage();
@@ -1425,7 +1841,7 @@
                     }
                 });
             }
-            
+
             // OTP verification with API call
             const otpForm = root.querySelector('#otpForm');
             if (otpForm) {
@@ -1443,26 +1859,26 @@
                         }
                     });
                 });
-                
+
                 otpForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const otpInputs = root.querySelectorAll('.otp-input');
                     const otp = Array.from(otpInputs).map(input => input.value).join('');
-                    
+
                     if (otp.length !== 6) {
                         showToast('Please enter 6-digit OTP', true);
                         return;
                     }
-                    
+
                     showLoading('Verifying OTP...');
-                    
+
                     try {
                         // Call backend API with OTP
                         const result = PageBridge.loginWithOtp(window.phoneNumber, otp);
-                        
+
                         showToast('Login successful!');
                         isLoggedIn = true;
-                        
+
                         // Notify Kotlin side
                         LoginBridge.notifyLoginSuccess();
                     } catch (error) {
@@ -1470,7 +1886,7 @@
                         showToast('Invalid OTP', true);
                     }
                 });
-                
+
                 // Resend OTP
                 const resendBtn = root.querySelector('#resendBtn');
                 if (resendBtn) {
@@ -1489,7 +1905,7 @@
                     });
                 }
             }
-            
+
             // Navigation buttons
             root.querySelectorAll(".nav-btn").forEach(btn => {
                 btn.addEventListener("click", () => {
@@ -1497,7 +1913,7 @@
                     render(root);
                 });
             });
-            
+
             // Dark mode toggle
             const darkModeToggle = root.querySelector("#darkModeToggle");
             if (darkModeToggle) {
@@ -1517,7 +1933,7 @@
                     render(root);
                 });
             }
-            
+
             // Mood buttons
             root.querySelectorAll(".mood-btn").forEach(btn => {
                 btn.addEventListener("click", () => {
@@ -1531,7 +1947,7 @@
                     alert(`Mood saved: ${mood}`);
                 });
             });
-            
+
             // Save thought
             const saveThoughtBtn = root.querySelector("#saveThoughtBtn");
             if (saveThoughtBtn) {
@@ -1581,19 +1997,19 @@
                     }
                 });
             }
-            
+
             // Meditation Sessions
             initializeMeditationUI(root);
             attachMeditationEventListeners();
-            
+
             // AI Chat Event Listeners
             const sendChatBtn = root.querySelector("#sendChatBtn");
             const chatInput = root.querySelector("#chatInput");
-            
+
             if (sendChatBtn) {
                 sendChatBtn.addEventListener("click", sendChatMessage);
             }
-            
+
             if (chatInput) {
                 chatInput.addEventListener("keypress", (e) => {
                     if (e.key === "Enter") {
@@ -1601,19 +2017,19 @@
                         sendChatMessage();
                     }
                 });
-                
+
                 // Focus input when page loads
                 setTimeout(() => {
                     chatInput.focus();
                 }, 100);
             }
-            
+
             // Quick response buttons
             root.querySelectorAll(".quick-response-btn").forEach(btn => {
                 btn.addEventListener("click", async () => {
                     const query = btn.getAttribute("data-query");
                     const chatInput = root.querySelector("#chatInput");
-                    
+
                     if (chatInput) {
                         const queryTexts = {
                             'motivation': 'Give me motivation!',
@@ -1621,13 +2037,13 @@
                             'nutrition': 'Tell me about healthy nutrition',
                             'sleep': 'How can I sleep better?'
                         };
-                        
+
                         chatInput.value = queryTexts[query] || query;
                         sendChatMessage();
                     }
                 });
             });
-            
+
             // Buy Ring button
             const buyRingBtn = root.querySelector("#buyRingBtn");
             if (buyRingBtn) {
@@ -1636,7 +2052,7 @@
                     render(root);
                 });
             }
-            
+
             // Back button in Buy Ring page
             const backBtn = root.querySelector("#backBtn");
             if (backBtn) {
@@ -1646,24 +2062,24 @@
                 });
             }
         }
-        
+
         // Meditation Timer Variables
         let meditationState = {
             active: null,
             isPaused: false,
             timerInterval: null
         };
-        
+
         const meditationSessions = [
             { id: 'morning_calm', title: 'Morning Calm', duration: '5 min', durationSeconds: 300, icon: '🌅' },
             { id: 'breathing_exercise', title: 'Breathing Exercise', duration: '10 min', durationSeconds: 600, icon: '🌬️' },
             { id: 'sleep_meditation', title: 'Sleep Meditation', duration: '15 min', durationSeconds: 900, icon: '🌙' }
         ];
-        
+
         function initializeMeditationUI(root) {
             const sessionsList = root.querySelector("#meditationSessionsList");
             if (!sessionsList) return;
-            
+
             // Clear and render sessions
             sessionsList.innerHTML = meditationSessions.map(session => `
                 <div class="meditation-card">
@@ -1678,13 +2094,13 @@
                 </div>
             `).join('');
         }
-        
+
         function startMeditationSession(sessionId, title, durationSeconds) {
             // Notify Kotlin about meditation start
             if (window.PageBridge && window.PageBridge.startMeditation) {
                 window.PageBridge.startMeditation(sessionId);
             }
-            
+
             // Show timer UI
             meditationState.active = {
                 id: sessionId,
@@ -1694,29 +2110,29 @@
                 startTime: Date.now()
             };
             meditationState.isPaused = false;
-            
+
             const sessionsList = document.querySelector("#meditationSessionsList");
             const timerDisplay = document.querySelector("#meditationTimerDisplay");
-            
+
             if (sessionsList) sessionsList.style.display = "none";
             if (timerDisplay) timerDisplay.style.display = "block";
-            
+
             // Update UI
             document.querySelector("#timerSessionName").textContent = title;
             updateMeditationTimer();
             startMeditationCountdown();
         }
-        
+
         function startMeditationCountdown() {
             if (meditationState.timerInterval) {
                 clearInterval(meditationState.timerInterval);
             }
-            
+
             meditationState.timerInterval = setInterval(() => {
                 if (meditationState.isPaused) {
                     return;
                 }
-                
+
                 if (meditationState.active.remainingSeconds > 0) {
                     meditationState.active.remainingSeconds--;
                     updateMeditationTimer();
@@ -1726,93 +2142,93 @@
                 }
             }, 1000);
         }
-        
+
         function updateMeditationTimer() {
             const session = meditationState.active;
             if (!session) return;
-            
+
             const minutes = Math.floor(session.remainingSeconds / 60);
             const seconds = session.remainingSeconds % 60;
             const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            
+
             const timerDisplay = document.querySelector("#timerDisplay");
             if (timerDisplay) {
                 timerDisplay.textContent = timeStr;
             }
-            
+
             const progress = (session.durationSeconds - session.remainingSeconds) / session.durationSeconds;
             const progressBar = document.querySelector("#timerProgress");
             if (progressBar) {
                 progressBar.style.width = (progress * 100) + "%";
             }
         }
-        
+
         function pauseResumeMeditation() {
             meditationState.isPaused = !meditationState.isPaused;
             const btn = document.querySelector("#pauseResumeBtn");
             if (btn) {
                 btn.textContent = meditationState.isPaused ? "Resume" : "Pause";
-                btn.style.background = meditationState.isPaused ? 
-                    "linear-gradient(135deg, rgb(34, 197, 94) 0%, rgb(22, 163, 74) 100%)" : 
+                btn.style.background = meditationState.isPaused ?
+                    "linear-gradient(135deg, rgb(34, 197, 94) 0%, rgb(22, 163, 74) 100%)" :
                     "linear-gradient(135deg, #14b8a6 0%, #0891b2 100%)";
             }
-            
+
             if (!meditationState.isPaused) {
                 startMeditationCountdown();
             }
         }
-        
+
         function stopMeditationSession() {
             clearInterval(meditationState.timerInterval);
-            
+
             // Notify Kotlin about meditation stop
             if (window.PageBridge && window.PageBridge.stopMeditation) {
                 window.PageBridge.stopMeditation();
             }
-            
+
             meditationState.active = null;
             meditationState.isPaused = false;
-            
+
             const sessionsList = document.querySelector("#meditationSessionsList");
             const timerDisplay = document.querySelector("#meditationTimerDisplay");
-            
+
             if (sessionsList) sessionsList.style.display = "block";
             if (timerDisplay) timerDisplay.style.display = "none";
-            
+
             showToast("Meditation session stopped", false);
         }
-        
+
         function completeMeditationSession() {
             clearInterval(meditationState.timerInterval);
-            
+
             const session = meditationState.active;
-            
+
             // Notify Kotlin about completion
             if (window.PageBridge && window.PageBridge.onMeditationComplete) {
                 window.PageBridge.onMeditationComplete(session.id, session.durationSeconds);
             }
-            
+
             meditationState.active = null;
             meditationState.isPaused = false;
-            
+
             // Show completion message
             showToast(`🎉 Great job! You completed ${session.title}!`, false);
-            
+
             // Reset UI after 2 seconds
             setTimeout(() => {
                 const sessionsList = document.querySelector("#meditationSessionsList");
                 const timerDisplay = document.querySelector("#meditationTimerDisplay");
-                
+
                 if (sessionsList) sessionsList.style.display = "block";
                 if (timerDisplay) timerDisplay.style.display = "none";
             }, 2000);
         }
-        
+
         // Attach event listeners for timer buttons
         function attachMeditationEventListeners() {
             const pauseResumeBtn = document.querySelector("#pauseResumeBtn");
             const stopTimerBtn = document.querySelector("#stopTimerBtn");
-            
+
             if (pauseResumeBtn) {
                 pauseResumeBtn.onclick = pauseResumeMeditation;
             }
@@ -1820,9 +2236,9 @@
                 stopTimerBtn.onclick = stopMeditationSession;
             }
         }
-        
+
         // ===== AI CHAT API INTEGRATION =====
-        
+
         // Positive wellness responses database
         const wellnessResponses = {
             motivation: {
@@ -1886,15 +2302,15 @@
                 emoji: '⭐'
             }
         };
-        
+
         // Chat history
         let chatHistory = [];
-        
+
         // AI Chat API - Get response based on query
         async function getAIResponse(userMessage) {
             const lowerMessage = userMessage.toLowerCase();
             let category = 'default';
-            
+
             // Categorize the message
             if (lowerMessage.includes('motiv') || lowerMessage.includes('encourage') || lowerMessage.includes('inspire')) {
                 category = 'motivation';
@@ -1907,28 +2323,28 @@
             } else if (lowerMessage.includes('stress') || lowerMessage.includes('anxiety') || lowerMessage.includes('anxious') || lowerMessage.includes('worry') || lowerMessage.includes('relax')) {
                 category = 'stress';
             }
-            
+
             // Get response from database
             const responses = wellnessResponses[category].responses;
             const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-            
+
             return {
                 message: randomResponse,
                 category: category,
                 emoji: wellnessResponses[category].emoji
             };
         }
-        
+
         // Send chat message
         async function sendChatMessage() {
             const chatInput = document.querySelector("#chatInput");
             const chatMessages = document.querySelector("#chatMessages");
-            
+
             if (!chatInput || !chatMessages) return;
-            
+
             const userMessage = chatInput.value.trim();
             if (!userMessage) return;
-            
+
             // Add user message to chat
             const userMsgEl = document.createElement("div");
             userMsgEl.style.cssText = "display: flex; justify-content: flex-end;";
@@ -1939,7 +2355,7 @@
             `;
             chatMessages.appendChild(userMsgEl);
             chatInput.value = "";
-            
+
             // Show typing indicator
             const typingEl = document.createElement("div");
             typingEl.style.cssText = "display: flex; justify-content: flex-start;";
@@ -1952,14 +2368,14 @@
             `;
             chatMessages.appendChild(typingEl);
             chatMessages.scrollTop = chatMessages.scrollHeight;
-            
+
             // Get AI response
             setTimeout(async () => {
                 const response = await getAIResponse(userMessage);
-                
+
                 // Remove typing indicator
                 typingEl.remove();
-                
+
                 // Add AI response
                 const aiMsgEl = document.createElement("div");
                 aiMsgEl.style.cssText = "display: flex; justify-content: flex-start;";
@@ -1970,7 +2386,7 @@
                 `;
                 chatMessages.appendChild(aiMsgEl);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
-                
+
                 // Store in history
                 chatHistory.push({
                     user: userMessage,
@@ -1980,14 +2396,14 @@
                 });
             }, 800);
         }
-        
+
         // Escape HTML to prevent XSS
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-        
+
         // Add typing indicator animation
         const style = document.createElement('style');
         style.textContent = `
@@ -2032,4 +2448,5 @@
         document.addEventListener("DOMContentLoaded", main);
     </script>
 </body>
+
 </html>

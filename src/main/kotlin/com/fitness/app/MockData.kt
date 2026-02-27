@@ -7,6 +7,7 @@ import com.fitness.app.domain.model.Ring
 import com.fitness.app.domain.model.RingHealthData
 import com.fitness.app.domain.model.ScanStatus
 import com.fitness.app.domain.model.SleepData
+import com.fitness.app.presentation.dashboard.DashboardUiState
 import com.fitness.app.presentation.ring.PermissionUiState
 import com.fitness.app.presentation.ring.RingUiState
 
@@ -94,7 +95,7 @@ object PreviewData {
         firmwareInfo = FirmwareInfo(type = "MRD", version = "2.1.4")
     )
 
-    // ── Full UI states ──────────────────────────────────────────────
+    // ── RingUiState previews (for Ring Setup screens) ────────────────
 
     val connectedState = RingUiState(
         permissionState = PermissionUiState.Granted,
@@ -142,5 +143,52 @@ object PreviewData {
 
     val permissionsNeededState = RingUiState(
         permissionState = PermissionUiState.NotRequested
+    )
+
+    // ── DashboardUiState previews (for Dashboard screen) ────────────
+
+    val connectedDashboardState = DashboardUiState(
+        isConnected = true,
+        connectedRing = mockRing,
+        batteryLevel = 62,
+        heartRate = 72,
+        spO2 = 98f,
+        steps = 8432,
+        distance = 5200,
+        calories = 520,
+        stressLevel = 35
+    )
+
+    val disconnectedDashboardState = DashboardUiState(
+        isConnected = false,
+        connectedRing = null
+    )
+
+    val highStressDashboardState = DashboardUiState(
+        isConnected = true,
+        connectedRing = mockRing,
+        batteryLevel = 62,
+        heartRate = 95,
+        spO2 = 98f,
+        steps = 8432,
+        distance = 5200,
+        calories = 520,
+        stressLevel = 85
+    )
+
+    val lowBatteryDashboardState = DashboardUiState(
+        isConnected = true,
+        connectedRing = mockRing,
+        batteryLevel = 12,
+        heartRate = 72,
+        spO2 = 98f,
+        steps = 8432,
+        distance = 5200,
+        calories = 520,
+        stressLevel = 35
+    )
+
+    val loadingDashboardState = DashboardUiState(
+        isLoading = true
     )
 }
