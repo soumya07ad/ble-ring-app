@@ -17,35 +17,34 @@ import com.fitness.app.network.repository.FitnessRepository as NetworkFitnessRep
 import androidx.room.Room
 import com.fitness.app.data.local.db.AppDatabase
 import com.fitness.app.data.repository.SleepRepositoryImpl
+import com.fitness.app.domain.repository.ICoachRepository
+import com.fitness.app.data.repository.CoachRepositoryImpl
 import com.fitness.app.domain.repository.SleepRepository
+import com.fitness.app.data.repository.StreakRepository
+import com.fitness.app.data.repository.SettingsRepository
+import com.fitness.app.domain.repository.IStreakRepository
+import com.fitness.app.domain.repository.ISettingsRepository
 
 /**
  * Manual Dependency Injection Container
  * 
  * Provides singleton instances of repositories, use cases, and services.
- * This is a simple DI solution without Hilt/Dagger complexity.
+ * All repositories are exposed via their interfaces for testability.
  * 
  * Usage:
  * ```
  * val container = AppContainer.getInstance(context)
- * val useCase = container.connectRingUseCase
+ * val factory   = container.viewModelFactory
  * ```
  */
 class AppContainer private constructor(private val context: Context) {
 
     // ── Core Services ──────────────────────────────────────────────
 
-    /** Local fitness data (SharedPreferences-based) */
-    val fitnessAPI: FitnessAPI by lazy {
-        FitnessAPI(context)
-    }
+    val fitnessAPI: FitnessAPI by lazy { FitnessAPI(context) }
 
-    /** Retrofit HTTP client */
-    val retrofitClient: RetrofitClient by lazy {
-        RetrofitClient.getInstance(context)
-    }
+    val retrofitClient: RetrofitClient by lazy { RetrofitClient.getInstance(context) }
 
-    /** Network repository for API calls */
     val networkRepository: NetworkFitnessRepository by lazy {
         NetworkFitnessRepository(
             retrofitClient.getApiService(),
@@ -53,54 +52,42 @@ class AppContainer private constructor(private val context: Context) {
         )
     }
 
-    // ── Ring / BLE ─────────────────────────────────────────────────
+    // ── Database ────────────────────────────────────────────────────
 
-    /** Ring BLE repository (singleton) */
-    val ringRepository: IRingRepository by lazy {
-        RingRepositoryImpl(context)
-    }
-
-    /** Local database */
     val appDatabase: AppDatabase by lazy {
         Room.databaseBuilder(
             context.applicationContext,
             AppDatabase::class.java,
-            "fitness_app_db"
+            "fitness_app_database"
         ).fallbackToDestructiveMigration().build()
     }
 
-    /** Sleep Repository */
-    val sleepRepository: SleepRepository by lazy {
-        SleepRepositoryImpl(appDatabase.sleepDao())
-    }
+    // ── Repositories (all exposed via interface) ────────────────────
 
-    val scanDevicesUseCase: ScanDevicesUseCase by lazy {
-        ScanDevicesUseCase(ringRepository)
-    }
+    val ringRepository: IRingRepository by lazy { RingRepositoryImpl(context) }
 
-    val connectRingUseCase: ConnectRingUseCase by lazy {
-        ConnectRingUseCase(ringRepository)
-    }
+    val sleepRepository: SleepRepository by lazy { SleepRepositoryImpl(appDatabase.sleepDao()) }
 
-    val disconnectRingUseCase: DisconnectRingUseCase by lazy {
-        DisconnectRingUseCase(ringRepository)
-    }
+    val coachRepository: ICoachRepository by lazy { CoachRepositoryImpl(appDatabase.coachDao()) }
 
-    val getRingDataUseCase: GetRingDataUseCase by lazy {
-        GetRingDataUseCase(ringRepository)
-    }
+    val streakRepository: IStreakRepository by lazy { StreakRepository(appDatabase.streakDao()) }
 
-    // ── Fitness / Health ───────────────────────────────────────────
+    val settingsRepository: ISettingsRepository by lazy { SettingsRepository(context) }
 
-    /** Local meditation repository */
-    val meditationLocalRepository: IMeditationRepository by lazy {
-        MeditationRepositoryImpl()
-    }
+    val meditationLocalRepository: IMeditationRepository by lazy { MeditationRepositoryImpl() }
 
-    /** Local fitness repository (wraps FitnessAPI behind a clean interface) */
-    val fitnessLocalRepository: IFitnessRepository by lazy {
-        FitnessRepositoryImpl(fitnessAPI)
-    }
+    val fitnessLocalRepository: IFitnessRepository by lazy { FitnessRepositoryImpl(fitnessAPI) }
+
+    // ── Use Cases ──────────────────────────────────────────────────
+
+    val scanDevicesUseCase: ScanDevicesUseCase by lazy { ScanDevicesUseCase(ringRepository) }
+    val connectRingUseCase: ConnectRingUseCase by lazy { ConnectRingUseCase(ringRepository) }
+    val disconnectRingUseCase: DisconnectRingUseCase by lazy { DisconnectRingUseCase(ringRepository) }
+    val getRingDataUseCase: GetRingDataUseCase by lazy { GetRingDataUseCase(ringRepository) }
+
+    // ── ViewModel Factory ──────────────────────────────────────────
+
+    val viewModelFactory: AppViewModelFactory by lazy { AppViewModelFactory(this) }
 
     // ── Singleton ──────────────────────────────────────────────────
 
@@ -116,9 +103,6 @@ class AppContainer private constructor(private val context: Context) {
             }
         }
 
-        /**
-         * Initialize container (call from Application.onCreate or MainActivity.onCreate)
-         */
         fun initialize(context: Context) {
             getInstance(context)
         }

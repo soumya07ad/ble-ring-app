@@ -1,9 +1,7 @@
 package com.fitness.app.presentation.dashboard
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fitness.app.core.di.AppContainer
 import com.fitness.app.domain.model.ConnectionStatus
 import com.fitness.app.domain.repository.IFitnessRepository
 import com.fitness.app.domain.repository.IRingRepository
@@ -18,12 +16,13 @@ import kotlinx.coroutines.launch
  *
  * Combines data from IRingRepository (live ring hardware data)
  * and IFitnessRepository (local fitness data) into a single DashboardUiState.
+ *
+ * Dependencies are constructor-injected via AppViewModelFactory.
  */
-class DashboardViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val container = AppContainer.getInstance(application)
-    private val ringRepository: IRingRepository = container.ringRepository
-    private val fitnessRepository: IFitnessRepository = container.fitnessLocalRepository
+class DashboardViewModel(
+    private val ringRepository: IRingRepository,
+    private val fitnessRepository: IFitnessRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -37,7 +36,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
      * Observe ring repository flows and merge into dashboard state.
      */
     private fun observeRingState() {
-        // Connection status
         viewModelScope.launch {
             ringRepository.connectionStatus.collect { status ->
                 _uiState.update { state ->
@@ -66,7 +64,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
 
-        // Ring health data
         viewModelScope.launch {
             ringRepository.ringData.collect { ringData ->
                 _uiState.update { state ->

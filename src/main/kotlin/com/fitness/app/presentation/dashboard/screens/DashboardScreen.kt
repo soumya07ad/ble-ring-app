@@ -41,15 +41,6 @@ import com.fitness.app.presentation.dashboard.DashboardViewModel
 import com.fitness.app.domain.model.Ring
 import com.fitness.app.ui.components.*
 import com.fitness.app.ui.theme.*
-import androidx.compose.foundation.isSystemInDarkTheme
-
-// ═══════════════════════════════════════════════════════════════════════
-// THEME TOGGLE
-// ═══════════════════════════════════════════════════════════════════════
-
-enum class ThemeMode { DARK, LIGHT, AUTO }
-
-val LocalDashboardThemeMode = compositionLocalOf { ThemeMode.DARK }
 
 // ═══════════════════════════════════════════════════════════════════════
 // PREMIUM DASHBOARD — Cinematic Silicon Valley Health-Tech
@@ -60,29 +51,12 @@ fun DashboardRoute(
     viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    var themeMode by remember { mutableStateOf(ThemeMode.DARK) }
-    val systemIsDark = isSystemInDarkTheme()
-    val isDark = when (themeMode) {
-        ThemeMode.DARK  -> true
-        ThemeMode.LIGHT -> false
-        ThemeMode.AUTO  -> systemIsDark
-    }
-    FitnessAppTheme(darkTheme = isDark) {
-        CompositionLocalProvider(LocalDashboardThemeMode provides themeMode) {
-            DashboardScreenWithHeader(
-                state = state,
-                themeMode = themeMode,
-                onThemeChange = { themeMode = it }
-            )
-        }
-    }
+    DashboardScreenWithHeader(state = state)
 }
 
 @Composable
 fun DashboardScreenWithHeader(
-    state: DashboardUiState,
-    themeMode: ThemeMode = ThemeMode.DARK,
-    onThemeChange: (ThemeMode) -> Unit = {}
+    state: DashboardUiState
 ) {
     val stressLevel = state.stressLevel.coerceIn(0, 100)
     val pairedRing = state.connectedRing
@@ -96,18 +70,6 @@ fun DashboardScreenWithHeader(
                 .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Theme Toggle
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                ThemeTogglePill(
-                    currentMode = themeMode,
-                    onModeChange = onThemeChange
-                )
-            }
 
             // Hero Section
             HeroDashboardHeader(pairedRing = pairedRing, isConnected = state.isConnected, batteryLevel = state.batteryLevel)
@@ -323,59 +285,6 @@ private fun HeroDashboardHeader(pairedRing: Ring?, isConnected: Boolean, battery
     }
 }
 
-
-// ═══════════════════════════════════════════════════════════════════════
-// THEME TOGGLE PILL
-// ═══════════════════════════════════════════════════════════════════════
-
-@Composable
-fun ThemeTogglePill(
-    currentMode: ThemeMode,
-    onModeChange: (ThemeMode) -> Unit
-) {
-    val modes = listOf(
-        Triple(ThemeMode.DARK,  "🌙", "Dark Mode"),
-        Triple(ThemeMode.LIGHT, "☀️", "Light Mode"),
-        Triple(ThemeMode.AUTO,  "🔄", "Auto")
-    )
-    val idx = modes.indexOfFirst { it.first == currentMode }
-    val nextMode = modes[(idx + 1) % modes.size]
-    val (_, icon, label) = modes[idx]
-
-    val glowColor = when (currentMode) {
-        ThemeMode.DARK  -> NeonCyan
-        ThemeMode.LIGHT -> NeonOrange
-        ThemeMode.AUTO  -> PrimaryPurple
-    }
-
-    Box(
-        modifier = Modifier
-            .shadow(elevation = 12.dp, shape = RoundedCornerShape(50), ambientColor = glowColor, spotColor = glowColor)
-            .clip(RoundedCornerShape(50))
-            .background(
-                Brush.horizontalGradient(
-                    listOf(glowColor.copy(alpha = 0.25f), glowColor.copy(alpha = 0.12f))
-                )
-            )
-            .border(1.5.dp, Brush.horizontalGradient(listOf(glowColor.copy(alpha = 0.8f), glowColor.copy(alpha = 0.3f))), RoundedCornerShape(50))
-            .clickable { onModeChange(nextMode.first) }
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text(text = icon, fontSize = 20.sp)
-            Text(
-                text = label,
-                fontSize = 15.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp
-            )
-        }
-    }
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // WEEKLY EMOTIONS CHART — Canvas bar + line chart
