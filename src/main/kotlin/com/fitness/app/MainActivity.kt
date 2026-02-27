@@ -23,11 +23,29 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.fitness.app.core.di.AppContainer
 import com.fitness.app.network.sync.SyncWorker
 import com.fitness.app.presentation.navigation.AppNavigationViewModel
 import com.fitness.app.presentation.dashboard.screens.DashboardRoute
+import com.fitness.app.presentation.dashboard.screens.SleepTrackerScreen
+import com.fitness.app.presentation.coach.screens.CoachScreen
+import com.fitness.app.presentation.wellness.screens.WellnessScreen
+import com.fitness.app.presentation.navigation.Screen
+import com.fitness.app.presentation.dashboard.DashboardViewModel
+import com.fitness.app.presentation.dashboard.SleepTrackerViewModel
+import com.fitness.app.presentation.coach.CoachViewModel
+import com.fitness.app.presentation.wellness.WellnessViewModel
+import com.fitness.app.presentation.streaks.StreakViewModel
+import com.fitness.app.presentation.settings.SettingsViewModel
 import com.fitness.app.ui.theme.FitnessAppTheme
+import com.fitness.app.ui.theme.TextSecondary
+import androidx.compose.runtime.remember
 
 class MainActivity : ComponentActivity() {
 
@@ -61,46 +79,69 @@ fun AppNavigationFlow(
     navViewModel: AppNavigationViewModel = viewModel()
 ) {
     val navState by navViewModel.uiState.collectAsState()
-    var selectedTab by remember { mutableStateOf(0) }  // 0 = Dashboard, 1 = Sleep
+    val navController = rememberNavController()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val factory = remember { AppContainer.getInstance(context).viewModelFactory }
 
     when {
         !navState.userLoggedIn -> {
-            // Show WebView with login flow
             FitnessWebView(onLoginSuccess = {
                 navViewModel.onLoginSuccess()
             })
         }
         !navState.setupComplete -> {
-            // Show Smart Ring Setup
             com.fitness.app.presentation.ring.screens.RingSetupRoute(
                 onSetupComplete = { navViewModel.onSetupComplete() },
                 onSkip = { navViewModel.onSkip() }
             )
         }
         else -> {
-            // Main app with bottom navigation
             Scaffold(
                 containerColor = Color(0xFF050508),
-                bottomBar = {
-                    AppBottomNav(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
-                }
+                bottomBar = { AppBottomNav(navController = navController) }
             ) { paddingValues ->
-                Box(modifier = Modifier.padding(paddingValues)) {
-                    when (selectedTab) {
-                        0 -> DashboardRoute()
-                        1 -> {
-                            val context = androidx.compose.ui.platform.LocalContext.current
-                            val factory = com.fitness.app.presentation.dashboard.SleepTrackerViewModel.provideFactory(
-                                com.fitness.app.core.di.AppContainer.getInstance(context).sleepRepository
-                            )
-                            val sleepViewModel: com.fitness.app.presentation.dashboard.SleepTrackerViewModel = 
-                                androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+                NavHost(
+                    navController = navController,
+                    startDestination = Screen.Dashboard.route,
+                    modifier = Modifier.padding(paddingValues)
+                ) {
+                    composable(Screen.Dashboard.route) {
+                        DashboardRoute(viewModel = viewModel(factory = factory))
+                    }
 
-                            com.fitness.app.presentation.dashboard.screens.SleepTrackerScreen(
-                                viewModel = sleepViewModel,
-                                onBack = { selectedTab = 0 }
-                            )
-                        }
+                    composable(Screen.Sleep.route) {
+                        SleepTrackerScreen(
+                            viewModel = viewModel(factory = factory),
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(Screen.Coach.route) {
+                        CoachScreen(
+                            viewModel = viewModel(factory = factory),
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(Screen.Wellness.route) {
+                        WellnessScreen(
+                            viewModel = viewModel(factory = factory),
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(Screen.Streaks.route) {
+                        com.fitness.app.presentation.streaks.screens.StreaksScreen(
+                            viewModel = viewModel(factory = factory),
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(Screen.Settings.route) {
+                        com.fitness.app.presentation.settings.screens.SettingsScreen(
+                            viewModel = viewModel(factory = factory),
+                            onBack = { navController.popBackStack() }
+                        )
                     }
                 }
             }
@@ -108,12 +149,26 @@ fun AppNavigationFlow(
     }
 }
 
+
+
+
 @Composable
-fun AppBottomNav(selectedTab: Int, onTabSelected: (Int) -> Unit) {
-    val items = listOf(
-        Triple(0, "Dashboard", "🏠"),
-        Triple(1, "Sleep",     "😴")
-    )
+fun PlaceholderScreen(screen: Screen) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(screen.emoji, fontSize = 48.sp)
+            Spacer(Modifier.height(16.dp))
+            Text("${screen.label} coming soon...", color = TextSecondary, fontSize = 18.sp)
+        }
+    }
+}
+
+@Composable
+fun AppBottomNav(navController: NavHostController) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val items = Screen.bottomNavItems
 
     Row(
         modifier = Modifier
@@ -125,28 +180,40 @@ fun AppBottomNav(selectedTab: Int, onTabSelected: (Int) -> Unit) {
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)
             )
             .navigationBarsPadding()
-            .height(60.dp),
+            .height(65.dp),
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        items.forEach { (idx, label, emoji) ->
-            val isSelected = selectedTab == idx
-            val accentColor = if (idx == 1) com.fitness.app.ui.theme.PrimaryPurple
-                              else com.fitness.app.ui.theme.NeonCyan
+        items.forEach { screen ->
+            val isSelected = currentRoute == screen.route
+            val accentColor = when (screen) {
+                Screen.Sleep -> com.fitness.app.ui.theme.PrimaryPurple
+                Screen.Coach -> com.fitness.app.ui.theme.NeonPurple
+                else -> com.fitness.app.ui.theme.NeonCyan
+            }
+            
             Column(
                 modifier = Modifier
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
-                    .clickable { onTabSelected(idx) }
-                    .padding(horizontal = 24.dp, vertical = 6.dp),
+                    .clickable {
+                        navController.navigate(screen.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = emoji,
+                    text = screen.emoji,
                     fontSize = if (isSelected) 22.sp else 18.sp
                 )
                 Text(
-                    text = label,
+                    text = screen.label,
                     fontSize = 11.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     color = if (isSelected) accentColor else Color(0xFF5A5A7A)
