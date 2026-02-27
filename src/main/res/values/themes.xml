@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.FitnessApp" parent="android:Theme.Material.Light">
-        <item name="android:statusBarColor">@color/primary</item>
-        <item name="android:navigationBarColor">@color/white</item>
+    <!-- Main App Theme -->
+    <style name="Theme.FitnessApp" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#050508</item>
+        <item name="android:navigationBarColor">#050508</item>
+        <item name="android:windowBackground">#050508</item>
+    </style>
+
+    <!-- Splash Screen Theme (used only for launch) -->
+    <style name="Theme.FitnessApp.Starting" parent="Theme.SplashScreen">
+        <!-- Icon drawable -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <!-- Background color of the splash screen -->
+        <item name="windowSplashScreenBackground">#050508</item>
+        <!-- Duration the splash icon is shown -->
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <!-- Theme to switch to after splash -->
+        <item name="postSplashScreenTheme">@style/Theme.FitnessApp</item>
     </style>
 </resources>

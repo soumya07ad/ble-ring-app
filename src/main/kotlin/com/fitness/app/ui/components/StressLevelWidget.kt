@@ -1,4 +1,4 @@
-package com.fitness.app
+package com.fitness.app.ui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -230,4 +230,3 @@ private fun StressDarkPreview() {
         StressLevelWidget(stressLevel = 45)
     }
 }
-

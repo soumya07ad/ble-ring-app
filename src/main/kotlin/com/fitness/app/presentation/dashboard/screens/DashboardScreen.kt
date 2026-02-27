@@ -1,8 +1,11 @@
-package com.fitness.app
+package com.fitness.app.presentation.dashboard.screens
 
 import android.content.res.Configuration
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -14,9 +17,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,11 +34,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.fitness.app.presentation.ring.RingUiState
-import com.fitness.app.presentation.ring.RingViewModel
+import com.fitness.app.MockData
+import com.fitness.app.PreviewData
+import com.fitness.app.presentation.dashboard.DashboardUiState
+import com.fitness.app.presentation.dashboard.DashboardViewModel
 import com.fitness.app.domain.model.Ring
 import com.fitness.app.ui.components.*
 import com.fitness.app.ui.theme.*
+import androidx.compose.foundation.isSystemInDarkTheme
+
+// ═══════════════════════════════════════════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════════════════════════════════════════
+
+enum class ThemeMode { DARK, LIGHT, AUTO }
+
+val LocalDashboardThemeMode = compositionLocalOf { ThemeMode.DARK }
 
 // ═══════════════════════════════════════════════════════════════════════
 // PREMIUM DASHBOARD — Cinematic Silicon Valley Health-Tech
@@ -37,15 +57,34 @@ import com.fitness.app.ui.theme.*
 
 @Composable
 fun DashboardRoute(
-    viewModel: RingViewModel = viewModel()
+    viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    DashboardScreenWithHeader(state = state)
+    var themeMode by remember { mutableStateOf(ThemeMode.DARK) }
+    val systemIsDark = isSystemInDarkTheme()
+    val isDark = when (themeMode) {
+        ThemeMode.DARK  -> true
+        ThemeMode.LIGHT -> false
+        ThemeMode.AUTO  -> systemIsDark
+    }
+    FitnessAppTheme(darkTheme = isDark) {
+        CompositionLocalProvider(LocalDashboardThemeMode provides themeMode) {
+            DashboardScreenWithHeader(
+                state = state,
+                themeMode = themeMode,
+                onThemeChange = { themeMode = it }
+            )
+        }
+    }
 }
 
 @Composable
-fun DashboardScreenWithHeader(state: RingUiState) {
-    val stressLevel = state.ringData.stress.coerceIn(0, 100)
+fun DashboardScreenWithHeader(
+    state: DashboardUiState,
+    themeMode: ThemeMode = ThemeMode.DARK,
+    onThemeChange: (ThemeMode) -> Unit = {}
+) {
+    val stressLevel = state.stressLevel.coerceIn(0, 100)
     val pairedRing = state.connectedRing
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -57,6 +96,19 @@ fun DashboardScreenWithHeader(state: RingUiState) {
                 .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
         ) {
+            // Theme Toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                ThemeTogglePill(
+                    currentMode = themeMode,
+                    onModeChange = onThemeChange
+                )
+            }
+
             // Hero Section
             HeroDashboardHeader(pairedRing = pairedRing, isConnected = state.isConnected, batteryLevel = state.batteryLevel)
 
@@ -93,9 +145,9 @@ fun DashboardScreenWithHeader(state: RingUiState) {
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Favorite,
                         label = "HEART RATE",
-                        value = if (state.ringData.heartRate > 0) "${state.ringData.heartRate}" else "--",
+                        value = if (state.heartRate > 0) "${state.heartRate}" else "--",
                         unit = "bpm",
-                        progress = (state.ringData.heartRate / 200f).coerceIn(0f, 1f),
+                        progress = (state.heartRate / 200f).coerceIn(0f, 1f),
                         gradientColors = listOf(ErrorRed, NeonPink),
                         glowColor = ErrorRed
                     )
@@ -103,9 +155,9 @@ fun DashboardScreenWithHeader(state: RingUiState) {
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.FavoriteBorder,
                         label = "BLOOD O₂",
-                        value = if (state.ringData.spO2 > 0) "${state.ringData.spO2.toInt()}" else "--",
+                        value = if (state.spO2 > 0) "${state.spO2.toInt()}" else "--",
                         unit = "%",
-                        progress = (state.ringData.spO2 / 100f).coerceIn(0f, 1f),
+                        progress = (state.spO2 / 100f).coerceIn(0f, 1f),
                         gradientColors = listOf(NeonCyan, NeonBlue),
                         glowColor = NeonCyan
                     )
@@ -119,9 +171,9 @@ fun DashboardScreenWithHeader(state: RingUiState) {
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Star,
                         label = "STEPS",
-                        value = "${state.ringData.steps}",
+                        value = "${state.steps}",
                         unit = "",
-                        progress = (state.ringData.steps / 10000f).coerceIn(0f, 1f),
+                        progress = (state.steps / 10000f).coerceIn(0f, 1f),
                         gradientColors = listOf(PrimaryPurple, NeonPink),
                         glowColor = PrimaryPurple
                     )
@@ -129,9 +181,9 @@ fun DashboardScreenWithHeader(state: RingUiState) {
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Build,
                         label = "DISTANCE",
-                        value = "${state.ringData.distance}",
+                        value = "${state.distance}",
                         unit = "m",
-                        progress = (state.ringData.distance / 5000f).coerceIn(0f, 1f),
+                        progress = (state.distance / 5000f).coerceIn(0f, 1f),
                         gradientColors = listOf(NeonOrange, WarningAmber),
                         glowColor = NeonOrange
                     )
@@ -198,6 +250,16 @@ fun DashboardScreenWithHeader(state: RingUiState) {
                 DailySummaryCard()
 
                 Spacer(modifier = Modifier.height(20.dp))
+
+                // Weekly Emotions Chart
+                WeeklyEmotionsChart()
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Daily Insights
+                DailyInsightsCard()
+
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
@@ -261,6 +323,323 @@ private fun HeroDashboardHeader(pairedRing: Ring?, isConnected: Boolean, battery
     }
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════
+// THEME TOGGLE PILL
+// ═══════════════════════════════════════════════════════════════════════
+
+@Composable
+fun ThemeTogglePill(
+    currentMode: ThemeMode,
+    onModeChange: (ThemeMode) -> Unit
+) {
+    val modes = listOf(
+        Triple(ThemeMode.DARK,  "🌙", "Dark Mode"),
+        Triple(ThemeMode.LIGHT, "☀️", "Light Mode"),
+        Triple(ThemeMode.AUTO,  "🔄", "Auto")
+    )
+    val idx = modes.indexOfFirst { it.first == currentMode }
+    val nextMode = modes[(idx + 1) % modes.size]
+    val (_, icon, label) = modes[idx]
+
+    val glowColor = when (currentMode) {
+        ThemeMode.DARK  -> NeonCyan
+        ThemeMode.LIGHT -> NeonOrange
+        ThemeMode.AUTO  -> PrimaryPurple
+    }
+
+    Box(
+        modifier = Modifier
+            .shadow(elevation = 12.dp, shape = RoundedCornerShape(50), ambientColor = glowColor, spotColor = glowColor)
+            .clip(RoundedCornerShape(50))
+            .background(
+                Brush.horizontalGradient(
+                    listOf(glowColor.copy(alpha = 0.25f), glowColor.copy(alpha = 0.12f))
+                )
+            )
+            .border(1.5.dp, Brush.horizontalGradient(listOf(glowColor.copy(alpha = 0.8f), glowColor.copy(alpha = 0.3f))), RoundedCornerShape(50))
+            .clickable { onModeChange(nextMode.first) }
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(text = icon, fontSize = 20.sp)
+            Text(
+                text = label,
+                fontSize = 15.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
+            )
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// WEEKLY EMOTIONS CHART — Canvas bar + line chart
+// ═══════════════════════════════════════════════════════════════════════
+
+@Composable
+fun WeeklyEmotionsChart() {
+    val moodData = listOf(
+        Triple("Mon", 65f, "Good"),
+        Triple("Tue", 72f, "Great"),
+        Triple("Wed", 58f, "Okay"),
+        Triple("Thu", 85f, "Exc."),
+        Triple("Fri", 78f, "Great"),
+        Triple("Sat", 92f, "Exc."),
+        Triple("Sun", 75f, "Great")
+    )
+
+    val animProgress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        animProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(1400, easing = FastOutSlowInEasing)
+        )
+    }
+
+    // 3D Glass card shell
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .shadow(elevation = 16.dp, shape = RoundedCornerShape(24.dp), ambientColor = NeonCyan.copy(alpha = 0.25f), spotColor = NeonCyan.copy(alpha = 0.3f))
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF0E1A1F),  // dark teal-tinted glass
+                        Color(0xFF080E12)
+                    )
+                )
+            )
+            .border(
+                1.5.dp,
+                Brush.verticalGradient(
+                    listOf(NeonCyan.copy(alpha = 0.5f), NeonBlue.copy(alpha = 0.15f))
+                ),
+                RoundedCornerShape(24.dp)
+            )
+            .padding(20.dp)
+    ) {
+        Column {
+            // Header
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(NeonCyan))
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "WEEKLY EMOTIONS TREND",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+            ) {
+                val w = size.width
+                val h = size.height
+                val padBottom = 36f
+                val padTop = 16f
+                val chartH = h - padBottom - padTop
+                val slotW = w / moodData.size
+                val barW = slotW * 0.5f
+
+                // Grid lines
+                for (i in 0..4) {
+                    val y = padTop + chartH * i / 4f
+                    drawLine(NeonCyan.copy(alpha = 0.1f), Offset(0f, y), Offset(w, y), strokeWidth = 1.5f)
+                }
+
+                val points = mutableListOf<Offset>()
+                moodData.forEachIndexed { i, (_, value, _) ->
+                    val x = slotW * i + slotW / 2f
+                    val barH = chartH * (value / 100f) * animProgress.value
+                    val top = padTop + chartH - barH
+                    val bottom = padTop + chartH
+
+                    // Bar with rounded top
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(NeonCyan.copy(alpha = 0.7f), NeonBlue.copy(alpha = 0.3f)),
+                            startY = top, endY = bottom
+                        ),
+                        topLeft = Offset(x - barW / 2f, top),
+                        size = androidx.compose.ui.geometry.Size(barW, barH)
+                    )
+
+                    val dotY = padTop + chartH * (1f - value / 100f * animProgress.value)
+                    points.add(Offset(x, dotY))
+                }
+
+                // Trend line
+                if (points.size > 1) {
+                    val path = Path().apply {
+                        moveTo(points[0].x, points[0].y)
+                        for (j in 1 until points.size) {
+                            val cx = (points[j - 1].x + points[j].x) / 2f
+                            cubicTo(cx, points[j - 1].y, cx, points[j].y, points[j].x, points[j].y)
+                        }
+                    }
+                    drawPath(path, NeonCyan, style = Stroke(width = 3f, cap = StrokeCap.Round))
+                }
+
+                // Dots
+                points.forEach { pt ->
+                    drawCircle(NeonCyan, radius = 6f, center = pt)
+                    drawCircle(Color(0xFF000000), radius = 3f, center = pt)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Day labels with mood %
+            Row(modifier = Modifier.fillMaxWidth()) {
+                moodData.forEach { (day, value, _) ->
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = day,
+                            fontSize = 12.sp,
+                            color = TextSecondary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "${value.toInt()}%",
+                            fontSize = 10.sp,
+                            color = NeonCyan.copy(alpha = 0.8f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Legend
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(NeonCyan))
+                    Text(text = "Mood Level", fontSize = 12.sp, color = TextSecondary)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(modifier = Modifier
+                        .height(3.dp)
+                        .width(24.dp)
+                        .background(Brush.horizontalGradient(listOf(NeonCyan, NeonBlue)))
+                    )
+                    Text(text = "Trend", fontSize = 12.sp, color = TextSecondary)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DailyInsightsCard() {
+    data class Insight(val emoji: String, val label: String, val value: String, val color: Color)
+    val insights = listOf(
+        Insight("⚡", "Active Time",     "45 mins",  NeonCyan),
+        Insight("🔥", "Calories Burned",  "524 kcal", NeonOrange),
+        Insight("🧘", "Meditation",      "12 mins",  PrimaryPurple),
+        Insight("👟", "Steps Taken",     "8,432",    NeonGreen),
+        Insight("❤️", "Heart Rate Avg",  "72 bpm",   NeonPink)
+    )
+
+    // 3D Glass card
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .shadow(elevation = 16.dp, shape = RoundedCornerShape(24.dp), ambientColor = PrimaryPurple.copy(alpha = 0.25f), spotColor = PrimaryPurple.copy(alpha = 0.3f))
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF120D1E),  // dark purple-tinted glass
+                        Color(0xFF0A0812)
+                    )
+                )
+            )
+            .border(
+                1.5.dp,
+                Brush.verticalGradient(
+                    listOf(PrimaryPurple.copy(alpha = 0.5f), NeonPink.copy(alpha = 0.15f))
+                ),
+                RoundedCornerShape(24.dp)
+            )
+            .padding(20.dp)
+    ) {
+        Column {
+            // Header
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(PrimaryPurple))
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "DAILY INSIGHTS",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary,
+                    letterSpacing = 1.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            insights.forEachIndexed { idx, insight ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Color dot
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(insight.color)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = insight.emoji, fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = insight.label,
+                        fontSize = 15.sp,
+                        color = TextSecondary,
+                        modifier = Modifier.weight(1f),
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = insight.value,
+                        fontSize = 16.sp,
+                        color = insight.color,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+                if (idx < insights.lastIndex) {
+                    HorizontalDivider(
+                        color = GlassBorder,
+                        thickness = 0.5.dp
+                    )
+                }
+            }
+        }
+    }
+}
 
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -398,12 +777,12 @@ fun getStressStatus(level: Int): String = when {
 // ═══════════════════════════════════════════════════════════════════════
 // ROUTE — ViewModel-owning wrapper (use in navigation)
 // ═══════════════════════════════════════════════════════════════════════
-// DashboardRoute is already defined above at line 39
+// DashboardRoute is already defined above at line 41
 
 // Legacy compatibility
 @Composable
 fun DashboardScreen() {
-    DashboardScreenWithHeader(state = RingUiState())
+    DashboardScreenWithHeader(state = DashboardUiState())
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -414,7 +793,7 @@ fun DashboardScreen() {
 @Composable
 private fun DashboardConnectedPreview() {
     FitnessAppTheme(darkTheme = true) {
-        DashboardScreenWithHeader(state = PreviewData.connectedState)
+        DashboardScreenWithHeader(state = PreviewData.connectedDashboardState)
     }
 }
 
@@ -422,7 +801,7 @@ private fun DashboardConnectedPreview() {
 @Composable
 private fun DashboardDisconnectedPreview() {
     FitnessAppTheme(darkTheme = true) {
-        DashboardScreenWithHeader(state = PreviewData.disconnectedState)
+        DashboardScreenWithHeader(state = PreviewData.disconnectedDashboardState)
     }
 }
 
@@ -430,7 +809,7 @@ private fun DashboardDisconnectedPreview() {
 @Composable
 private fun DashboardHighStressPreview() {
     FitnessAppTheme(darkTheme = true) {
-        DashboardScreenWithHeader(state = PreviewData.highStressState)
+        DashboardScreenWithHeader(state = PreviewData.highStressDashboardState)
     }
 }
 
@@ -438,7 +817,7 @@ private fun DashboardHighStressPreview() {
 @Composable
 private fun DashboardLowBatteryPreview() {
     FitnessAppTheme(darkTheme = true) {
-        DashboardScreenWithHeader(state = PreviewData.lowBatteryState)
+        DashboardScreenWithHeader(state = PreviewData.lowBatteryDashboardState)
     }
 }
 
@@ -446,7 +825,7 @@ private fun DashboardLowBatteryPreview() {
 @Composable
 private fun DashboardDarkModePreview() {
     FitnessAppTheme(darkTheme = true) {
-        DashboardScreenWithHeader(state = PreviewData.connectedState)
+        DashboardScreenWithHeader(state = PreviewData.connectedDashboardState)
     }
 }
 
@@ -454,7 +833,7 @@ private fun DashboardDarkModePreview() {
 @Composable
 private fun DashboardTabletPreview() {
     FitnessAppTheme(darkTheme = true) {
-        DashboardScreenWithHeader(state = PreviewData.connectedState)
+        DashboardScreenWithHeader(state = PreviewData.connectedDashboardState)
     }
 }
 
@@ -462,7 +841,7 @@ private fun DashboardTabletPreview() {
 @Composable
 private fun DashboardLandscapePreview() {
     FitnessAppTheme(darkTheme = true) {
-        DashboardScreenWithHeader(state = PreviewData.connectedState)
+        DashboardScreenWithHeader(state = PreviewData.connectedDashboardState)
     }
 }
 
@@ -470,6 +849,6 @@ private fun DashboardLandscapePreview() {
 @Composable
 private fun DashboardLoadingPreview() {
     FitnessAppTheme(darkTheme = true) {
-        DashboardScreenWithHeader(state = PreviewData.loadingState)
+        DashboardScreenWithHeader(state = PreviewData.loadingDashboardState)
     }
 }

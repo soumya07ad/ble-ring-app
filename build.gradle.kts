@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application") version "8.5.0"
     kotlin("android") version "1.9.22"
+    id("com.google.devtools.ksp") version "1.9.22-1.0.17"
 }
 
 android {
@@ -59,6 +60,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
     
+    // SplashScreen API (Android 12+ compatible)
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    
     // WebView
     implementation("androidx.webkit:webkit:1.8.0")
     
@@ -76,6 +80,17 @@ dependencies {
     // Coroutines for async operations
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     
+    // Room Database
+    val roomVersion = "2.6.1"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
+    
     // WorkManager for background sync
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // ══════════════════════════════════════════════════════════
+    // Manridy MRD SDK (for R9 Ring) - WORKING SDK!
+    // ══════════════════════════════════════════════════════════
+    // implementation(":sdk_mrd20240218_1.1.5@aar") // Removed as file is missing
 }
