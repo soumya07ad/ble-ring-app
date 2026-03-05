@@ -30,8 +30,10 @@ import androidx.compose.ui.unit.sp
 import com.fitness.app.presentation.settings.SettingsViewModel
 import com.fitness.app.ui.components.GlowDivider
 import com.fitness.app.ui.theme.*
+import java.time.Instant
 import java.time.LocalDate
 import java.time.Period
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
@@ -192,6 +194,8 @@ private fun ProfileHeader(
 ) {
     val displayName = name.ifBlank { "Add your name" }
     val age = calculateAge(dob)
+    // Convert stored yyyy-MM-dd to dd/MM/yyyy for display
+    val displayDob = formatDobForDisplay(dob)
 
     Row(
         modifier = Modifier
@@ -269,6 +273,34 @@ private fun calculateAge(dob: String): Int? {
     }
 }
 
+/**
+ * Convert stored yyyy-MM-dd to dd/MM/yyyy for UI display.
+ * Returns empty string if input is blank or unparseable.
+ */
+private fun formatDobForDisplay(storedDob: String): String {
+    if (storedDob.isBlank()) return ""
+    return try {
+        val date = LocalDate.parse(storedDob, DateTimeFormatter.ISO_LOCAL_DATE)
+        date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+    } catch (e: DateTimeParseException) {
+        storedDob  // fallback: show as-is
+    }
+}
+
+/**
+ * Convert display dd/MM/yyyy to yyyy-MM-dd for storage.
+ * Returns the input as-is if blank or unparseable.
+ */
+private fun formatDobForStorage(displayDob: String): String {
+    if (displayDob.isBlank()) return ""
+    return try {
+        val date = LocalDate.parse(displayDob, DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+        date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+    } catch (e: DateTimeParseException) {
+        displayDob  // fallback
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileEditBottomSheet(
@@ -279,33 +311,91 @@ private fun ProfileEditBottomSheet(
     onSave: (name: String, dob: String, gender: String) -> Unit
 ) {
     var name   by remember { mutableStateOf(currentName) }
-    var dob    by remember { mutableStateOf(currentDob) }
+    // Display DOB in dd/MM/yyyy; currentDob comes as yyyy-MM-dd from storage
+    var displayDob by remember { mutableStateOf(formatDobForDisplay(currentDob)) }
     var gender by remember { mutableStateOf(currentGender) }
-    var dobError by remember { mutableStateOf<String?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val genders = listOf("Male", "Female", "Other")
-    val fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    fun validateAndSave() {
-        // Validate DOB
-        if (dob.isNotBlank()) {
+    // Initialise DatePickerState with existing DOB if available
+    val initialMillis = remember {
+        if (currentDob.isNotBlank()) {
             try {
-                val parsed = LocalDate.parse(dob, fmt)
-                if (parsed.isAfter(LocalDate.now())) {
-                    dobError = "Date of birth cannot be in the future"
-                    return
-                }
-                if (Period.between(parsed, LocalDate.now()).years > 120) {
-                    dobError = "Please enter a valid date"
-                    return
-                }
-            } catch (e: DateTimeParseException) {
-                dobError = "Format must be yyyy-MM-dd (e.g. 1995-08-14)"
-                return
+                LocalDate.parse(currentDob, DateTimeFormatter.ISO_LOCAL_DATE)
+                    .atStartOfDay(ZoneId.of("UTC"))
+                    .toInstant()
+                    .toEpochMilli()
+            } catch (e: DateTimeParseException) { null }
+        } else null
+    }
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialMillis,
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                return utcTimeMillis <= System.currentTimeMillis()
             }
         }
-        dobError = null
-        onSave(name, dob, gender)
+    )
+
+    fun validateAndSave() {
+        // Convert display format to storage format
+        val storageDob = formatDobForStorage(displayDob)
+        onSave(name, storageDob, gender)
+    }
+
+    // DatePicker dialog
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val selectedDate = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.of("UTC"))
+                                .toLocalDate()
+                            displayDob = selectedDate.format(
+                                DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                            )
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("OK", color = PrimaryPurple)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            },
+            colors = DatePickerDefaults.colors(
+                containerColor = DarkCard
+            )
+        ) {
+            DatePicker(
+                state = datePickerState,
+                colors = DatePickerDefaults.colors(
+                    containerColor = DarkCard,
+                    titleContentColor = TextPrimary,
+                    headlineContentColor = TextPrimary,
+                    weekdayContentColor = TextSecondary,
+                    subheadContentColor = TextSecondary,
+                    yearContentColor = TextPrimary,
+                    currentYearContentColor = PrimaryPurple,
+                    selectedYearContentColor = Color.White,
+                    selectedYearContainerColor = PrimaryPurple,
+                    dayContentColor = TextPrimary,
+                    selectedDayContentColor = Color.White,
+                    selectedDayContainerColor = PrimaryPurple,
+                    todayContentColor = NeonCyan,
+                    todayDateBorderColor = NeonCyan,
+                    navigationContentColor = TextPrimary
+                )
+            )
+        }
     }
 
     ModalBottomSheet(
@@ -345,31 +435,23 @@ private fun ProfileEditBottomSheet(
             )
             Spacer(Modifier.height(16.dp))
 
-            // DOB field
+            // DOB field — read-only, opens DatePicker on click
             OutlinedTextField(
-                value = dob,
-                onValueChange = {
-                    dob = it
-                    dobError = null
-                },
-                label = { Text("Date of Birth  (yyyy-MM-dd)", color = TextSecondary) },
-                placeholder = { Text("e.g. 1995-08-14", color = TextMuted) },
+                value = displayDob,
+                onValueChange = { /* read-only */ },
+                label = { Text("Date of Birth", color = TextSecondary) },
+                placeholder = { Text("dd/MM/yyyy", color = TextMuted) },
                 singleLine = true,
-                isError = dobError != null,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                supportingText = {
-                    if (dobError != null) {
-                        Text(dobError!!, color = ErrorRed, fontSize = 12.sp)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                enabled = false,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = NeonCyan,
-                    unfocusedBorderColor = GlassBorder,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    errorBorderColor = ErrorRed,
-                    cursorColor = NeonCyan
+                    disabledBorderColor = GlassBorder,
+                    disabledTextColor = TextPrimary,
+                    disabledLabelColor = TextSecondary,
+                    disabledPlaceholderColor = TextMuted
                 )
             )
             Spacer(Modifier.height(20.dp))
