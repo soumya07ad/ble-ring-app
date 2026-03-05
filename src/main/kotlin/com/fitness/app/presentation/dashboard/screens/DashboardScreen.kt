@@ -42,6 +42,7 @@ import com.fitness.app.presentation.dashboard.DashboardViewModel
 import com.fitness.app.presentation.dashboard.SmartRingViewModel
 import com.fitness.app.domain.model.Ring
 import com.fitness.app.domain.model.RingConnectionState
+import com.fitness.app.presentation.navigation.Screen
 import com.fitness.app.ui.components.*
 import com.fitness.app.ui.theme.*
 
@@ -66,6 +67,9 @@ fun DashboardRoute(
         },
         onDisconnectClick = {
             smartRingViewModel.disconnectRing()
+        },
+        onSettingsClick = {
+            navController?.navigate(Screen.Settings.route)
         }
     )
 }
@@ -75,7 +79,8 @@ fun DashboardScreenWithHeader(
     state: DashboardUiState,
     ringConnectionState: RingConnectionState = if (state.isConnected) RingConnectionState.CONNECTED else RingConnectionState.DISCONNECTED,
     onConnectClick: () -> Unit = {},
-    onDisconnectClick: () -> Unit = {}
+    onDisconnectClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
 ) {
     val stressLevel = state.stressLevel.coerceIn(0, 100)
     val pairedRing = state.connectedRing
@@ -90,6 +95,32 @@ fun DashboardScreenWithHeader(
                 .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
         ) {
+            // Dashboard Top Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Smart Ring Dashboard",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                IconButton(
+                    onClick = onSettingsClick
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = TextPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
 
             // Hero Section
             HeroDashboardHeader(
