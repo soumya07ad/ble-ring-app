@@ -39,6 +39,7 @@ import com.fitness.app.presentation.wellness.screens.WellnessScreen
 import com.fitness.app.presentation.navigation.Screen
 import com.fitness.app.presentation.dashboard.DashboardViewModel
 import com.fitness.app.presentation.dashboard.SleepTrackerViewModel
+import com.fitness.app.presentation.dashboard.SmartRingViewModel
 import com.fitness.app.presentation.coach.CoachViewModel
 import com.fitness.app.presentation.wellness.WellnessViewModel
 import com.fitness.app.presentation.streaks.StreakViewModel
@@ -106,7 +107,11 @@ fun AppNavigationFlow(
                     modifier = Modifier.padding(paddingValues)
                 ) {
                     composable(Screen.Dashboard.route) {
-                        DashboardRoute(viewModel = viewModel(factory = factory))
+                        DashboardRoute(
+                            viewModel = viewModel(factory = factory),
+                            smartRingViewModel = viewModel(factory = factory),
+                            navController = navController
+                        )
                     }
 
                     composable(Screen.Sleep.route) {
@@ -141,6 +146,13 @@ fun AppNavigationFlow(
                         com.fitness.app.presentation.settings.screens.SettingsScreen(
                             viewModel = viewModel(factory = factory),
                             onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable("ringSetup") {
+                        com.fitness.app.presentation.ring.screens.RingSetupRoute(
+                            onSetupComplete = { navController.popBackStack() },
+                            onSkip = { navController.popBackStack() }
                         )
                     }
                 }

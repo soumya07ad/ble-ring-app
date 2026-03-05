@@ -34,11 +34,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.fitness.app.MockData
 import com.fitness.app.PreviewData
 import com.fitness.app.presentation.dashboard.DashboardUiState
 import com.fitness.app.presentation.dashboard.DashboardViewModel
+import com.fitness.app.presentation.dashboard.SmartRingViewModel
 import com.fitness.app.domain.model.Ring
+import com.fitness.app.domain.model.RingConnectionState
 import com.fitness.app.ui.components.*
 import com.fitness.app.ui.theme.*
 
@@ -48,18 +51,35 @@ import com.fitness.app.ui.theme.*
 
 @Composable
 fun DashboardRoute(
-    viewModel: DashboardViewModel = viewModel()
+    viewModel: DashboardViewModel = viewModel(),
+    smartRingViewModel: SmartRingViewModel = viewModel(),
+    navController: NavController? = null
 ) {
     val state by viewModel.uiState.collectAsState()
-    DashboardScreenWithHeader(state = state)
+    val ringConnectionState by smartRingViewModel.connectionState.collectAsState()
+
+    DashboardScreenWithHeader(
+        state = state,
+        ringConnectionState = ringConnectionState,
+        onConnectClick = {
+            navController?.navigate("ringSetup")
+        },
+        onDisconnectClick = {
+            smartRingViewModel.disconnectRing()
+        }
+    )
 }
 
 @Composable
 fun DashboardScreenWithHeader(
-    state: DashboardUiState
+    state: DashboardUiState,
+    ringConnectionState: RingConnectionState = if (state.isConnected) RingConnectionState.CONNECTED else RingConnectionState.DISCONNECTED,
+    onConnectClick: () -> Unit = {},
+    onDisconnectClick: () -> Unit = {}
 ) {
     val stressLevel = state.stressLevel.coerceIn(0, 100)
     val pairedRing = state.connectedRing
+    val isConnected = ringConnectionState == RingConnectionState.CONNECTED
 
     Box(modifier = Modifier.fillMaxSize()) {
         CinematicBackground()
@@ -72,7 +92,14 @@ fun DashboardScreenWithHeader(
         ) {
 
             // Hero Section
-            HeroDashboardHeader(pairedRing = pairedRing, isConnected = state.isConnected, batteryLevel = state.batteryLevel)
+            HeroDashboardHeader(
+                pairedRing = pairedRing,
+                isConnected = isConnected,
+                batteryLevel = state.batteryLevel,
+                ringConnectionState = ringConnectionState,
+                onConnectClick = onConnectClick,
+                onDisconnectClick = onDisconnectClick
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -93,8 +120,8 @@ fun DashboardScreenWithHeader(
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     StatusBadge(
-                        text = if (state.isConnected) "Live" else "Offline",
-                        color = if (state.isConnected) NeonGreen else TextMuted
+                        text = if (isConnected) "Live" else "Offline",
+                        color = if (isConnected) NeonGreen else TextMuted
                     )
                 }
 
@@ -107,9 +134,9 @@ fun DashboardScreenWithHeader(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Favorite,
                         label = "HEART RATE",
-                        value = if (state.heartRate > 0) "${state.heartRate}" else "--",
+                        value = if (!isConnected) "--" else if (state.heartRate > 0) "${state.heartRate}" else "--",
                         unit = "bpm",
-                        progress = (state.heartRate / 200f).coerceIn(0f, 1f),
+                        progress = if (isConnected) (state.heartRate / 200f).coerceIn(0f, 1f) else 0f,
                         gradientColors = listOf(ErrorRed, NeonPink),
                         glowColor = ErrorRed
                     )
@@ -117,9 +144,9 @@ fun DashboardScreenWithHeader(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.FavoriteBorder,
                         label = "BLOOD O₂",
-                        value = if (state.spO2 > 0) "${state.spO2.toInt()}" else "--",
+                        value = if (!isConnected) "--" else if (state.spO2 > 0) "${state.spO2.toInt()}" else "--",
                         unit = "%",
-                        progress = (state.spO2 / 100f).coerceIn(0f, 1f),
+                        progress = if (isConnected) (state.spO2 / 100f).coerceIn(0f, 1f) else 0f,
                         gradientColors = listOf(NeonCyan, NeonBlue),
                         glowColor = NeonCyan
                     )
@@ -133,9 +160,9 @@ fun DashboardScreenWithHeader(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Star,
                         label = "STEPS",
-                        value = "${state.steps}",
+                        value = if (isConnected) "${state.steps}" else "0",
                         unit = "",
-                        progress = (state.steps / 10000f).coerceIn(0f, 1f),
+                        progress = if (isConnected) (state.steps / 10000f).coerceIn(0f, 1f) else 0f,
                         gradientColors = listOf(PrimaryPurple, NeonPink),
                         glowColor = PrimaryPurple
                     )
@@ -143,9 +170,9 @@ fun DashboardScreenWithHeader(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Build,
                         label = "DISTANCE",
-                        value = "${state.distance}",
+                        value = if (isConnected) "${state.distance}" else "0",
                         unit = "m",
-                        progress = (state.distance / 5000f).coerceIn(0f, 1f),
+                        progress = if (isConnected) (state.distance / 5000f).coerceIn(0f, 1f) else 0f,
                         gradientColors = listOf(NeonOrange, WarningAmber),
                         glowColor = NeonOrange
                     )
@@ -232,7 +259,14 @@ fun DashboardScreenWithHeader(
 // ═══════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun HeroDashboardHeader(pairedRing: Ring?, isConnected: Boolean, batteryLevel: Int?) {
+private fun HeroDashboardHeader(
+    pairedRing: Ring?,
+    isConnected: Boolean,
+    batteryLevel: Int?,
+    ringConnectionState: RingConnectionState = if (isConnected) RingConnectionState.CONNECTED else RingConnectionState.DISCONNECTED,
+    onConnectClick: () -> Unit = {},
+    onDisconnectClick: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -249,35 +283,15 @@ private fun HeroDashboardHeader(pairedRing: Ring?, isConnected: Boolean, battery
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = pairedRing?.name ?: "Smart Ring",
-            style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.Bold
+        // Smart Ring Card with connection management
+        SmartRingCard(
+            connectionState = ringConnectionState,
+            ringName = pairedRing?.name ?: "Smart Ring",
+            batteryLevel = batteryLevel,
+            onConnectClick = onConnectClick,
+            onDisconnectClick = onDisconnectClick,
+            modifier = Modifier.padding(horizontal = 0.dp)
         )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isConnected) NeonGreen else TextMuted
-                    )
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = if (isConnected)
-                    "Connected ${batteryLevel?.let { "• $it%" } ?: ""}"
-                else "Not connected",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
-            )
-        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -691,7 +705,10 @@ fun getStressStatus(level: Int): String = when {
 // Legacy compatibility
 @Composable
 fun DashboardScreen() {
-    DashboardScreenWithHeader(state = DashboardUiState())
+    DashboardScreenWithHeader(
+        state = DashboardUiState(),
+        ringConnectionState = RingConnectionState.DISCONNECTED
+    )
 }
 
 // ═══════════════════════════════════════════════════════════════════════
