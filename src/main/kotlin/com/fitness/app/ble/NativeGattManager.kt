@@ -109,6 +109,7 @@ class NativeGattManager private constructor(private val context: Context) {
     private var connectedDevice: BluetoothDevice? = null
     private val handler = Handler(Looper.getMainLooper())
     private var isScanning = false
+    private var currentScanCallback: ScanCallback? = null
     
     init {
         Log.i(TAG, "═══════════════════════════════════")
@@ -191,20 +192,26 @@ class NativeGattManager private constructor(private val context: Context) {
             override fun onScanFailed(errorCode: Int) {
                 Log.e(TAG, "❌ Scan failed: errorCode=$errorCode")
                 isScanning = false
+                currentScanCallback = null
             }
         }
         
+        // Store the callback so stopScan() can use the same instance
+        currentScanCallback = scanCallback
         scanner.startScan(scanCallback)
         
         // Auto-stop after duration
         handler.postDelayed({
-            try {
-                scanner.stopScan(scanCallback)
-            } catch (e: Exception) {
-                Log.w(TAG, "Stop scan exception: ${e.message}")
+            if (isScanning && currentScanCallback != null) {
+                try {
+                    scanner.stopScan(currentScanCallback)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Stop scan exception: ${e.message}")
+                }
+                isScanning = false
+                currentScanCallback = null
+                Log.i(TAG, "🔍 Scan complete. Found ${foundDevices.size} devices")
             }
-            isScanning = false
-            Log.i(TAG, "🔍 Scan complete. Found ${foundDevices.size} devices")
         }, durationSeconds * 1000L)
     }
     
@@ -212,12 +219,15 @@ class NativeGattManager private constructor(private val context: Context) {
     fun stopScan() {
         if (isScanning) {
             try {
-                bluetoothAdapter?.bluetoothLeScanner?.stopScan(object : ScanCallback() {})
+                currentScanCallback?.let { callback ->
+                    bluetoothAdapter?.bluetoothLeScanner?.stopScan(callback)
+                }
             } catch (e: Exception) {
-                // Ignore
+                Log.w(TAG, "Stop scan exception: ${e.message}")
             }
             isScanning = false
-            Log.d(TAG, "🔍 Scan stopped")
+            currentScanCallback = null
+            Log.d(TAG, "🔍 Scan stopped by user")
         }
     }
     

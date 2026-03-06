@@ -216,7 +216,7 @@ fun NeonButton(
             .fillMaxWidth()
             .height(56.dp)
             .scale(scale),
-        enabled = enabled && !isLoading,
+        enabled = enabled,
         shape = shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent,
