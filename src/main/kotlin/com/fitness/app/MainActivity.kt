@@ -40,6 +40,9 @@ import com.fitness.app.presentation.dashboard.screens.DashboardRoute
 import com.fitness.app.presentation.dashboard.screens.SleepTrackerScreen
 import com.fitness.app.presentation.coach.screens.CoachScreen
 import com.fitness.app.presentation.wellness.screens.WellnessScreen
+import com.fitness.app.presentation.wellness.screens.MeditationListScreen
+import com.fitness.app.presentation.wellness.screens.MeditationTimerScreen
+import com.fitness.app.presentation.wellness.MeditationViewModel
 import com.fitness.app.presentation.navigation.Screen
 import com.fitness.app.presentation.dashboard.DashboardViewModel
 import com.fitness.app.presentation.dashboard.SleepTrackerViewModel
@@ -149,6 +152,72 @@ fun AppNavigationFlow(
                     composable(Screen.Wellness.route) {
                         WellnessScreen(
                             viewModel = viewModel(factory = factory),
+                            onBack = { navController.popBackStack() },
+                            onMeditationClick = { category ->
+                                val route = when (category) {
+                                    "morning_calm" -> Screen.MorningCalm.route
+                                    "breathing" -> Screen.BreathingExercise.route
+                                    "sleep" -> Screen.SleepMeditation.route
+                                    else -> Screen.MorningCalm.route
+                                }
+                                navController.navigate(route)
+                            }
+                        )
+                    }
+
+                    // Meditation category screens
+                    composable(Screen.MorningCalm.route) {
+                        MeditationListScreen(
+                            category = "morning_calm",
+                            viewModel = viewModel(),
+                            onExerciseClick = { exercise ->
+                                navController.navigate(
+                                    Screen.MeditationTimer.createRoute(exercise.id, exercise.category)
+                                )
+                            },
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(Screen.BreathingExercise.route) {
+                        MeditationListScreen(
+                            category = "breathing",
+                            viewModel = viewModel(),
+                            onExerciseClick = { exercise ->
+                                navController.navigate(
+                                    Screen.MeditationTimer.createRoute(exercise.id, exercise.category)
+                                )
+                            },
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(Screen.SleepMeditation.route) {
+                        MeditationListScreen(
+                            category = "sleep",
+                            viewModel = viewModel(),
+                            onExerciseClick = { exercise ->
+                                navController.navigate(
+                                    Screen.MeditationTimer.createRoute(exercise.id, exercise.category)
+                                )
+                            },
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(
+                        Screen.MeditationTimer.route,
+                        arguments = listOf(
+                            androidx.navigation.navArgument("exerciseId") { type = androidx.navigation.NavType.StringType },
+                            androidx.navigation.navArgument("category") { type = androidx.navigation.NavType.StringType }
+                        )
+                    ) { backStackEntry ->
+                        val exerciseId = backStackEntry.arguments?.getString("exerciseId") ?: ""
+                        val category = backStackEntry.arguments?.getString("category") ?: ""
+                        MeditationTimerScreen(
+                            exerciseId = exerciseId,
+                            category = category,
+                            viewModel = viewModel(),
                             onBack = { navController.popBackStack() }
                         )
                     }

@@ -36,7 +36,8 @@ import com.fitness.app.ui.components.GlowDivider
 @Composable
 fun WellnessScreen(
     viewModel: WellnessViewModel,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onMeditationClick: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -186,7 +187,16 @@ fun WellnessScreen(
                 MeditationCard(
                     meditation = meditation,
                     isActive = isActive,
-                    onStart = { viewModel.startMeditation(meditation) }
+                    onStart = {
+                        // Navigate to dedicated category screen
+                        val category = when (meditation.id) {
+                            "1" -> "morning_calm"
+                            "2" -> "breathing"
+                            "3" -> "sleep"
+                            else -> "morning_calm"
+                        }
+                        onMeditationClick(category)
+                    }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
