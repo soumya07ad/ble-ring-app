@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +48,7 @@ fun StressLevelWidget(stressLevel: Int) {
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                Color.White,
+                MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(16.dp)
             )
             .padding(16.dp)
@@ -66,13 +67,13 @@ fun StressLevelWidget(stressLevel: Int) {
                     "Stress Level",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Icon(
                     imageVector = Icons.Filled.Info,
                     contentDescription = "Info",
                     modifier = Modifier.size(20.dp),
-                    tint = Color(0xFF9CA3AF)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -86,7 +87,7 @@ fun StressLevelWidget(stressLevel: Int) {
                 Box(
                     modifier = Modifier
                         .size(100.dp)
-                        .background(Color(0xFFF3F4F6), shape = CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant, shape = CircleShape)
                         .clip(CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
@@ -113,7 +114,7 @@ fun StressLevelWidget(stressLevel: Int) {
                             Text(
                                 "/100",
                                 fontSize = 10.sp,
-                                color = Color(0xFF9CA3AF)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -146,14 +147,14 @@ fun StressLevelWidget(stressLevel: Int) {
                         Text(
                             levelDescription,
                             fontSize = 12.sp,
-                            color = Color(0xFF6B7280)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
                     Text(
                         "Based on: Heart rate variability & activity",
                         fontSize = 10.sp,
-                        color = Color(0xFF9CA3AF)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -163,7 +164,7 @@ fun StressLevelWidget(stressLevel: Int) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
-                    .background(Color(0xFFE5E7EB), shape = RoundedCornerShape(3.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(3.dp))
                     .clip(RoundedCornerShape(3.dp))
             ) {
                 Box(
@@ -178,7 +179,7 @@ fun StressLevelWidget(stressLevel: Int) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFFEF2F2), shape = RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp))
                     .padding(8.dp)
             ) {
                 Text(
@@ -188,7 +189,7 @@ fun StressLevelWidget(stressLevel: Int) {
                         else -> "🔴 Take a break and practice deep breathing"
                     },
                     fontSize = 12.sp,
-                    color = Color(0xFF4B5563)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

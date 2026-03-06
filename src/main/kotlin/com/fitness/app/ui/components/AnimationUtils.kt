@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fitness.app.ui.theme.*
+import androidx.compose.material3.MaterialTheme
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -60,6 +61,10 @@ fun AnimatedRing3D(
         label = "glow"
     )
 
+    val ringShadowColor = MaterialTheme.colorScheme.background.copy(alpha = 0.3f)
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    val innerShineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+
     Canvas(
         modifier = modifier.size(180.dp)
     ) {
@@ -85,7 +90,7 @@ fun AnimatedRing3D(
 
         // Ring shadow (depth illusion)
         drawArc(
-            color = Color.Black.copy(alpha = 0.3f),
+            color = ringShadowColor,
             startAngle = 0f,
             sweepAngle = 360f,
             useCenter = false,
@@ -123,7 +128,7 @@ fun AnimatedRing3D(
             brush = Brush.sweepGradient(
                 colors = listOf(
                     Color.Transparent,
-                    Color.White.copy(alpha = 0.6f),
+                    highlightColor,
                     Color.Transparent
                 )
             ),
@@ -139,7 +144,7 @@ fun AnimatedRing3D(
         drawArc(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.05f),
+                    innerShineColor,
                     Color.Transparent
                 ),
                 center = Offset(cx, cy)
@@ -370,7 +375,7 @@ fun AnimatedRadialChart(
     modifier: Modifier = Modifier,
     progress: Float,
     gradientColors: List<Color> = listOf(NeonCyan, NeonBlue),
-    trackColor: Color = Color.White.copy(alpha = 0.06f),
+    trackColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
     strokeWidth: Float = 10f,
     glowRadius: Float = 8f
 ) {
@@ -480,17 +485,21 @@ fun CinematicBackground(
         label = "streak"
     )
 
+    val streakColor = MaterialTheme.colorScheme.onSurface
+    val bgBase = MaterialTheme.colorScheme.background
+    val bgMid = if (AppColors.isDark) MaterialTheme.colorScheme.surface else Color(0xFFF3FFF6)  // green tint in light
+
     Canvas(modifier = modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
 
-        // Base ultra-dark gradient
+        // Base gradient
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    Color(0xFF050508),
-                    Color(0xFF08080E),
-                    Color(0xFF050508)
+                    bgBase,
+                    bgMid,
+                    bgBase
                 ),
                 startY = h * gradientOffset * 0.3f,
                 endY = h
@@ -531,7 +540,7 @@ fun CinematicBackground(
             brush = Brush.horizontalGradient(
                 colors = listOf(
                     Color.Transparent,
-                    Color.White.copy(alpha = streakAlpha),
+                    streakColor.copy(alpha = streakAlpha),
                     Color.Transparent
                 )
             ),

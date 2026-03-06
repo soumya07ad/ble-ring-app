@@ -22,6 +22,7 @@ import com.fitness.app.data.repository.CoachRepositoryImpl
 import com.fitness.app.domain.repository.SleepRepository
 import com.fitness.app.data.repository.StreakRepository
 import com.fitness.app.data.repository.SettingsRepository
+import com.fitness.app.data.repository.ThemeManager
 import com.fitness.app.domain.repository.IStreakRepository
 import com.fitness.app.domain.repository.ISettingsRepository
 
@@ -77,6 +78,8 @@ class AppContainer private constructor(private val context: Context) {
     val meditationLocalRepository: IMeditationRepository by lazy { MeditationRepositoryImpl() }
 
     val fitnessLocalRepository: IFitnessRepository by lazy { FitnessRepositoryImpl(fitnessAPI) }
+
+    val themeManager: ThemeManager by lazy { ThemeManager(context) }
 
     // ── Use Cases ──────────────────────────────────────────────────
 

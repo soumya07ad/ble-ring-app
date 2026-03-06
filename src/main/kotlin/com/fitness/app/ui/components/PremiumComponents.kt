@@ -40,6 +40,7 @@ fun NeonGlassCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(cornerRadius)
+    val isDark = AppColors.isDark
 
     Box(modifier = modifier) {
         Surface(
@@ -47,29 +48,40 @@ fun NeonGlassCard(
                 .fillMaxWidth()
                 .clip(shape)
                 .then(
-                    if (showGlow) {
-                        Modifier.border(
-                            width = 1.dp,
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    glowColor.copy(alpha = 0.4f),
-                                    glowColor.copy(alpha = 0.05f),
-                                    Color.Transparent,
-                                    glowColor.copy(alpha = 0.1f)
-                                )
-                            ),
-                            shape = shape
-                        )
+                    if (isDark) {
+                        if (showGlow) {
+                            Modifier.border(
+                                width = 1.dp,
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        glowColor.copy(alpha = 0.4f),
+                                        glowColor.copy(alpha = 0.05f),
+                                        Color.Transparent,
+                                        glowColor.copy(alpha = 0.1f)
+                                    )
+                                ),
+                                shape = shape
+                            )
+                        } else {
+                            Modifier.border(1.dp, MaterialTheme.colorScheme.outline, shape)
+                        }
                     } else {
-                        Modifier.border(1.dp, GlassBorder, shape)
+                        // Glass border for light mode
+                        Modifier.border(1.dp, LightGlassBorderStrong, shape)
                     }
                 ),
             shape = shape,
-            color = DarkCard.copy(alpha = 0.7f)
+            color = if (isDark) MaterialTheme.colorScheme.surface else LightGlassCard,
+            shadowElevation = if (isDark) 0.dp else 8.dp
         ) {
             Column(
                 modifier = Modifier
-                    .background(CardGlassBrush)
+                    .background(if (isDark) CardGlassBrush else Brush.verticalGradient(
+                        listOf(
+                            Color(0x33FFFFFF),  // 20% white top
+                            Color(0x0DFFFFFF)   // 5% white bottom
+                        )
+                    ))
                     .padding(20.dp),
                 content = content
             )
@@ -92,13 +104,33 @@ fun FloatingMetricTile(
     gradientColors: List<Color> = listOf(NeonCyan, NeonBlue),
     glowColor: Color = gradientColors.first()
 ) {
-    NeonGlassCard(
-        modifier = modifier,
-        glowColor = glowColor
+    val isDark = AppColors.isDark
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .then(
+                if (isDark) {
+                    Modifier.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
+                } else {
+                    Modifier.border(1.dp, LightGlassBorderStrong, RoundedCornerShape(20.dp))
+                }
+            ),
+        shape = RoundedCornerShape(20.dp),
+        color = if (isDark) MaterialTheme.colorScheme.surface else LightGlassCard,
+        shadowElevation = if (isDark) 0.dp else 6.dp
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .background(if (isDark) CardGlassBrush else Brush.verticalGradient(
+                    listOf(
+                        Color(0x33FFFFFF),
+                        Color(0x0DFFFFFF)
+                    )
+                ))
+                .padding(20.dp)
         ) {
             // Radial chart
             Box(
@@ -126,7 +158,7 @@ fun FloatingMetricTile(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
@@ -135,7 +167,7 @@ fun FloatingMetricTile(
                     Text(
                         text = value,
                         style = MaterialTheme.typography.headlineMedium,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                     if (unit.isNotEmpty()) {
@@ -143,7 +175,7 @@ fun FloatingMetricTile(
                         Text(
                             text = unit,
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 3.dp)
                         )
                     }
@@ -212,7 +244,7 @@ fun NeonButton(
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -223,7 +255,7 @@ fun NeonButton(
                             imageVector = it,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
@@ -231,7 +263,7 @@ fun NeonButton(
                 Text(
                     text = text,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (enabled) Color.White else Color.White.copy(alpha = 0.5f),
+                    color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     letterSpacing = 1.sp
                 )
             }
@@ -248,7 +280,7 @@ fun NeonSecondaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    borderColor: Color = GlassBorder
+    borderColor: Color = AppColors.dividerColor
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -272,7 +304,7 @@ fun NeonSecondaryButton(
             )
         ),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = TextPrimary
+            contentColor = MaterialTheme.colorScheme.onSurface
         ),
         interactionSource = interactionSource
     ) {
@@ -356,7 +388,7 @@ fun StatusBadge(
 private fun NeonGlassCardPreview() {
     FitnessAppTheme(darkTheme = true) {
         NeonGlassCard(glowColor = NeonCyan) {
-            Text("Glass Card Content", color = TextPrimary)
+            Text("Glass Card Content", color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

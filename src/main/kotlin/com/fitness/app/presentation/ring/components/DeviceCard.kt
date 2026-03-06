@@ -63,7 +63,7 @@ fun DeviceCard(
         )
     } else {
         Brush.linearGradient(
-            colors = listOf(GlassBorder, GlassBorder)
+            colors = listOf(AppColors.dividerColor, AppColors.dividerColor)
         )
     }
 
@@ -82,7 +82,7 @@ fun DeviceCard(
                 indication = null
             ) { onClick() },
         shape = shape,
-        color = if (isSelected) DarkCard.copy(alpha = 0.8f) else DarkCard.copy(alpha = 0.5f)
+        color = if (isSelected) MaterialTheme.colorScheme.surface.copy(alpha = 0.8f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
     ) {
         Row(
             modifier = Modifier
@@ -121,14 +121,14 @@ fun DeviceCard(
                 Text(
                     text = ring.name,
                     style = MaterialTheme.typography.titleSmall,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = ring.macAddress,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             }
 
@@ -155,7 +155,7 @@ fun DeviceCard(
                     Icon(
                         imageVector = Icons.Filled.Check,
                         contentDescription = "Selected",
-                        tint = Color.Black,
+                        tint = MaterialTheme.colorScheme.background,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -203,7 +203,7 @@ fun PremiumSignalIndicator(
                         .clip(RoundedCornerShape(2.dp))
                         .background(
                             if (isActive) color
-                            else Color.White.copy(alpha = 0.06f)
+                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
                         )
                 )
             }
@@ -214,7 +214,7 @@ fun PremiumSignalIndicator(
         Text(
             text = "${rssi} dBm",
             style = MaterialTheme.typography.labelSmall,
-            color = TextMuted
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
         )
     }
 }

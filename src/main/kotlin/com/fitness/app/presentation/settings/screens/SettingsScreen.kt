@@ -30,8 +30,10 @@ import androidx.compose.ui.unit.sp
 import com.fitness.app.presentation.settings.SettingsViewModel
 import com.fitness.app.ui.components.GlowDivider
 import com.fitness.app.ui.theme.*
+import java.time.Instant
 import java.time.LocalDate
 import java.time.Period
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
@@ -46,19 +48,19 @@ fun SettingsScreen(
     var showProfileSheet by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Settings", color = TextPrimary, fontWeight = FontWeight.Bold) },
+                title = { Text("Settings", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DarkBackground,
-                    navigationIconContentColor = TextPrimary,
-                    titleContentColor = TextPrimary
+                    containerColor = MaterialTheme.colorScheme.background,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -142,7 +144,7 @@ fun SettingsScreen(
                 SettingsActionRow(
                     icon = "🛡️",
                     title = "Privacy Policy",
-                    iconColor = TextSecondary,
+                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     onClick = { Toast.makeText(context, "Privacy Policy opened", Toast.LENGTH_SHORT).show() }
                 )
                 Spacer(modifier = Modifier.height(36.dp))
@@ -192,6 +194,8 @@ private fun ProfileHeader(
 ) {
     val displayName = name.ifBlank { "Add your name" }
     val age = calculateAge(dob)
+    // Convert stored yyyy-MM-dd to dd/MM/yyyy for display
+    val displayDob = formatDobForDisplay(dob)
 
     Row(
         modifier = Modifier
@@ -204,7 +208,7 @@ private fun ProfileHeader(
             modifier = Modifier
                 .size(72.dp)
                 .clip(CircleShape)
-                .background(DarkSurfaceVariant)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .border(2.dp, PrimaryPurple.copy(alpha = 0.6f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
@@ -216,7 +220,7 @@ private fun ProfileHeader(
                     color = PrimaryPurple
                 )
             } else {
-                Icon(Icons.Default.Person, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(36.dp))
+                Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(36.dp))
             }
         }
 
@@ -227,7 +231,7 @@ private fun ProfileHeader(
                 text = displayName,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (name.isBlank()) TextSecondary else TextPrimary
+                color = if (name.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -269,6 +273,34 @@ private fun calculateAge(dob: String): Int? {
     }
 }
 
+/**
+ * Convert stored yyyy-MM-dd to dd/MM/yyyy for UI display.
+ * Returns empty string if input is blank or unparseable.
+ */
+private fun formatDobForDisplay(storedDob: String): String {
+    if (storedDob.isBlank()) return ""
+    return try {
+        val date = LocalDate.parse(storedDob, DateTimeFormatter.ISO_LOCAL_DATE)
+        date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+    } catch (e: DateTimeParseException) {
+        storedDob  // fallback: show as-is
+    }
+}
+
+/**
+ * Convert display dd/MM/yyyy to yyyy-MM-dd for storage.
+ * Returns the input as-is if blank or unparseable.
+ */
+private fun formatDobForStorage(displayDob: String): String {
+    if (displayDob.isBlank()) return ""
+    return try {
+        val date = LocalDate.parse(displayDob, DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+        date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+    } catch (e: DateTimeParseException) {
+        displayDob  // fallback
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileEditBottomSheet(
@@ -279,39 +311,97 @@ private fun ProfileEditBottomSheet(
     onSave: (name: String, dob: String, gender: String) -> Unit
 ) {
     var name   by remember { mutableStateOf(currentName) }
-    var dob    by remember { mutableStateOf(currentDob) }
+    // Display DOB in dd/MM/yyyy; currentDob comes as yyyy-MM-dd from storage
+    var displayDob by remember { mutableStateOf(formatDobForDisplay(currentDob)) }
     var gender by remember { mutableStateOf(currentGender) }
-    var dobError by remember { mutableStateOf<String?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val genders = listOf("Male", "Female", "Other")
-    val fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    fun validateAndSave() {
-        // Validate DOB
-        if (dob.isNotBlank()) {
+    // Initialise DatePickerState with existing DOB if available
+    val initialMillis = remember {
+        if (currentDob.isNotBlank()) {
             try {
-                val parsed = LocalDate.parse(dob, fmt)
-                if (parsed.isAfter(LocalDate.now())) {
-                    dobError = "Date of birth cannot be in the future"
-                    return
-                }
-                if (Period.between(parsed, LocalDate.now()).years > 120) {
-                    dobError = "Please enter a valid date"
-                    return
-                }
-            } catch (e: DateTimeParseException) {
-                dobError = "Format must be yyyy-MM-dd (e.g. 1995-08-14)"
-                return
+                LocalDate.parse(currentDob, DateTimeFormatter.ISO_LOCAL_DATE)
+                    .atStartOfDay(ZoneId.of("UTC"))
+                    .toInstant()
+                    .toEpochMilli()
+            } catch (e: DateTimeParseException) { null }
+        } else null
+    }
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialMillis,
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                return utcTimeMillis <= System.currentTimeMillis()
             }
         }
-        dobError = null
-        onSave(name, dob, gender)
+    )
+
+    fun validateAndSave() {
+        // Convert display format to storage format
+        val storageDob = formatDobForStorage(displayDob)
+        onSave(name, storageDob, gender)
+    }
+
+    // DatePicker dialog
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val selectedDate = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.of("UTC"))
+                                .toLocalDate()
+                            displayDob = selectedDate.format(
+                                DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                            )
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("OK", color = PrimaryPurple)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            colors = DatePickerDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            DatePicker(
+                state = datePickerState,
+                colors = DatePickerDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    headlineContentColor = MaterialTheme.colorScheme.onSurface,
+                    weekdayContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    subheadContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    yearContentColor = MaterialTheme.colorScheme.onSurface,
+                    currentYearContentColor = NeonCyan,
+                    selectedYearContentColor = MaterialTheme.colorScheme.onSurface,
+                    selectedYearContainerColor = PrimaryPurple,
+                    dayContentColor = MaterialTheme.colorScheme.onSurface,
+                    selectedDayContentColor = MaterialTheme.colorScheme.onSurface,
+                    selectedDayContainerColor = PrimaryPurple,
+                    todayContentColor = NeonCyan,
+                    todayDateBorderColor = NeonCyan,
+                    navigationContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        }
     }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = DarkCard,
-        contentColor = TextPrimary
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Column(
             modifier = Modifier
@@ -323,7 +413,7 @@ private fun ProfileEditBottomSheet(
                 "Edit Profile",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(24.dp))
 
@@ -331,51 +421,43 @@ private fun ProfileEditBottomSheet(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Full Name", color = TextSecondary) },
+                label = { Text("Full Name", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryPurple,
-                    unfocusedBorderColor = GlassBorder,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
+                    unfocusedBorderColor = AppColors.dividerColor,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                     cursorColor = PrimaryPurple
                 )
             )
             Spacer(Modifier.height(16.dp))
 
-            // DOB field
+            // DOB field — read-only, opens DatePicker on click
             OutlinedTextField(
-                value = dob,
-                onValueChange = {
-                    dob = it
-                    dobError = null
-                },
-                label = { Text("Date of Birth  (yyyy-MM-dd)", color = TextSecondary) },
-                placeholder = { Text("e.g. 1995-08-14", color = TextMuted) },
+                value = displayDob,
+                onValueChange = { /* read-only */ },
+                label = { Text("Date of Birth", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                placeholder = { Text("dd/MM/yyyy", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                 singleLine = true,
-                isError = dobError != null,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                supportingText = {
-                    if (dobError != null) {
-                        Text(dobError!!, color = ErrorRed, fontSize = 12.sp)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                enabled = false,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = NeonCyan,
-                    unfocusedBorderColor = GlassBorder,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    errorBorderColor = ErrorRed,
-                    cursorColor = NeonCyan
+                    disabledBorderColor = AppColors.dividerColor,
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             )
             Spacer(Modifier.height(20.dp))
 
             // Gender selection
-            Text("Gender", color = TextSecondary, fontSize = 14.sp)
+            Text("Gender", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             Spacer(Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -387,15 +469,15 @@ private fun ProfileEditBottomSheet(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(if (selected) PrimaryPurple.copy(alpha = 0.25f) else DarkSurfaceVariant)
-                            .border(1.5.dp, if (selected) PrimaryPurple else GlassBorder, RoundedCornerShape(12.dp))
+                            .background(if (selected) PrimaryPurple.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant)
+                            .border(1.5.dp, if (selected) PrimaryPurple else AppColors.dividerColor, RoundedCornerShape(12.dp))
                             .clickable { gender = option }
                             .padding(vertical = 12.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             option,
-                            color = if (selected) Color.White else TextSecondary,
+                            color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                             fontSize = 14.sp
                         )
@@ -427,7 +509,7 @@ private fun SettingsSectionHeader(title: String) {
         text = title.uppercase(),
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        color = TextSecondary,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         letterSpacing = 1.sp,
         modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp)
     )
@@ -460,18 +542,18 @@ private fun SettingsSwitchRow(
         }
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-            Text(subtitle, fontSize = 12.sp, color = TextSecondary)
+            Text(title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
+                checkedThumbColor = MaterialTheme.colorScheme.onSurface,
                 checkedTrackColor = PrimaryPurple,
-                uncheckedThumbColor = TextSecondary,
-                uncheckedTrackColor = DarkSurfaceVariant,
-                uncheckedBorderColor = GlassBorder
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                uncheckedBorderColor = AppColors.dividerColor
             )
         )
     }
@@ -505,13 +587,13 @@ private fun SettingsActionRow(
             title,
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
-            tint = TextSecondary
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

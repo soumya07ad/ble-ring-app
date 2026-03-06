@@ -6,16 +6,20 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,12 +43,15 @@ import com.fitness.app.presentation.wellness.screens.WellnessScreen
 import com.fitness.app.presentation.navigation.Screen
 import com.fitness.app.presentation.dashboard.DashboardViewModel
 import com.fitness.app.presentation.dashboard.SleepTrackerViewModel
+import com.fitness.app.presentation.dashboard.SmartRingViewModel
 import com.fitness.app.presentation.coach.CoachViewModel
 import com.fitness.app.presentation.wellness.WellnessViewModel
 import com.fitness.app.presentation.streaks.StreakViewModel
 import com.fitness.app.presentation.settings.SettingsViewModel
+import com.fitness.app.presentation.theme.ThemeViewModel
+import com.fitness.app.domain.model.AppTheme
 import com.fitness.app.ui.theme.FitnessAppTheme
-import com.fitness.app.ui.theme.TextSecondary
+import com.fitness.app.ui.theme.AppColors
 import androidx.compose.runtime.remember
 
 class MainActivity : ComponentActivity() {
@@ -62,12 +69,22 @@ class MainActivity : ComponentActivity() {
         SyncWorker.scheduleSyncWorker(this)
 
         setContent {
-            FitnessAppTheme {
+            val factory = remember { AppContainer.getInstance(this).viewModelFactory }
+            val themeViewModel: ThemeViewModel = viewModel(factory = factory)
+            val appTheme by themeViewModel.themeState.collectAsState()
+
+            val isDark = when (appTheme) {
+                AppTheme.DARK -> true
+                AppTheme.LIGHT -> false
+                AppTheme.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
+            }
+
+            FitnessAppTheme(darkTheme = isDark) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFF050508) // Match dark auth background
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigationFlow()
+                    AppNavigationFlow(themeViewModel = themeViewModel)
                 }
             }
         }
@@ -76,7 +93,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigationFlow(
-    navViewModel: AppNavigationViewModel = viewModel()
+    navViewModel: AppNavigationViewModel = viewModel(),
+    themeViewModel: ThemeViewModel = viewModel()
 ) {
     val navState by navViewModel.uiState.collectAsState()
     val navController = rememberNavController()
@@ -97,7 +115,7 @@ fun AppNavigationFlow(
         }
         else -> {
             Scaffold(
-                containerColor = Color(0xFF050508),
+                containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = { AppBottomNav(navController = navController) }
             ) { paddingValues ->
                 NavHost(
@@ -106,7 +124,12 @@ fun AppNavigationFlow(
                     modifier = Modifier.padding(paddingValues)
                 ) {
                     composable(Screen.Dashboard.route) {
-                        DashboardRoute(viewModel = viewModel(factory = factory))
+                        DashboardRoute(
+                            viewModel = viewModel(factory = factory),
+                            smartRingViewModel = viewModel(factory = factory),
+                            navController = navController,
+                            themeViewModel = themeViewModel
+                        )
                     }
 
                     composable(Screen.Sleep.route) {
@@ -143,6 +166,13 @@ fun AppNavigationFlow(
                             onBack = { navController.popBackStack() }
                         )
                     }
+
+                    composable("ringSetup") {
+                        com.fitness.app.presentation.ring.screens.RingSetupRoute(
+                            onSetupComplete = { navController.popBackStack() },
+                            onSkip = { navController.popBackStack() }
+                        )
+                    }
                 }
             }
         }
@@ -158,7 +188,7 @@ fun PlaceholderScreen(screen: Screen) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(screen.emoji, fontSize = 48.sp)
             Spacer(Modifier.height(16.dp))
-            Text("${screen.label} coming soon...", color = TextSecondary, fontSize = 18.sp)
+            Text("${screen.label} coming soon...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp)
         }
     }
 }
@@ -167,35 +197,50 @@ fun PlaceholderScreen(screen: Screen) {
 fun AppBottomNav(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val isCoachSelected = currentRoute == Screen.Coach.route
 
-    val items = Screen.bottomNavItems
+    // Items split: left pair (Dashboard, Sleep)  |  FAB  |  right pair (Wellness, Streaks)
+    val leftItems = listOf(Screen.Dashboard, Screen.Sleep)
+    val rightItems = listOf(Screen.Wellness, Screen.Streaks)
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFF080810))
-            .border(
-                width = 0.5.dp,
-                color = Color(0xFF1A1A2E),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)
-            )
-            .navigationBarsPadding()
-            .height(65.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically
+    // Pulse animation for the Coach FAB
+    val infiniteTransition = rememberInfiniteTransition(label = "coachPulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = androidx.compose.animation.core.EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "coachScale"
+    )
+    val fabScale = if (isCoachSelected) 1.15f else pulseScale
+
+    Box(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        items.forEach { screen ->
-            val isSelected = currentRoute == screen.route
-            val accentColor = when (screen) {
-                Screen.Sleep -> com.fitness.app.ui.theme.PrimaryPurple
-                Screen.Coach -> com.fitness.app.ui.theme.NeonPurple
-                else -> com.fitness.app.ui.theme.NeonCyan
-            }
-            
-            Column(
-                modifier = Modifier
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
-                    .clickable {
+        // Bottom bar background
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(AppColors.navBarBackground)
+                .border(
+                    width = 0.5.dp,
+                    color = AppColors.navBarBorder,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)
+                )
+                .navigationBarsPadding()
+                .height(65.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left items
+            leftItems.forEach { screen ->
+                BottomNavItem(
+                    screen = screen,
+                    isSelected = currentRoute == screen.route,
+                    onClick = {
                         navController.navigate(screen.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
@@ -204,30 +249,132 @@ fun AppBottomNav(navController: NavHostController) {
                             restoreState = true
                         }
                     }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
+
+            // Spacer for the center FAB
+            Spacer(modifier = Modifier.width(64.dp))
+
+            // Right items
+            rightItems.forEach { screen ->
+                BottomNavItem(
+                    screen = screen,
+                    isSelected = currentRoute == screen.route,
+                    onClick = {
+                        navController.navigate(screen.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+            }
+        }
+
+        // Center Coach FAB — elevated above the bar
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .offset(y = (-24).dp)
+                .size(60.dp)
+                .scale(fabScale)
+                .clip(CircleShape)
+                .background(
+                    AppColors.accentGradient
+                )
+                .border(
+                    width = if (isCoachSelected) 2.dp else 1.dp,
+                    brush = if (AppColors.isDark) {
+                        Brush.linearGradient(
+                            listOf(
+                                com.fitness.app.ui.theme.NeonPurple.copy(alpha = 0.8f),
+                                com.fitness.app.ui.theme.NeonCyan.copy(alpha = 0.4f)
+                            )
+                        )
+                    } else {
+                        Brush.linearGradient(
+                            listOf(
+                                com.fitness.app.ui.theme.SkyBlueDark.copy(alpha = 0.5f),
+                                com.fitness.app.ui.theme.HighlighterGreen.copy(alpha = 0.3f)
+                            )
+                        )
+                    },
+                    shape = CircleShape
+                )
+                .clickable {
+                    navController.navigate(Screen.Coach.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = screen.emoji,
-                    fontSize = if (isSelected) 22.sp else 18.sp
+                    text = Screen.Coach.emoji,
+                    fontSize = 24.sp
                 )
                 Text(
-                    text = screen.label,
-                    fontSize = 11.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) accentColor else Color(0xFF5A5A7A)
+                    text = "Coach",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                if (isSelected) {
-                    Box(
-                        modifier = Modifier
-                            .width(20.dp)
-                            .height(2.dp)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(1.dp))
-                            .background(accentColor)
-                    )
-                }
             }
+        }
+    }
+}
+
+@Composable
+private fun BottomNavItem(
+    screen: Screen,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val accentColor = if (AppColors.isDark) {
+        when (screen) {
+            Screen.Sleep -> com.fitness.app.ui.theme.PrimaryPurple
+            else -> com.fitness.app.ui.theme.NeonCyan
+        }
+    } else {
+        com.fitness.app.ui.theme.SkyBlue
+    }
+
+    Column(
+        modifier = Modifier
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = screen.emoji,
+            fontSize = if (isSelected) 22.sp else 18.sp
+        )
+        Text(
+            text = screen.label,
+            fontSize = 11.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        )
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .width(20.dp)
+                    .height(2.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(1.dp))
+                    .background(accentColor)
+            )
         }
     }
 }

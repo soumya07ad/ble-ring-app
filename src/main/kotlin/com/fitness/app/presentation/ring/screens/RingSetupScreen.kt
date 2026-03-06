@@ -205,8 +205,8 @@ fun RingSetupScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp),
-                containerColor = DarkCard,
-                contentColor = TextPrimary,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
                 action = {
                     TextButton(onClick = onClearError) {
                         Text("DISMISS", color = NeonCyan)
@@ -248,14 +248,14 @@ private fun PremiumSetupHeader() {
         Text(
             text = "Setup",
             style = MaterialTheme.typography.displaySmall,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Connect your ring to unlock health insights",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
     }
@@ -317,7 +317,7 @@ private fun PermissionContent(
                 else -> "Allow Bluetooth Access"
             },
             style = MaterialTheme.typography.titleLarge,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -332,7 +332,7 @@ private fun PermissionContent(
                     "Your ring communicates via Bluetooth. Tap below to allow access so we can scan for and connect to your ring."
             },
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
@@ -393,13 +393,13 @@ private fun PermissionItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -444,7 +444,7 @@ private fun ScanContent(
                 Text(
                     text = "DISCOVERED DEVICES",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 StatusBadge(
@@ -531,13 +531,13 @@ private fun ScanContent(
                     Text(
                         text = "Scanning",
                         style = MaterialTheme.typography.titleMedium,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Keep your ring nearby",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -557,7 +557,7 @@ private fun ScanContent(
                             .background(
                                 Brush.radialGradient(
                                     colors = listOf(
-                                        TextMuted.copy(alpha = 0.15f),
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f).copy(alpha = 0.15f),
                                         Color.Transparent
                                     )
                                 )
@@ -567,7 +567,7 @@ private fun ScanContent(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = null,
-                            tint = TextMuted,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -575,7 +575,7 @@ private fun ScanContent(
                     Text(
                         text = "Tap 'Scan for Devices' to find your ring",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -650,7 +650,7 @@ private fun ConnectingContent() {
             Text(
                 text = "Connecting",
                 style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
 
@@ -659,7 +659,7 @@ private fun ConnectingContent() {
             Text(
                 text = "Establishing secure link to your ring",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -731,7 +731,7 @@ private fun ConnectedContent(
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            tint = Color.Black,
+                            tint = MaterialTheme.colorScheme.background,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -747,7 +747,7 @@ private fun ConnectedContent(
                             Text(
                                 text = "${ring.name} • ${ring.macAddress}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -964,7 +964,7 @@ private fun BloodPressureCard(systolic: Int, diastolic: Int, isMeasuring: Boolea
                 Text(
                     text = "BLOOD PRESSURE",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -972,7 +972,7 @@ private fun BloodPressureCard(systolic: Int, diastolic: Int, isMeasuring: Boolea
                     else if (systolic > 0) "$systolic/$diastolic mmHg"
                     else "-- / -- mmHg",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -1033,14 +1033,14 @@ private fun StressCard(stress: Int, onMeasureClick: () -> Unit = {}) {
                 Text(
                     text = "STRESS LEVEL",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = if (stress > 0) "$stress" else "--",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                     if (stress > 0) {
@@ -1092,7 +1092,7 @@ private fun ManualEntryContent(
         Text(
             text = "Manual MAC Entry",
             style = MaterialTheme.typography.titleLarge,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -1100,7 +1100,7 @@ private fun ManualEntryContent(
         Text(
             text = "Enter the MAC address of your ring",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -1114,9 +1114,9 @@ private fun ManualEntryContent(
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = NeonCyan,
-                unfocusedBorderColor = GlassBorder,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary,
+                unfocusedBorderColor = AppColors.dividerColor,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                 cursorColor = NeonCyan,
                 focusedLabelColor = NeonCyan
             ),
@@ -1182,7 +1182,7 @@ private fun SleepCard(
                 Text(
                     text = "SLEEP",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 if (sleepData != null && sleepData.totalMinutes > 0) {
@@ -1191,7 +1191,7 @@ private fun SleepCard(
                     Text(
                         text = "${hours}h ${mins}m",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -1206,7 +1206,7 @@ private fun SleepCard(
                             Text(
                                 text = "Quality: ",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             StatusBadge(
                                 text = "${sleepData.quality}%",
@@ -1218,7 +1218,7 @@ private fun SleepCard(
                     Text(
                         text = "No data",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = TextMuted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -1256,7 +1256,7 @@ private fun SleepMetric(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = TextMuted
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
         )
     }
 }
@@ -1268,7 +1268,7 @@ private fun SleepMetric(
 @Composable
 private fun FirmwareCard(firmwareInfo: com.fitness.app.domain.model.FirmwareInfo) {
     NeonGlassCard(
-        glowColor = TextMuted,
+        glowColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         showGlow = false
     ) {
         Row(
@@ -1281,7 +1281,7 @@ private fun FirmwareCard(firmwareInfo: com.fitness.app.domain.model.FirmwareInfo
                     .clip(CircleShape)
                     .background(
                         Brush.radialGradient(
-                            colors = listOf(TextMuted.copy(alpha = 0.15f), Color.Transparent)
+                            colors = listOf(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f).copy(alpha = 0.15f), Color.Transparent)
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -1289,7 +1289,7 @@ private fun FirmwareCard(firmwareInfo: com.fitness.app.domain.model.FirmwareInfo
                 Icon(
                     imageVector = Icons.Default.Build,
                     contentDescription = null,
-                    tint = TextSecondary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -1298,20 +1298,20 @@ private fun FirmwareCard(firmwareInfo: com.fitness.app.domain.model.FirmwareInfo
                 Text(
                     text = "FIRMWARE",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = firmwareInfo.displayText,
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold
                 )
                 if (firmwareInfo.type.isNotEmpty()) {
                     Text(
                         text = "Type: ${firmwareInfo.type}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextMuted
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
             }

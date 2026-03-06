@@ -40,7 +40,7 @@ fun WellnessScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(containerColor = DarkBackground) { paddingValues ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -59,7 +59,7 @@ fun WellnessScreen(
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -69,12 +69,12 @@ fun WellnessScreen(
                             text = "💎  Wellness",
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Track your mind, body & spirit",
                             fontSize = 13.sp,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -94,13 +94,13 @@ fun WellnessScreen(
                         text = "How are you feeling?",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Select an emotion that best describes your current state",
                         fontSize = 13.sp,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
@@ -212,7 +212,7 @@ private fun SectionHeader(title: String, dotColor: Color) {
             title.uppercase(),
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = 1.sp
         )
     }
@@ -259,12 +259,12 @@ private fun EmotionCard(
     onSelect: () -> Unit
 ) {
     val borderColor by animateColorAsState(
-        targetValue = if (isSelected) NeonCyan else GlassBorder,
+        targetValue = if (isSelected) NeonCyan else AppColors.dividerColor,
         animationSpec = tween(300),
         label = "emotionBorder"
     )
     val bgColor by animateColorAsState(
-        targetValue = if (isSelected) NeonCyan.copy(alpha = 0.12f) else DarkSurfaceVariant,
+        targetValue = if (isSelected) NeonCyan.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant,
         animationSpec = tween(300),
         label = "emotionBg"
     )
@@ -291,7 +291,7 @@ private fun EmotionCard(
                 emotion.name,
                 fontSize = 13.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) NeonCyan else TextSecondary
+                color = if (isSelected) NeonCyan else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -324,7 +324,7 @@ private fun InsightCard(
                 spotColor = color.copy(alpha = 0.2f)
             )
             .clip(RoundedCornerShape(16.dp))
-            .background(Brush.verticalGradient(listOf(DarkSurfaceVariant, DarkCard)))
+            .background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surface)))
             .border(1.dp, color.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
@@ -338,7 +338,7 @@ private fun InsightCard(
                 color = color
             )
             Spacer(Modifier.height(4.dp))
-            Text(label, fontSize = 12.sp, color = TextMuted)
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
             Spacer(Modifier.height(10.dp))
 
             Box(
@@ -346,7 +346,7 @@ private fun InsightCard(
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp))
-                    .background(Color.White.copy(alpha = 0.07f))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f))
             ) {
                 Box(
                     modifier = Modifier
@@ -389,15 +389,11 @@ private fun WellnessScoreCard(score: Int) {
             )
             .clip(RoundedCornerShape(20.dp))
             .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF0E0A1A), Color(0xFF080610))
-                )
+                AppColors.sectionGradient(PrimaryPurple)
             )
             .border(
                 1.5.dp,
-                Brush.verticalGradient(
-                    listOf(PrimaryPurple.copy(alpha = 0.5f), NeonCyan.copy(alpha = 0.1f))
-                ),
+                AppColors.sectionBorder(PrimaryPurple),
                 RoundedCornerShape(20.dp)
             )
             .padding(20.dp)
@@ -410,7 +406,7 @@ private fun WellnessScoreCard(score: Int) {
                     "Wellness Score",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.weight(1f))
                 Text(
@@ -428,7 +424,7 @@ private fun WellnessScoreCard(score: Int) {
                     .fillMaxWidth()
                     .height(12.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color.White.copy(alpha = 0.07f))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f))
             ) {
                 Box(
                     modifier = Modifier
@@ -453,7 +449,7 @@ private fun WellnessScoreCard(score: Int) {
                     else -> "Let's work on building better habits."
                 },
                 fontSize = 12.sp,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -502,18 +498,11 @@ private fun ActiveTimerCard(
             )
             .clip(RoundedCornerShape(24.dp))
             .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF0E0A1A), Color(0xFF080610))
-                )
+                AppColors.sectionGradient(accentColor)
             )
             .border(
                 1.5.dp,
-                Brush.verticalGradient(
-                    listOf(
-                        accentColor.copy(alpha = 0.6f),
-                        NeonCyan.copy(alpha = 0.1f)
-                    )
-                ),
+                AppColors.sectionBorder(accentColor),
                 RoundedCornerShape(24.dp)
             )
             .padding(24.dp)
@@ -527,7 +516,7 @@ private fun ActiveTimerCard(
                 text = if (timer.isCompleted) "✅ Session Complete!" else "🧘 ${timer.title}",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (timer.isCompleted) NeonGreen else TextPrimary
+                color = if (timer.isCompleted) NeonGreen else MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(Modifier.height(20.dp))
@@ -549,7 +538,7 @@ private fun ActiveTimerCard(
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color.White.copy(alpha = 0.07f))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f))
             ) {
                 Box(
                     modifier = Modifier
@@ -567,7 +556,7 @@ private fun ActiveTimerCard(
             Text(
                 text = "${(timer.progress * 100).toInt()}% complete",
                 fontSize = 12.sp,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             if (!timer.isCompleted) {
@@ -616,7 +605,7 @@ private fun ActiveTimerCard(
                             .weight(1f)
                             .clip(RoundedCornerShape(14.dp))
                             .background(
-                                Brush.horizontalGradient(listOf(PrimaryPurple, NeonPurple))
+                                AppColors.accentGradient
                             )
                             .clickable {
                                 if (timer.isRunning) onPause() else onResume()
@@ -631,7 +620,7 @@ private fun ActiveTimerCard(
                             Icon(
                                 if (timer.isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 contentDescription = if (timer.isRunning) "Pause" else "Resume",
-                                tint = Color.White,
+                                tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.width(8.dp))
@@ -639,7 +628,7 @@ private fun ActiveTimerCard(
                                 if (timer.isRunning) "Pause" else "Resume",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -659,7 +648,7 @@ private fun MeditationCard(
     isActive: Boolean,
     onStart: () -> Unit
 ) {
-    val borderColor = if (isActive) PrimaryPurple.copy(alpha = 0.5f) else GlassBorder
+    val borderColor = if (isActive) PrimaryPurple.copy(alpha = 0.5f) else AppColors.dividerColor
 
     Box(
         modifier = Modifier
@@ -671,7 +660,7 @@ private fun MeditationCard(
                 spotColor = if (isActive) PrimaryPurple.copy(alpha = 0.2f) else Color.Transparent
             )
             .clip(RoundedCornerShape(16.dp))
-            .background(Brush.verticalGradient(listOf(DarkSurfaceVariant, DarkCard)))
+            .background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surface)))
             .border(1.dp, borderColor, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
@@ -699,13 +688,13 @@ private fun MeditationCard(
                     meditation.title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     meditation.duration,
                     fontSize = 12.sp,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -715,7 +704,7 @@ private fun MeditationCard(
                     .clip(RoundedCornerShape(12.dp))
                     .background(
                         if (isActive) Brush.horizontalGradient(listOf(NeonGreen, NeonCyan))
-                        else Brush.horizontalGradient(listOf(PrimaryPurple, NeonPurple))
+                        else AppColors.accentGradient
                     )
                     .clickable { onStart() }
                     .padding(horizontal = 18.dp, vertical = 10.dp)
@@ -724,7 +713,7 @@ private fun MeditationCard(
                     if (isActive) "Active" else "Start",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }

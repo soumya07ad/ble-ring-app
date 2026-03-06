@@ -84,7 +84,7 @@ fun CoachScreen(
         }
     ) {
         Scaffold(
-            containerColor = DarkBackground,
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 Column {
                     Row(
@@ -97,7 +97,7 @@ fun CoachScreen(
                             Icon(
                                 Icons.Default.ArrowBack,
                                 contentDescription = "Back",
-                                tint = TextPrimary,
+                                tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -109,12 +109,12 @@ fun CoachScreen(
                                 text = "🤖  Wellness Coach",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = if (uiState.activeSessionId == null) "New Conversation" else "Conversation History",
                                 fontSize = 12.sp,
-                                color = TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
 
@@ -183,8 +183,8 @@ fun HistoryDrawerContent(
     onClose: () -> Unit
 ) {
     ModalDrawerSheet(
-        drawerContainerColor = DarkSurface,
-        drawerContentColor = TextPrimary,
+        drawerContainerColor = MaterialTheme.colorScheme.surface,
+        drawerContentColor = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.width(320.dp)
     ) {
         Column(
@@ -204,7 +204,7 @@ fun HistoryDrawerContent(
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             
@@ -226,7 +226,7 @@ fun HistoryDrawerContent(
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            GlowDivider(color = GlassBorder)
+            GlowDivider(color = AppColors.dividerColor)
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -234,13 +234,13 @@ fun HistoryDrawerContent(
                 "History",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
             )
 
             if (sessions.isEmpty()) {
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text("No past conversations", color = TextMuted, fontSize = 14.sp)
+                    Text("No past conversations", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 14.sp)
                 }
             } else {
                 LazyColumn(modifier = Modifier.weight(1f)) {
@@ -295,7 +295,7 @@ fun SessionHistoryItem(
         Icon(
             imageVector = Icons.Outlined.ChatBubbleOutline,
             contentDescription = null,
-            tint = if (isSelected) PrimaryPurple else TextSecondary,
+            tint = if (isSelected) PrimaryPurple else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(18.dp)
         )
         
@@ -305,14 +305,14 @@ fun SessionHistoryItem(
             Text(
                 text = session.firstMessage,
                 fontSize = 14.sp,
-                color = if (isSelected) TextPrimary else TextSecondary,
+                color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
             )
             Text(
                 text = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(session.timestamp)),
                 fontSize = 10.sp,
-                color = TextMuted
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
         }
 
@@ -336,11 +336,11 @@ fun SessionHistoryItem(
 fun MessageBubble(message: CoachMessage) {
     val alignment = if (message.isUser) Alignment.End else Alignment.Start
     val bgBrush = if (message.isUser) {
-        Brush.horizontalGradient(listOf(PrimaryPurple, NeonPurple))
+        AppColors.accentGradient
     } else {
-        Brush.verticalGradient(listOf(DarkSurfaceVariant, DarkCard))
+        Brush.verticalGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surface))
     }
-    val textColor = TextPrimary
+    val textColor = MaterialTheme.colorScheme.onSurface
     val shape = if (message.isUser) {
         RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 4.dp)
     } else {
@@ -364,7 +364,7 @@ fun MessageBubble(message: CoachMessage) {
                 .background(bgBrush)
                 .border(
                     width = 1.dp,
-                    color = if (message.isUser) PrimaryPurple.copy(alpha = 0.5f) else GlassBorder,
+                    color = if (message.isUser) PrimaryPurple.copy(alpha = 0.5f) else AppColors.dividerColor,
                     shape = shape
                 )
                 .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -379,7 +379,7 @@ fun MessageBubble(message: CoachMessage) {
         Text(
             text = if (message.isUser) "You" else "Coach",
             fontSize = 10.sp,
-            color = TextMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.padding(top = 4.dp, start = 4.dp, end = 4.dp)
         )
     }
@@ -405,15 +405,15 @@ fun QuickActions(onActionClick: (String) -> Unit) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(DarkSurfaceVariant)
-                    .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(1.dp, AppColors.dividerColor, RoundedCornerShape(12.dp))
                     .clickable { onActionClick(label) }
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(emoji, fontSize = 16.sp)
                     Spacer(Modifier.width(8.dp))
-                    Text(label, color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -427,10 +427,10 @@ fun ChatInput(
     onSend: () -> Unit
 ) {
     Surface(
-        color = DarkSurface,
+        color = MaterialTheme.colorScheme.surface,
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 0.5.dp, color = GlassBorder, shape = RoundedCornerShape(0.dp))
+            .border(width = 0.5.dp, color = AppColors.dividerColor, shape = RoundedCornerShape(0.dp))
             .navigationBarsPadding()
     ) {
         Row(
@@ -442,18 +442,18 @@ fun ChatInput(
             TextField(
                 value = value,
                 onValueChange = onValueChange,
-                placeholder = { Text("Ask your coach...", color = TextMuted) },
+                placeholder = { Text("Ask your coach...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(24.dp)),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = DarkBackground,
-                    unfocusedContainerColor = DarkBackground,
+                    focusedContainerColor = MaterialTheme.colorScheme.background,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.background,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     cursorColor = PrimaryPurple,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 ),
                 maxLines = 4
             )
@@ -464,14 +464,14 @@ fun ChatInput(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Brush.horizontalGradient(listOf(PrimaryPurple, NeonPurple)))
+                    .background(AppColors.accentGradient)
                     .clickable(enabled = value.isNotBlank(), onClick = onSend),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Send,
                     contentDescription = "Send",
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -485,7 +485,7 @@ fun TypingIndicator() {
         modifier = Modifier
             .padding(horizontal = 20.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(DarkSurfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -504,8 +504,8 @@ fun TypingIndicator() {
             animationSpec = infiniteRepeatable(animation = tween(600, delayMillis = 400), repeatMode = RepeatMode.Reverse)
         )
 
-        Box(Modifier.size(6.dp).clip(CircleShape).background(TextSecondary.copy(alpha = alpha1)))
-        Box(Modifier.size(6.dp).clip(CircleShape).background(TextSecondary.copy(alpha = alpha2)))
-        Box(Modifier.size(6.dp).clip(CircleShape).background(TextSecondary.copy(alpha = alpha3)))
+        Box(Modifier.size(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha1)))
+        Box(Modifier.size(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha2)))
+        Box(Modifier.size(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha3)))
     }
 }

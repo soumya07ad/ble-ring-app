@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModelProvider
 import com.fitness.app.presentation.coach.CoachViewModel
 import com.fitness.app.presentation.dashboard.DashboardViewModel
 import com.fitness.app.presentation.dashboard.SleepTrackerViewModel
+import com.fitness.app.presentation.dashboard.SmartRingViewModel
 import com.fitness.app.presentation.settings.SettingsViewModel
 import com.fitness.app.presentation.streaks.StreakViewModel
+import com.fitness.app.presentation.theme.ThemeViewModel
 import com.fitness.app.presentation.wellness.WellnessViewModel
 
 /**
@@ -52,6 +54,16 @@ class AppViewModelFactory(private val container: AppContainer) : ViewModelProvid
             modelClass.isAssignableFrom(SettingsViewModel::class.java) ->
                 SettingsViewModel(
                     settingsRepository = container.settingsRepository
+                ) as T
+
+            modelClass.isAssignableFrom(SmartRingViewModel::class.java) ->
+                SmartRingViewModel(
+                    ringRepository = container.ringRepository
+                ) as T
+
+            modelClass.isAssignableFrom(ThemeViewModel::class.java) ->
+                ThemeViewModel(
+                    themeManager = container.themeManager
                 ) as T
 
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
