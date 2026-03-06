@@ -46,7 +46,7 @@ fun ManualMacEntryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF9FAFB))
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -55,7 +55,7 @@ fun ManualMacEntryScreen(
             "Manual Pairing",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1F2937)
+            color = MaterialTheme.colorScheme.onBackground
         )
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -63,7 +63,7 @@ fun ManualMacEntryScreen(
         Text(
             "Enter ring's MAC address directly",
             fontSize = 14.sp,
-            color = Color(0xFF6B7280)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Spacer(modifier = Modifier.height(32.dp))
@@ -71,7 +71,7 @@ fun ManualMacEntryScreen(
         // Info card
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFFFEF3C7),
+            color = MaterialTheme.colorScheme.tertiaryContainer,
             shape = RoundedCornerShape(12.dp)
         ) {
             Row(
@@ -81,7 +81,7 @@ fun ManualMacEntryScreen(
                 Icon(
                     Icons.Filled.Info,
                     contentDescription = null,
-                    tint = Color(0xFF92400E),
+                    tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -90,7 +90,7 @@ fun ManualMacEntryScreen(
                         "When to use manual entry:",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF92400E)
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -98,7 +98,7 @@ fun ManualMacEntryScreen(
                         "• BLE scan doesn't find the ring\n" +
                         "• You know the MAC from another app",
                         fontSize = 12.sp,
-                        color = Color(0xFF92400E),
+                        color = MaterialTheme.colorScheme.tertiary,
                         lineHeight = 18.sp
                     )
                 }
@@ -116,15 +116,15 @@ fun ManualMacEntryScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFFA855F7),
-                focusedLabelColor = Color(0xFFA855F7)
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                focusedLabelColor = MaterialTheme.colorScheme.primary
             )
         )
         
         Text(
             "For display only - you can name it anything",
             fontSize = 11.sp,
-            color = Color(0xFF9CA3AF),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, top = 4.dp)
@@ -154,7 +154,7 @@ fun ManualMacEntryScreen(
                 } else {
                     Text(
                         "Enter exactly as shown in Bluetooth settings",
-                        color = Color(0xFF6B7280)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             },
@@ -162,8 +162,8 @@ fun ManualMacEntryScreen(
                 keyboardType = KeyboardType.Ascii
             ),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFFA855F7),
-                focusedLabelColor = Color(0xFFA855F7),
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
                 errorBorderColor = MaterialTheme.colorScheme.error
             )
         )
@@ -173,7 +173,7 @@ fun ManualMacEntryScreen(
         // Example
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFFF3F4F6),
+            color = MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(8.dp)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
@@ -181,13 +181,13 @@ fun ManualMacEntryScreen(
                     "Example MAC addresses:",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF4B5563)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     "AA:BB:CC:DD:EE:FF\n35:88:CC:F8:96:55",
                     fontSize = 11.sp,
-                    color = Color(0xFF6B7280),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                 )
             }
@@ -220,15 +220,15 @@ fun ManualMacEntryScreen(
                     .weight(1f)
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFA855F7),
-                    disabledContainerColor = Color(0xFFE5E7EB)
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     "Confirm Device",
                     fontWeight = FontWeight.Bold,
-                    color = if (isValid) Color.White else Color(0xFF9CA3AF)
+                    color = if (isValid) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

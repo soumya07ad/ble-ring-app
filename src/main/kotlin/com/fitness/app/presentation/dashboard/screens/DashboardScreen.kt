@@ -42,7 +42,9 @@ import com.fitness.app.presentation.dashboard.DashboardViewModel
 import com.fitness.app.presentation.dashboard.SmartRingViewModel
 import com.fitness.app.domain.model.Ring
 import com.fitness.app.domain.model.RingConnectionState
+import com.fitness.app.domain.model.AppTheme
 import com.fitness.app.presentation.navigation.Screen
+import com.fitness.app.presentation.theme.ThemeViewModel
 import com.fitness.app.ui.components.*
 import com.fitness.app.ui.theme.*
 
@@ -54,10 +56,12 @@ import com.fitness.app.ui.theme.*
 fun DashboardRoute(
     viewModel: DashboardViewModel = viewModel(),
     smartRingViewModel: SmartRingViewModel = viewModel(),
-    navController: NavController? = null
+    navController: NavController? = null,
+    themeViewModel: ThemeViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val ringConnectionState by smartRingViewModel.connectionState.collectAsState()
+    val currentTheme by themeViewModel.themeState.collectAsState()
 
     DashboardScreenWithHeader(
         state = state,
@@ -70,7 +74,9 @@ fun DashboardRoute(
         },
         onSettingsClick = {
             navController?.navigate(Screen.Settings.route)
-        }
+        },
+        currentTheme = currentTheme,
+        onThemeChange = { themeViewModel.setTheme(it) }
     )
 }
 
@@ -80,7 +86,9 @@ fun DashboardScreenWithHeader(
     ringConnectionState: RingConnectionState = if (state.isConnected) RingConnectionState.CONNECTED else RingConnectionState.DISCONNECTED,
     onConnectClick: () -> Unit = {},
     onDisconnectClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    currentTheme: AppTheme = AppTheme.SYSTEM,
+    onThemeChange: (AppTheme) -> Unit = {}
 ) {
     val stressLevel = state.stressLevel.coerceIn(0, 100)
     val pairedRing = state.connectedRing
@@ -106,19 +114,78 @@ fun DashboardScreenWithHeader(
                 Text(
                     text = "Smart Ring Dashboard",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
 
-                IconButton(
-                    onClick = onSettingsClick
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        tint = TextPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
+                Row {
+                    // Theme toggle
+                    Box {
+                        var themeMenuExpanded by remember { mutableStateOf(false) }
+
+                        IconButton(
+                            onClick = { themeMenuExpanded = true }
+                        ) {
+                            Icon(
+                                imageVector = when (currentTheme) {
+                                    AppTheme.DARK -> Icons.Default.DarkMode
+                                    AppTheme.LIGHT -> Icons.Default.LightMode
+                                    AppTheme.SYSTEM -> Icons.Default.BrightnessAuto
+                                },
+                                contentDescription = "Theme",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = themeMenuExpanded,
+                            onDismissRequest = { themeMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Dark Mode") },
+                                onClick = {
+                                    onThemeChange(AppTheme.DARK)
+                                    themeMenuExpanded = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.DarkMode, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Light Mode") },
+                                onClick = {
+                                    onThemeChange(AppTheme.LIGHT)
+                                    themeMenuExpanded = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.LightMode, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("System Default") },
+                                onClick = {
+                                    onThemeChange(AppTheme.SYSTEM)
+                                    themeMenuExpanded = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.BrightnessAuto, contentDescription = null)
+                                }
+                            )
+                        }
+                    }
+
+                    // Settings icon
+                    IconButton(
+                        onClick = onSettingsClick
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
 
@@ -147,12 +214,12 @@ fun DashboardScreenWithHeader(
                     Text(
                         text = "HEALTH METRICS",
                         style = MaterialTheme.typography.labelMedium,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     StatusBadge(
                         text = if (isConnected) "Live" else "Offline",
-                        color = if (isConnected) NeonGreen else TextMuted
+                        color = if (isConnected) NeonGreen else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
 
@@ -241,14 +308,14 @@ fun DashboardScreenWithHeader(
                             Text(
                                 text = "STRESS LEVEL",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = "$stressLevel",
                                     style = MaterialTheme.typography.headlineMedium,
-                                    color = TextPrimary,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -307,8 +374,8 @@ private fun HeroDashboardHeader(
         // Small ring animation
         AnimatedRing3D(
             modifier = Modifier.size(100.dp),
-            primaryColor = if (isConnected) NeonCyan else TextMuted,
-            secondaryColor = if (isConnected) PrimaryPurple else TextMuted.copy(alpha = 0.5f),
+            primaryColor = if (isConnected) NeonCyan else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            secondaryColor = if (isConnected) PrimaryPurple else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f).copy(alpha = 0.5f),
             isConnected = isConnected
         )
 
@@ -363,18 +430,11 @@ fun WeeklyEmotionsChart() {
             .shadow(elevation = 16.dp, shape = RoundedCornerShape(24.dp), ambientColor = NeonCyan.copy(alpha = 0.25f), spotColor = NeonCyan.copy(alpha = 0.3f))
             .clip(RoundedCornerShape(24.dp))
             .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF0E1A1F),  // dark teal-tinted glass
-                        Color(0xFF080E12)
-                    )
-                )
+                AppColors.sectionGradient(NeonCyan)
             )
             .border(
                 1.5.dp,
-                Brush.verticalGradient(
-                    listOf(NeonCyan.copy(alpha = 0.5f), NeonBlue.copy(alpha = 0.15f))
-                ),
+                AppColors.sectionBorder(NeonCyan),
                 RoundedCornerShape(24.dp)
             )
             .padding(20.dp)
@@ -388,7 +448,7 @@ fun WeeklyEmotionsChart() {
                     text = "WEEKLY EMOTIONS TREND",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 1.sp
                 )
             }
@@ -466,7 +526,7 @@ fun WeeklyEmotionsChart() {
                         Text(
                             text = day,
                             fontSize = 12.sp,
-                            color = TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
@@ -488,7 +548,7 @@ fun WeeklyEmotionsChart() {
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(NeonCyan))
-                    Text(text = "Mood Level", fontSize = 12.sp, color = TextSecondary)
+                    Text(text = "Mood Level", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(modifier = Modifier
@@ -496,7 +556,7 @@ fun WeeklyEmotionsChart() {
                         .width(24.dp)
                         .background(Brush.horizontalGradient(listOf(NeonCyan, NeonBlue)))
                     )
-                    Text(text = "Trend", fontSize = 12.sp, color = TextSecondary)
+                    Text(text = "Trend", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -522,18 +582,11 @@ fun DailyInsightsCard() {
             .shadow(elevation = 16.dp, shape = RoundedCornerShape(24.dp), ambientColor = PrimaryPurple.copy(alpha = 0.25f), spotColor = PrimaryPurple.copy(alpha = 0.3f))
             .clip(RoundedCornerShape(24.dp))
             .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF120D1E),  // dark purple-tinted glass
-                        Color(0xFF0A0812)
-                    )
-                )
+                AppColors.sectionGradient(PrimaryPurple)
             )
             .border(
                 1.5.dp,
-                Brush.verticalGradient(
-                    listOf(PrimaryPurple.copy(alpha = 0.5f), NeonPink.copy(alpha = 0.15f))
-                ),
+                AppColors.sectionBorder(PrimaryPurple),
                 RoundedCornerShape(24.dp)
             )
             .padding(20.dp)
@@ -547,7 +600,7 @@ fun DailyInsightsCard() {
                     text = "DAILY INSIGHTS",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 1.sp
                 )
             }
@@ -573,7 +626,7 @@ fun DailyInsightsCard() {
                     Text(
                         text = insight.label,
                         fontSize = 15.sp,
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                         fontWeight = FontWeight.Medium
                     )
@@ -586,7 +639,7 @@ fun DailyInsightsCard() {
                 }
                 if (idx < insights.lastIndex) {
                     HorizontalDivider(
-                        color = GlassBorder,
+                        color = AppColors.dividerColor,
                         thickness = 0.5.dp
                     )
                 }
@@ -636,14 +689,14 @@ fun PremiumBatteryCard(battery: Int) {
                 Text(
                     text = "RING BATTERY",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = "$battery%",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -677,7 +730,7 @@ fun DailySummaryCard() {
         Text(
             text = "DAILY SUMMARY",
             style = MaterialTheme.typography.labelMedium,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(12.dp))
         SummaryRow(icon = "🏃", label = "Distance", value = "5.2 km")
@@ -700,13 +753,13 @@ private fun SummaryRow(icon: String, label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
         Text(
             text = value,
             style = MaterialTheme.typography.titleSmall,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.SemiBold
         )
     }

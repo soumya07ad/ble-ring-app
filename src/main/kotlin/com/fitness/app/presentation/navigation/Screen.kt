@@ -9,6 +9,6 @@ sealed class Screen(val route: String, val label: String, val emoji: String) {
     object Settings : Screen("settings", "Settings", "⚙️")
 
     companion object {
-        val bottomNavItems = listOf(Dashboard, Sleep, Wellness, Streaks, Coach)
+        val bottomNavItems = listOf(Dashboard, Sleep, Wellness, Streaks)
     }
 }

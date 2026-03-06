@@ -55,13 +55,13 @@ fun StreaksScreen(
     }
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
                 Snackbar(
                     snackbarData = data,
-                    containerColor = DarkSurfaceVariant,
-                    contentColor = TextPrimary,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
                     actionColor = NeonCyan
                 )
             }
@@ -70,7 +70,7 @@ fun StreaksScreen(
             FloatingActionButton(
                 onClick = { showManualEntry = true },
                 containerColor = PrimaryPurple,
-                contentColor = Color.White,
+                contentColor = MaterialTheme.colorScheme.onSurface,
                 shape = CircleShape
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Entry")
@@ -100,7 +100,7 @@ fun StreaksScreen(
                             Icon(
                                 Icons.Default.ArrowBack,
                                 contentDescription = "Back",
-                                tint = TextPrimary,
+                                tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -110,12 +110,12 @@ fun StreaksScreen(
                                 text = "🔥 Streaks",
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "Consistency is key",
                                 fontSize = 13.sp,
-                                color = TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -190,7 +190,7 @@ private fun SectionHeader(title: String, dotColor: Color) {
             title.uppercase(),
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = 1.sp
         )
     }
@@ -215,15 +215,11 @@ private fun LongestStreakCard(activityName: String, streakCount: Int) {
             )
             .clip(RoundedCornerShape(24.dp))
             .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF1E0A05), Color(0xFF0D0402))
-                )
+                AppColors.sectionGradient(NeonOrange)
             )
             .border(
                 1.5.dp,
-                Brush.verticalGradient(
-                    listOf(NeonOrange.copy(alpha = 0.6f), ErrorRed.copy(alpha = 0.1f))
-                ),
+                AppColors.sectionBorder(NeonOrange),
                 RoundedCornerShape(24.dp)
             )
             .padding(24.dp)
@@ -245,13 +241,13 @@ private fun LongestStreakCard(activityName: String, streakCount: Int) {
                     "$animatedCount",
                     fontSize = 64.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     " days",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
             }
@@ -259,7 +255,7 @@ private fun LongestStreakCard(activityName: String, streakCount: Int) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White.copy(alpha = 0.1f))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
@@ -303,8 +299,8 @@ private fun ActiveStreakCard(data: ActivityStreakData) {
                 spotColor = color.copy(alpha = 0.2f)
             )
             .clip(RoundedCornerShape(16.dp))
-            .background(Brush.verticalGradient(listOf(DarkSurfaceVariant, DarkCard)))
-            .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
+            .background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surface)))
+            .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -324,7 +320,7 @@ private fun ActiveStreakCard(data: ActivityStreakData) {
                     data.activityType,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.height(8.dp))
                 Box(
@@ -332,7 +328,7 @@ private fun ActiveStreakCard(data: ActivityStreakData) {
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp))
-                        .background(Color.White.copy(alpha = 0.05f))
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 ) {
                     Box(
                         modifier = Modifier
@@ -354,7 +350,7 @@ private fun ActiveStreakCard(data: ActivityStreakData) {
                 Text(
                     "days",
                     fontSize = 11.sp,
-                    color = TextMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             }
         }
@@ -382,8 +378,8 @@ private fun MilestoneCard(milestone: MilestoneData) {
                 spotColor = color.copy(alpha = 0.1f)
             )
             .clip(RoundedCornerShape(16.dp))
-            .background(DarkSurfaceVariant)
-            .border(1.dp, if (isCompleted) NeonGreen.copy(alpha = 0.5f) else GlassBorder, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, if (isCompleted) NeonGreen.copy(alpha = 0.5f) else AppColors.dividerColor, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         Column {
@@ -397,7 +393,7 @@ private fun MilestoneCard(milestone: MilestoneData) {
                     milestone.label,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (isCompleted) NeonGreen else TextPrimary
+                    color = if (isCompleted) NeonGreen else MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.weight(1f))
                 Text(
@@ -413,7 +409,7 @@ private fun MilestoneCard(milestone: MilestoneData) {
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color.White.copy(alpha = 0.05f))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
             ) {
                 Box(
                     modifier = Modifier
@@ -445,8 +441,8 @@ private fun ManualEntryBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = DarkCard,
-        contentColor = TextPrimary
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Column(
             modifier = Modifier
@@ -457,11 +453,11 @@ private fun ManualEntryBottomSheet(
                 "Log Activity",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(24.dp))
             
-            Text("Activity", color = TextSecondary, fontSize = 14.sp)
+            Text("Activity", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             Spacer(Modifier.height(8.dp))
             // Activity Dropdown/Row selection
             Row(
@@ -473,14 +469,14 @@ private fun ManualEntryBottomSheet(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) PrimaryPurple else DarkSurfaceVariant)
-                            .border(1.dp, if (isSelected) NeonPurple else GlassBorder, RoundedCornerShape(12.dp))
+                            .background(if (isSelected) PrimaryPurple else MaterialTheme.colorScheme.surfaceVariant)
+                            .border(1.dp, if (isSelected) NeonPurple else AppColors.dividerColor, RoundedCornerShape(12.dp))
                             .clickable { selectedActivity = activity }
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     ) {
                         Text(
                             activity,
-                            color = if (isSelected) Color.White else TextSecondary,
+                            color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
                     }
@@ -489,7 +485,7 @@ private fun ManualEntryBottomSheet(
 
             Spacer(Modifier.height(24.dp))
 
-            Text("Date", color = TextSecondary, fontSize = 14.sp)
+            Text("Date", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             Spacer(Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -506,15 +502,15 @@ private fun ManualEntryBottomSheet(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) NeonCyan.copy(alpha = 0.2f) else DarkSurfaceVariant)
-                            .border(1.dp, if (isSelected) NeonCyan else GlassBorder, RoundedCornerShape(12.dp))
+                            .background(if (isSelected) NeonCyan.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant)
+                            .border(1.dp, if (isSelected) NeonCyan else AppColors.dividerColor, RoundedCornerShape(12.dp))
                             .clickable { selectedDate = date }
                             .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             label,
-                            color = if (isSelected) NeonCyan else TextSecondary,
+                            color = if (isSelected) NeonCyan else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             fontSize = 13.sp
                         )
@@ -557,5 +553,5 @@ private fun getActivityColor(type: String): Color = when (type) {
     "Gym" -> NeonPink
     "Sleep" -> NeonBlue
     "Mood" -> NeonGreen
-    else -> GlassBorder
+    else -> TextSecondary
 }

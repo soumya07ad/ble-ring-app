@@ -80,7 +80,7 @@ fun BatteryCard(batteryLevel: Int?, isCharging: Boolean = false) {
                 Text(
                     text = "BATTERY",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -91,7 +91,7 @@ fun BatteryCard(batteryLevel: Int?, isCharging: Boolean = false) {
                         else -> "—"
                     },
                     style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
@@ -164,7 +164,7 @@ fun HeartRateCard(heartRate: Int?, isMeasuring: Boolean = false) {
                 Text(
                     text = "HEART RATE",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
@@ -175,7 +175,7 @@ fun HeartRateCard(heartRate: Int?, isMeasuring: Boolean = false) {
                             else -> "—"
                         },
                         style = MaterialTheme.typography.headlineMedium,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                     if (hr > 0) {
@@ -183,7 +183,7 @@ fun HeartRateCard(heartRate: Int?, isMeasuring: Boolean = false) {
                         Text(
                             text = "bpm",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 3.dp)
                         )
                     }
@@ -211,7 +211,7 @@ fun HeartRateCard(heartRate: Int?, isMeasuring: Boolean = false) {
                     style = MaterialTheme.typography.labelSmall,
                     color = when {
                         isMeasuring -> NeonOrange
-                        heartRate == null || hr == 0 -> TextSecondary
+                        heartRate == null || hr == 0 -> MaterialTheme.colorScheme.onSurfaceVariant
                         hr < 60 -> NeonCyan
                         hr in 60..100 -> NeonGreen
                         else -> NeonOrange
@@ -259,13 +259,13 @@ fun StepsCard(steps: Int?) {
                 Text(
                     text = "STEPS",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = if (steps != null) "$stepCount" else "—",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -276,7 +276,7 @@ fun StepsCard(steps: Int?) {
                         .fillMaxWidth()
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(Color.White.copy(alpha = 0.06f))
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
                 ) {
                     Box(
                         modifier = Modifier
@@ -336,14 +336,14 @@ fun SpO2Card(spO2: Int?) {
                 Text(
                     text = "BLOOD OXYGEN",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = if (spO2 != null && oxygen > 0) "$oxygen" else "—",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                     if (oxygen > 0) {
@@ -351,7 +351,7 @@ fun SpO2Card(spO2: Int?) {
                         Text(
                             text = "%",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 3.dp)
                         )
                     }
@@ -366,7 +366,7 @@ fun SpO2Card(spO2: Int?) {
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = when {
-                        spO2 == null || oxygen == 0 -> TextSecondary
+                        spO2 == null || oxygen == 0 -> MaterialTheme.colorScheme.onSurfaceVariant
                         oxygen >= 95 -> NeonGreen
                         oxygen >= 90 -> NeonOrange
                         else -> ErrorRed

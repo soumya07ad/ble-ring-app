@@ -114,7 +114,7 @@ fun SmartRingCard(
                 Text(
                     text = ringName,
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -128,7 +128,7 @@ fun SmartRingCard(
                             .clip(CircleShape)
                             .background(
                                 if (isConnected) NeonGreen.copy(alpha = pulseAlpha)
-                                else TextMuted
+                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                             )
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -138,7 +138,7 @@ fun SmartRingCard(
                         else
                             "Not connected",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (isConnected) NeonGreen else TextSecondary
+                        color = if (isConnected) NeonGreen else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -188,9 +188,7 @@ fun SmartRingCard(
                     Box(
                         modifier = Modifier
                             .background(
-                                brush = Brush.horizontalGradient(
-                                    listOf(PrimaryPurple, NeonPurple)
-                                ),
+                                brush = AppColors.accentGradient,
                                 shape = buttonShape
                             )
                             .padding(horizontal = 16.dp, vertical = 10.dp),
@@ -201,14 +199,14 @@ fun SmartRingCard(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
-                                tint = Color.White
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Connect Ring",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 letterSpacing = 0.5.sp
                             )
                         }

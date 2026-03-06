@@ -90,7 +90,7 @@ fun SleepTrackerScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = DarkBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
 
@@ -110,7 +110,7 @@ fun SleepTrackerScreen(
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -120,12 +120,12 @@ fun SleepTrackerScreen(
                             text = "😴  Sleep Tracker",
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Track your rest, improve your life",
                             fontSize = 13.sp,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -162,7 +162,7 @@ fun SleepTrackerScreen(
                             text = "Log Sleep",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -241,7 +241,7 @@ private fun QuickStatTile(modifier: Modifier, emoji: String, label: String, valu
         modifier = modifier
             .shadow(8.dp, RoundedCornerShape(16.dp), ambientColor = color.copy(alpha = 0.3f), spotColor = color.copy(alpha = 0.3f))
             .clip(RoundedCornerShape(16.dp))
-            .background(Brush.verticalGradient(listOf(DarkSurfaceVariant, DarkCard)))
+            .background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surface)))
             .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
             .padding(vertical = 14.dp),
         contentAlignment = Alignment.Center
@@ -249,7 +249,7 @@ private fun QuickStatTile(modifier: Modifier, emoji: String, label: String, valu
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(emoji, fontSize = 22.sp)
             Text(value, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = color)
-            Text(label, fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Medium)
+            Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -269,8 +269,8 @@ fun SleepWeekChart(data: List<SleepDayUiModel>) {
             .padding(horizontal = 20.dp)
             .shadow(16.dp, RoundedCornerShape(24.dp), ambientColor = PrimaryPurple.copy(alpha = 0.2f), spotColor = PrimaryPurple.copy(alpha = 0.3f))
             .clip(RoundedCornerShape(24.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF0E0A1A), Color(0xFF080610))))
-            .border(1.5.dp, Brush.verticalGradient(listOf(PrimaryPurple.copy(alpha = 0.5f), NeonPink.copy(alpha = 0.1f))), RoundedCornerShape(24.dp))
+            .background(AppColors.sectionGradient(PrimaryPurple))
+            .border(1.5.dp, AppColors.sectionBorder(PrimaryPurple), RoundedCornerShape(24.dp))
             .padding(20.dp)
     ) {
         Column {
@@ -278,13 +278,14 @@ fun SleepWeekChart(data: List<SleepDayUiModel>) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(10.dp).clip(CircleShape).background(PrimaryPurple))
                 Spacer(Modifier.width(10.dp))
-                Text("LAST 7 DAYS GRAPH", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 1.sp)
+                Text("LAST 7 DAYS GRAPH", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
                 Spacer(Modifier.weight(1f))
-                Text("Recommended: 7-9h", fontSize = 11.sp, color = TextMuted)
+                Text("Recommended: 7-9h", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
             }
 
             Spacer(Modifier.height(20.dp))
 
+            val gridLineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
             Canvas(modifier = Modifier.fillMaxWidth().height(180.dp)) {
                 val w = size.width
                 val h = size.height
@@ -302,7 +303,7 @@ fun SleepWeekChart(data: List<SleepDayUiModel>) {
                 // Grid lines (y-axis) up to 16h
                 for (g in 0..4) {
                     val gy = padTop + chartH * (g / 4f)
-                    drawLine(Color.White.copy(alpha = 0.05f), Offset(0f, gy), Offset(w, gy), strokeWidth = 1f)
+                    drawLine(gridLineColor, Offset(0f, gy), Offset(w, gy), strokeWidth = 1f)
                 }
 
                 data.forEachIndexed { i, entry ->
@@ -345,7 +346,7 @@ fun SleepWeekChart(data: List<SleepDayUiModel>) {
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(entry.dayName, fontSize = 11.sp, color = TextSecondary, fontWeight = FontWeight.SemiBold)
+                        Text(entry.dayName, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                         Text(
                             text = if (entry.hours > 0.0) "%.1fh".format(entry.hours) else "-",
                             fontSize = 10.sp,
@@ -363,7 +364,7 @@ fun SleepWeekChart(data: List<SleepDayUiModel>) {
                 SleepQuality.values().forEach { q ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Box(Modifier.size(8.dp).clip(CircleShape).background(q.color))
-                        Text(q.label, fontSize = 10.sp, color = TextMuted)
+                        Text(q.label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                     }
                 }
             }
@@ -403,12 +404,12 @@ fun LogSleepDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF0E0A1A),
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(24.dp),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("🛏️", fontSize = 22.sp)
-                Text("Log Sleep", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Text("Log Sleep", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
         },
         text = {
@@ -433,7 +434,7 @@ fun LogSleepDialog(
                 }
 
                 // Date Picker Strip
-                Text("Select Date (Today/Past)", fontSize = 13.sp, color = TextSecondary, fontWeight = FontWeight.SemiBold)
+                Text("Select Date (Today/Past)", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -446,15 +447,15 @@ fun LogSleepDialog(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (isSelected) PrimaryPurple else Color.White.copy(alpha = 0.05f))
-                                .border(1.dp, if (isSelected) PrimaryPurple else GlassBorder, RoundedCornerShape(10.dp))
+                                .background(if (isSelected) PrimaryPurple else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                                .border(1.dp, if (isSelected) PrimaryPurple else AppColors.dividerColor, RoundedCornerShape(10.dp))
                                 .clickable { onDateChange(isoStr) }
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(label, fontSize = 11.sp, color = if (isSelected) Color.White else TextSecondary, fontWeight = FontWeight.Bold)
-                                Text("${ld.dayOfMonth}/${ld.monthValue}", fontSize = 9.sp, color = if (isSelected) Color.White.copy(0.8f) else TextMuted)
+                                Text(label, fontSize = 11.sp, color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                                Text("${ld.dayOfMonth}/${ld.monthValue}", fontSize = 9.sp, color = if (isSelected) MaterialTheme.colorScheme.onSurface.copy(0.8f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                             }
                         }
                     }
@@ -463,7 +464,7 @@ fun LogSleepDialog(
                 Spacer(Modifier.height(4.dp))
 
                 // Bed time
-                Text("Bedtime", fontSize = 13.sp, color = TextSecondary, fontWeight = FontWeight.SemiBold)
+                Text("Bedtime", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                 TimePickerRow(
                     hour = bedHour, minute = bedMin,
                     onHourChange = onBedHourChange,
@@ -472,7 +473,7 @@ fun LogSleepDialog(
                 )
 
                 // Wake time
-                Text("Wake Time", fontSize = 13.sp, color = TextSecondary, fontWeight = FontWeight.SemiBold)
+                Text("Wake Time", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                 TimePickerRow(
                     hour = wakeHour, minute = wakeMin,
                     onHourChange = onWakeHourChange,
@@ -493,7 +494,7 @@ fun LogSleepDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondary)
+                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     )
@@ -529,7 +530,7 @@ private fun TimePickerRow(
                 Icon(Icons.Default.KeyboardArrowDown, null, tint = accentColor)
             }
         }
-        Text(":", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
+        Text(":", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         // Minute
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             IconButton(onClick = { onMinChange((minute + 15) % 60) }) {
@@ -551,7 +552,7 @@ private fun TimePickerRow(
         }
         Text(
             text = "%02d:%02d".format(hour, minute),
-            fontSize = 14.sp, color = TextSecondary, fontWeight = FontWeight.Medium
+            fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium
         )
     }
 }
@@ -568,15 +569,15 @@ private fun SleepLogList(data: List<SleepDayUiModel>) {
             .padding(horizontal = 20.dp)
             .shadow(12.dp, RoundedCornerShape(24.dp), ambientColor = NeonCyan.copy(alpha = 0.15f), spotColor = NeonCyan.copy(alpha = 0.2f))
             .clip(RoundedCornerShape(24.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF0A101A), Color(0xFF060910))))
-            .border(1.5.dp, Brush.verticalGradient(listOf(NeonCyan.copy(alpha = 0.3f), PrimaryPurple.copy(alpha = 0.1f))), RoundedCornerShape(24.dp))
+            .background(AppColors.sectionGradient(NeonCyan))
+            .border(1.5.dp, AppColors.sectionBorder(NeonCyan), RoundedCornerShape(24.dp))
             .padding(20.dp)
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(10.dp).clip(CircleShape).background(NeonGreen))
                 Spacer(Modifier.width(10.dp))
-                Text("THIS WEEK'S LOG", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 1.sp)
+                Text("THIS WEEK'S LOG", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
             }
             Spacer(Modifier.height(14.dp))
             
@@ -585,14 +586,14 @@ private fun SleepLogList(data: List<SleepDayUiModel>) {
                     modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(entry.dayName, fontSize = 14.sp, color = TextSecondary, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(38.dp))
+                    Text(entry.dayName, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(38.dp))
                     // Progress bar
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .height(8.dp)
                             .clip(RoundedCornerShape(4.dp))
-                            .background(Color.White.copy(alpha = 0.07f))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f))
                     ) {
                         val pct = (entry.hours / 16.0).coerceIn(0.0, 1.0).toFloat()
                         val color = hoursToQuality(entry.hours).color
@@ -618,7 +619,7 @@ private fun SleepLogList(data: List<SleepDayUiModel>) {
                         textAlign = TextAlign.End
                     )
                 }
-                if (idx < data.lastIndex) HorizontalDivider(color = GlassBorder, thickness = 0.5.dp)
+                if (idx < data.lastIndex) HorizontalDivider(color = AppColors.dividerColor, thickness = 0.5.dp)
             }
         }
     }
@@ -636,15 +637,15 @@ private fun SleepStatisticsCard(avg: Double, best: Double, worst: Double, total:
             .padding(horizontal = 20.dp)
             .shadow(12.dp, RoundedCornerShape(24.dp), ambientColor = NeonGreen.copy(alpha = 0.15f), spotColor = NeonGreen.copy(alpha = 0.2f))
             .clip(RoundedCornerShape(24.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF081410), Color(0xFF050D09))))
-            .border(1.5.dp, Brush.verticalGradient(listOf(NeonGreen.copy(alpha = 0.4f), NeonCyan.copy(alpha = 0.1f))), RoundedCornerShape(24.dp))
+            .background(AppColors.sectionGradient(NeonGreen))
+            .border(1.5.dp, AppColors.sectionBorder(NeonGreen), RoundedCornerShape(24.dp))
             .padding(20.dp)
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(10.dp).clip(CircleShape).background(NeonGreen))
                 Spacer(Modifier.width(10.dp))
-                Text("SLEEP STATISTICS", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 1.sp)
+                Text("SLEEP STATISTICS", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
             }
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -669,7 +670,7 @@ private fun SleepStatisticsCard(avg: Double, best: Double, worst: Double, total:
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("🌙", fontSize = 20.sp)
                     Spacer(Modifier.width(12.dp))
-                    Text("Total sleep this week", fontSize = 14.sp, color = TextSecondary, modifier = Modifier.weight(1f))
+                    Text("Total sleep this week", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                     Text("%.1fh".format(total), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = NeonGreen)
                 }
             }
@@ -689,7 +690,7 @@ private fun StatBox(modifier: Modifier, emoji: String, label: String, value: Str
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(emoji, fontSize = 18.sp)
             Text(value, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = color)
-            Text(label, fontSize = 11.sp, color = TextMuted)
+            Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
         }
     }
 }
@@ -715,15 +716,15 @@ private fun SleepTipsCard() {
             .padding(horizontal = 20.dp)
             .shadow(12.dp, RoundedCornerShape(24.dp), ambientColor = NeonOrange.copy(alpha = 0.15f), spotColor = NeonOrange.copy(alpha = 0.2f))
             .clip(RoundedCornerShape(24.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF14100A), Color(0xFF0A0806))))
-            .border(1.5.dp, Brush.verticalGradient(listOf(NeonOrange.copy(alpha = 0.4f), WarningAmber.copy(alpha = 0.1f))), RoundedCornerShape(24.dp))
+            .background(AppColors.sectionGradient(NeonOrange))
+            .border(1.5.dp, AppColors.sectionBorder(NeonOrange), RoundedCornerShape(24.dp))
             .padding(20.dp)
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(10.dp).clip(CircleShape).background(NeonOrange))
                 Spacer(Modifier.width(10.dp))
-                Text("TIPS FOR BETTER SLEEP", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 1.sp)
+                Text("TIPS FOR BETTER SLEEP", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
             }
             Spacer(Modifier.height(16.dp))
             tips.forEachIndexed { idx, (emoji, title, desc) ->
@@ -742,12 +743,12 @@ private fun SleepTipsCard() {
                         Text(emoji, fontSize = 20.sp)
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(Modifier.height(4.dp))
-                        Text(desc, fontSize = 12.sp, color = TextSecondary, lineHeight = 17.sp)
+                        Text(desc, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 17.sp)
                     }
                 }
-                if (idx < tips.lastIndex) HorizontalDivider(color = GlassBorder.copy(alpha = 0.5f), thickness = 0.5.dp)
+                if (idx < tips.lastIndex) HorizontalDivider(color = AppColors.dividerColor.copy(alpha = 0.5f), thickness = 0.5.dp)
             }
         }
     }
