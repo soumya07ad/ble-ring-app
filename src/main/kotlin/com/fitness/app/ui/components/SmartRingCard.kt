@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -179,19 +180,28 @@ fun SmartRingCard(
                 // Connect button with gradient
                 Button(
                     onClick = onConnectClick,
-                    shape = buttonShape,
+                    shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent
                     ),
-                    contentPadding = PaddingValues(0.dp)
+                    contentPadding = PaddingValues(0.dp),
+                    modifier = Modifier
+                        .shadow(
+                            10.dp,
+                            RoundedCornerShape(28.dp),
+                            ambientColor = SkyBlue.copy(alpha = 0.3f),
+                            spotColor = SkyBlue.copy(alpha = 0.3f)
+                        )
                 ) {
                     Box(
                         modifier = Modifier
                             .background(
-                                brush = AppColors.accentGradient,
-                                shape = buttonShape
+                                brush = Brush.horizontalGradient(
+                                    listOf(SkyBlue, SoftHighlighterGreen)
+                                ),
+                                shape = RoundedCornerShape(28.dp)
                             )
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                            .padding(horizontal = 18.dp, vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -199,14 +209,14 @@ fun SmartRingCard(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.onSurface
+                                tint = Color.White
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Connect Ring",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = Color.White,
                                 letterSpacing = 0.5.sp
                             )
                         }

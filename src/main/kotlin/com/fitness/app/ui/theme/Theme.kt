@@ -98,6 +98,13 @@ val LightGlassShadow = Color(0x224FC3F7)        // Sky blue shadow
 val LightGlassBorder = Color(0x224FC3F7)         // 13% sky blue
 val LightGlassOverlay = Color(0x0A4FC3F7)        // 4% sky blue
 
+// ── Premium Glass (Light Mode Buttons) ──────────────────────────────
+val PremiumGlassWhite = Color(0x59FFFFFF)         // 35% white glass bg
+val PremiumGlassBorder = Color(0x73FFFFFF)        // 45% white border
+val PremiumGlassHighlight = Color(0x99FFFFFF)     // 60% white inner shine
+val PremiumShadowColor = Color(0x14000000)        // 8% black outer shadow
+val DarkGrayText = Color(0xFF2A2A2A)              // Dark button text
+
 // ═══════════════════════════════════════════════════════════════════════
 // THEME-AWARE COMPOSABLE ACCESSORS
 // ═══════════════════════════════════════════════════════════════════════

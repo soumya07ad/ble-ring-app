@@ -207,10 +207,18 @@ private fun ExerciseGlassCard(
             // Start button
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(AppColors.accentGradient)
+                    .shadow(
+                        8.dp,
+                        RoundedCornerShape(28.dp),
+                        ambientColor = SkyBlue.copy(alpha = 0.3f),
+                        spotColor = SkyBlue.copy(alpha = 0.3f)
+                    )
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(
+                        Brush.horizontalGradient(listOf(SkyBlue, SoftHighlighterGreen))
+                    )
                     .clickable { onClick() }
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .padding(horizontal = 18.dp, vertical = 10.dp)
             ) {
                 Text(
                     "Start",
@@ -473,10 +481,18 @@ fun MeditationTimerScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(AppColors.accentGradient)
+                            .shadow(
+                                12.dp,
+                                RoundedCornerShape(28.dp),
+                                ambientColor = SkyBlue.copy(alpha = 0.35f),
+                                spotColor = SkyBlue.copy(alpha = 0.35f)
+                            )
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(
+                                Brush.horizontalGradient(listOf(SkyBlue, SoftHighlighterGreen))
+                            )
                             .clickable { onBack() }
-                            .padding(vertical = 16.dp),
+                            .padding(vertical = 18.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -491,10 +507,18 @@ fun MeditationTimerScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(AppColors.accentGradient)
+                            .shadow(
+                                12.dp,
+                                RoundedCornerShape(28.dp),
+                                ambientColor = SkyBlue.copy(alpha = 0.35f),
+                                spotColor = SkyBlue.copy(alpha = 0.35f)
+                            )
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(
+                                Brush.horizontalGradient(listOf(SkyBlue, SoftHighlighterGreen))
+                            )
                             .clickable { viewModel.startTimer() }
-                            .padding(vertical = 16.dp),
+                            .padding(vertical = 18.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -568,41 +592,49 @@ private fun DurationButton(
     modifier: Modifier = Modifier
 ) {
     val isDark = AppColors.isDark
+    val shape = RoundedCornerShape(16.dp)
 
     val background = if (isSelected) {
-        AppColors.accentGradient
+        Brush.horizontalGradient(listOf(SkyBlue, HighlighterGreen))
     } else {
         if (isDark) CardGlassBrush
-        else Brush.verticalGradient(listOf(LightGlassCard, LightGlassCard.copy(alpha = 0.4f)))
+        else Brush.verticalGradient(
+            listOf(
+                PremiumGlassHighlight,  // 60% white top shine
+                PremiumGlassWhite       // 35% white bottom
+            )
+        )
     }
 
     val borderColor = if (isSelected) {
         Color.Transparent
     } else {
-        if (isDark) GlassBorder else LightGlassBorderStrong
+        if (isDark) GlassBorder else PremiumGlassBorder
     }
 
     val textColor = if (isSelected) {
         Color.White
     } else {
-        MaterialTheme.colorScheme.onSurface
+        if (isDark) MaterialTheme.colorScheme.onSurface else DarkGrayText
     }
 
     Box(
         modifier = modifier
+            // Outer 3D shadow
             .shadow(
-                if (isSelected) 8.dp else 4.dp,
-                RoundedCornerShape(16.dp),
-                ambientColor = if (isSelected) SkyBlue.copy(alpha = 0.3f) else Color.Transparent
+                elevation = if (isSelected) 10.dp else 6.dp,
+                shape = shape,
+                ambientColor = if (isSelected) SkyBlue.copy(alpha = 0.35f) else PremiumShadowColor,
+                spotColor = if (isSelected) SkyBlue.copy(alpha = 0.35f) else PremiumShadowColor
             )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(shape)
             .background(background)
             .then(
-                if (!isSelected) Modifier.border(1.dp, borderColor, RoundedCornerShape(16.dp))
+                if (!isSelected) Modifier.border(1.dp, borderColor, shape)
                 else Modifier
             )
             .clickable(enabled = enabled) { onClick() }
-            .padding(vertical = 14.dp),
+            .padding(vertical = 16.dp, horizontal = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
