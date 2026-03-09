@@ -45,29 +45,9 @@ fun MeditationListScreen(
     val title = MeditationData.categoryTitle(category)
     val emoji = MeditationData.categoryEmoji(category)
     val description = MeditationData.categoryDescription(category)
-    val timerState by viewModel.timerState.collectAsState()
-
-    var showCustomPanel by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = {
-            // FAB for custom session
-            FloatingActionButton(
-                onClick = { showCustomPanel = !showCustomPanel },
-                shape = CircleShape,
-                containerColor = Color.Transparent,
-                modifier = Modifier
-                    .shadow(12.dp, CircleShape, ambientColor = SkyBlue.copy(alpha = 0.3f))
-                    .background(AppColors.accentGradient, CircleShape)
-            ) {
-                Icon(
-                    if (showCustomPanel) Icons.Default.Close else Icons.Default.Add,
-                    contentDescription = "Custom Session",
-                    tint = Color.White
-                )
-            }
-        }
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -127,21 +107,6 @@ fun MeditationListScreen(
                 Spacer(Modifier.height(20.dp))
             }
 
-            // Custom Session Panel
-            if (showCustomPanel) {
-                item(key = "custom_panel") {
-                    CustomSessionPanel(
-                        timerState = timerState,
-                        onDurationChange = { viewModel.setCustomDuration(it) },
-                        onStart = {
-                            viewModel.startCustomTimer(timerState.customDurationMinutes, category)
-                            showCustomPanel = false
-                        }
-                    )
-                    Spacer(Modifier.height(16.dp))
-                }
-            }
-
             // Exercise cards
             items(exercises, key = { it.id }) { exercise ->
                 ExerciseGlassCard(
@@ -149,108 +114,6 @@ fun MeditationListScreen(
                     onClick = { onExerciseClick(exercise) }
                 )
                 Spacer(Modifier.height(12.dp))
-            }
-        }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// CUSTOM SESSION PANEL
-// ═══════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun CustomSessionPanel(
-    timerState: MeditationTimerState,
-    onDurationChange: (Int) -> Unit,
-    onStart: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .shadow(
-                12.dp, RoundedCornerShape(20.dp),
-                ambientColor = SkyBlue.copy(alpha = 0.2f)
-            )
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                if (AppColors.isDark) CardGlassBrush
-                else Brush.verticalGradient(listOf(LightGlassCard, LightGlassCard.copy(alpha = 0.2f)))
-            )
-            .border(1.dp, if (AppColors.isDark) GlassBorder else LightGlassBorderStrong, RoundedCornerShape(20.dp))
-            .padding(20.dp)
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                "⏱️ Custom Session",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.height(16.dp))
-
-            // Duration selector
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                IconButton(
-                    onClick = { onDurationChange(timerState.customDurationMinutes - 1) }
-                ) {
-                    Icon(
-                        Icons.Default.Remove,
-                        contentDescription = "Decrease",
-                        tint = SkyBlue
-                    )
-                }
-
-                Text(
-                    "${timerState.customDurationMinutes} min",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = SkyBlue,
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
-
-                IconButton(
-                    onClick = { onDurationChange(timerState.customDurationMinutes + 1) }
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Increase",
-                        tint = SkyBlue
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Start button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(AppColors.accentGradient)
-                    .clickable { onStart() }
-                    .padding(vertical = 14.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.PlayArrow,
-                        contentDescription = "Start",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "Start Session",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
             }
         }
     }
@@ -539,7 +402,16 @@ fun MeditationTimerScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(28.dp))
+
+            // Duration Selection Grid (2×3)
+            DurationSelectionGrid(
+                selectedMinutes = timerState.selectedDurationMinutes,
+                enabled = !timerState.isRunning && !timerState.isPaused && !timerState.isCompleted,
+                onSelect = { viewModel.setDuration(it) }
+            )
+
+            Spacer(Modifier.height(28.dp))
 
             // Control buttons
             Row(
@@ -646,5 +518,99 @@ fun MeditationTimerScreen(
 
             Spacer(Modifier.height(40.dp))
         }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DURATION SELECTION GRID
+// ═══════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun DurationSelectionGrid(
+    selectedMinutes: Int,
+    enabled: Boolean,
+    onSelect: (Int) -> Unit
+) {
+    val durations = listOf(5, 10, 15, 20, 25, 30)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 2×3 grid: 3 rows of 2 buttons
+        for (row in durations.chunked(2)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                for (minutes in row) {
+                    DurationButton(
+                        minutes = minutes,
+                        isSelected = selectedMinutes == minutes,
+                        enabled = enabled,
+                        onClick = { onSelect(minutes) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DurationButton(
+    minutes: Int,
+    isSelected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isDark = AppColors.isDark
+
+    val background = if (isSelected) {
+        AppColors.accentGradient
+    } else {
+        if (isDark) CardGlassBrush
+        else Brush.verticalGradient(listOf(LightGlassCard, LightGlassCard.copy(alpha = 0.4f)))
+    }
+
+    val borderColor = if (isSelected) {
+        Color.Transparent
+    } else {
+        if (isDark) GlassBorder else LightGlassBorderStrong
+    }
+
+    val textColor = if (isSelected) {
+        Color.White
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    Box(
+        modifier = modifier
+            .shadow(
+                if (isSelected) 8.dp else 4.dp,
+                RoundedCornerShape(16.dp),
+                ambientColor = if (isSelected) SkyBlue.copy(alpha = 0.3f) else Color.Transparent
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(background)
+            .then(
+                if (!isSelected) Modifier.border(1.dp, borderColor, RoundedCornerShape(16.dp))
+                else Modifier
+            )
+            .clickable(enabled = enabled) { onClick() }
+            .padding(vertical = 14.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "$minutes min",
+            fontSize = 15.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+            color = if (enabled) textColor else textColor.copy(alpha = 0.5f),
+            textAlign = TextAlign.Center
+        )
     }
 }

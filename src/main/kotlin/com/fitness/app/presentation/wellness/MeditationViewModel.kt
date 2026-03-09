@@ -20,7 +20,8 @@ data class MeditationTimerState(
     val isRunning: Boolean = false,
     val isPaused: Boolean = false,
     val isCompleted: Boolean = false,
-    val customDurationMinutes: Int = 5
+    val customDurationMinutes: Int = 5,
+    val selectedDurationMinutes: Int = 5
 ) {
     val progress: Float
         get() = if (totalSeconds > 0) (totalSeconds - remainingSeconds).toFloat() / totalSeconds else 0f
@@ -46,8 +47,21 @@ class MeditationViewModel : ViewModel() {
         _timerState.value = MeditationTimerState(
             exercise = exercise,
             remainingSeconds = totalSecs,
-            totalSeconds = totalSecs
+            totalSeconds = totalSecs,
+            selectedDurationMinutes = exercise.durationMinutes
         )
+    }
+
+    fun setDuration(minutes: Int) {
+        val totalSecs = minutes * 60
+        _timerState.update {
+            it.copy(
+                remainingSeconds = totalSecs,
+                totalSeconds = totalSecs,
+                selectedDurationMinutes = minutes,
+                isCompleted = false
+            )
+        }
     }
 
     fun startTimer() {
