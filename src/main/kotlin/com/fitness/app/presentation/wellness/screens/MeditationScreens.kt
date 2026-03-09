@@ -301,6 +301,16 @@ fun MeditationTimerScreen(
                         currentPhase = newPhase
                         pulseTrigger++
                     }
+                    
+                    val currentSecond = cycleTime.toInt()
+                    if (currentSecond != lastSecond) {
+                        lastSecond = currentSecond
+                        if (currentSecond % 4 == 0) { // 0, 4, 8, 12
+                            toneGen.startTone(ToneGenerator.TONE_SUP_RADIO_ACK, 1000)
+                        } else {
+                            toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 50)
+                        }
+                    }
                 } else if (is478Breathing) {
                     val cycleTime = breathingTime % 19f
                     val newPhase = when {
@@ -655,7 +665,7 @@ fun MeditationTimerScreen(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                if (is478Breathing) "Start Breathing" else "Start Meditation",
+                                if (isGuidedBreathing) "Start Breathing" else "Start Meditation",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
