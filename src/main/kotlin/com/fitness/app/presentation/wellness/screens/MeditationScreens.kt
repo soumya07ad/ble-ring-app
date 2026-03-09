@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -29,6 +30,10 @@ import com.fitness.app.domain.model.MeditationExercise
 import com.fitness.app.presentation.wellness.MeditationTimerState
 import com.fitness.app.presentation.wellness.MeditationViewModel
 import com.fitness.app.ui.theme.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import android.media.AudioManager
+import android.media.ToneGenerator
 
 // ═══════════════════════════════════════════════════════════════════════
 // MEDITATION LIST SCREEN — Shows exercises for a given category
@@ -252,8 +257,105 @@ fun MeditationTimerScreen(
     }
 
     val exercise = timerState.exercise
+    val isBoxBreathing = exerciseId == "br_1"
+    val is478Breathing = exerciseId == "br_2"
+    val isGuidedBreathing = isBoxBreathing || is478Breathing
 
-    // Breathing animation
+    // Custom Breathing State
+    var breathingTime by remember { mutableStateOf(0f) }
+    var currentPhase by remember { mutableStateOf("Ready") }
+    
+    // Scale pulse effect when breathing phase changes
+    var pulseTrigger by remember { mutableStateOf(0) }
+    val basePhaseScale by animateFloatAsState(
+        targetValue = if (pulseTrigger % 2 == 0) 1f else 1.05f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "phaseScale"
+    )
+
+    // Tone Generator for 4-7-8
+    val toneGen = remember { ToneGenerator(AudioManager.STREAM_MUSIC, 100) }
+    DisposableEffect(Unit) {
+        onDispose { toneGen.release() }
+    }
+
+    // Breathing loop
+    LaunchedEffect(timerState.isRunning, isGuidedBreathing) {
+        if (isGuidedBreathing && timerState.isRunning) {
+            breathingTime = 0f
+            var lastSecond = -1
+            
+            while (isActive) {
+                delay(16) // ~60fps updates
+                breathingTime += 0.016f
+                
+                if (isBoxBreathing) {
+                    val cycleTime = breathingTime % 16f
+                    val newPhase = when {
+                        cycleTime < 4f -> "INHALE"
+                        cycleTime < 8f -> "HOLD"
+                        cycleTime < 12f -> "EXHALE"
+                        else -> "HOLD"
+                    }
+                    if (newPhase != currentPhase) {
+                        currentPhase = newPhase
+                        pulseTrigger++
+                    }
+                } else if (is478Breathing) {
+                    val cycleTime = breathingTime % 19f
+                    val newPhase = when {
+                        cycleTime < 4f -> "INHALE"
+                        cycleTime < 11f -> "HOLD"
+                        else -> "EXHALE"
+                    }
+                    if (newPhase != currentPhase) {
+                        currentPhase = newPhase
+                        pulseTrigger++
+                    }
+                    
+                    val currentSecond = cycleTime.toInt()
+                    if (currentSecond != lastSecond) {
+                        lastSecond = currentSecond
+                        if (currentSecond == 0 || currentSecond == 4 || currentSecond == 11) {
+                            toneGen.startTone(ToneGenerator.TONE_SUP_RADIO_ACK, 1000)
+                        } else {
+                            toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 50)
+                        }
+                    }
+                }
+            }
+        } else {
+            breathingTime = 0f
+        }
+    }
+
+    // Calculate dynamic progress & scale for guided breathing
+    var guidedProgress = 0f
+    var guidedScale = basePhaseScale
+
+    if (isBoxBreathing) {
+        guidedProgress = (breathingTime % 16f) / 16f
+    } else if (is478Breathing) {
+        val cycleTime = breathingTime % 19f
+        when {
+            cycleTime < 4f -> {
+                val p = cycleTime / 4f
+                guidedProgress = p
+                guidedScale = 1f + (0.15f * p)
+            }
+            cycleTime < 11f -> {
+                guidedProgress = 1f
+                guidedScale = 1.15f
+            }
+            else -> {
+                val p = (cycleTime - 11f) / 8f
+                guidedProgress = 1f - p
+                guidedScale = 1.15f - (0.15f * p)
+            }
+        }
+    }
+
+    // Breathing animation (Outer Glow)
     val infiniteTransition = rememberInfiniteTransition(label = "breathe")
     val breatheScale by infiniteTransition.animateFloat(
         initialValue = 0.85f,
@@ -267,12 +369,12 @@ fun MeditationTimerScreen(
 
     // Progress ring animation
     val animatedProgress by animateFloatAsState(
-        targetValue = timerState.progress,
-        animationSpec = tween(300),
+        targetValue = if (isGuidedBreathing) guidedProgress else timerState.progress,
+        animationSpec = tween(if (isGuidedBreathing) 16 else 300, easing = LinearEasing),
         label = "progress"
     )
 
-    // Completion color pulse
+    // Completion / Breathing color
     val completionColor by animateColorAsState(
         targetValue = if (timerState.isCompleted) HighlighterGreen else SkyBlue,
         animationSpec = tween(500),
@@ -349,11 +451,17 @@ fun MeditationTimerScreen(
                         useCenter = false,
                         style = Stroke(width = 12f, cap = StrokeCap.Round)
                     )
+                    
+                    // Box & 4-7-8 Breathing forced gradient
+                    val customBrush = if (isGuidedBreathing) {
+                        Brush.sweepGradient(listOf(SkyBlue, HighlighterGreen, SkyBlue))
+                    } else {
+                        Brush.sweepGradient(listOf(completionColor, completionColor.copy(alpha = 0.6f)))
+                    }
+
                     // Progress arc
                     drawArc(
-                        brush = Brush.sweepGradient(
-                            listOf(completionColor, completionColor.copy(alpha = 0.6f))
-                        ),
+                        brush = customBrush,
                         startAngle = -90f,
                         sweepAngle = 360f * animatedProgress,
                         useCenter = false,
@@ -362,19 +470,35 @@ fun MeditationTimerScreen(
                 }
 
                 // Center content
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    modifier = Modifier.scale(guidedScale),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
                         exercise?.emoji ?: "🧘",
                         fontSize = 40.sp
                     )
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        timerState.formattedTime,
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = completionColor,
-                        letterSpacing = 2.sp
-                    )
+                    
+                    if (isGuidedBreathing) {
+                        Text(
+                            text = if (timerState.isRunning) currentPhase else exercise?.name?.uppercase() ?: "BREATHING",
+                            fontSize = if (timerState.isRunning) 36.sp else 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (timerState.isRunning) HighlighterGreen else SkyBlue,
+                            letterSpacing = 2.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        Text(
+                            timerState.formattedTime,
+                            fontSize = 48.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = completionColor,
+                            letterSpacing = 2.sp
+                        )
+                    }
+
                     if (timerState.isCompleted) {
                         Spacer(Modifier.height(8.dp))
                         Text(
@@ -403,21 +527,22 @@ fun MeditationTimerScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Progress percentage
-            Text(
-                "${(timerState.progress * 100).toInt()}% complete",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Progress percentage (hide for guided breathing)
+            if (!isGuidedBreathing) {
+                Text(
+                    "${(timerState.progress * 100).toInt()}% complete",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(28.dp))
 
-            Spacer(Modifier.height(28.dp))
-
-            // Duration Selection Grid (2×3)
-            DurationSelectionGrid(
-                selectedMinutes = timerState.selectedDurationMinutes,
-                enabled = !timerState.isRunning && !timerState.isPaused && !timerState.isCompleted,
-                onSelect = { viewModel.setDuration(it) }
-            )
+                // Duration Selection Grid (2×3)
+                DurationSelectionGrid(
+                    selectedMinutes = timerState.selectedDurationMinutes,
+                    enabled = !timerState.isRunning && !timerState.isPaused && !timerState.isCompleted,
+                    onSelect = { viewModel.setDuration(it) }
+                )
+            }
 
             Spacer(Modifier.height(28.dp))
 
@@ -530,7 +655,7 @@ fun MeditationTimerScreen(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                "Start Meditation",
+                                if (is478Breathing) "Start Breathing" else "Start Meditation",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White

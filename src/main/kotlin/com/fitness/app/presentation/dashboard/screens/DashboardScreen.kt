@@ -204,7 +204,7 @@ fun DashboardScreenWithHeader(
             // Health Metrics Grid
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Section header
                 Row(
@@ -226,7 +226,7 @@ fun DashboardScreenWithHeader(
                 // 2-column metric grid
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     FloatingMetricTile(
                         modifier = Modifier.weight(1f),
@@ -236,7 +236,8 @@ fun DashboardScreenWithHeader(
                         unit = "bpm",
                         progress = if (isConnected) (state.heartRate / 200f).coerceIn(0f, 1f) else 0f,
                         gradientColors = listOf(ErrorRed, NeonPink),
-                        glowColor = ErrorRed
+                        glowColor = ErrorRed,
+                        iconBgColor = HeartRateIconBg
                     )
                     FloatingMetricTile(
                         modifier = Modifier.weight(1f),
@@ -246,13 +247,14 @@ fun DashboardScreenWithHeader(
                         unit = "%",
                         progress = if (isConnected) (state.spO2 / 100f).coerceIn(0f, 1f) else 0f,
                         gradientColors = listOf(NeonCyan, NeonBlue),
-                        glowColor = NeonCyan
+                        glowColor = NeonCyan,
+                        iconBgColor = BloodOxygenIconBg
                     )
                 }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     FloatingMetricTile(
                         modifier = Modifier.weight(1f),
@@ -262,7 +264,8 @@ fun DashboardScreenWithHeader(
                         unit = "",
                         progress = if (isConnected) (state.steps / 10000f).coerceIn(0f, 1f) else 0f,
                         gradientColors = listOf(PrimaryPurple, NeonPink),
-                        glowColor = PrimaryPurple
+                        glowColor = PrimaryPurple,
+                        iconBgColor = StepsIconBg
                     )
                     FloatingMetricTile(
                         modifier = Modifier.weight(1f),
@@ -272,58 +275,69 @@ fun DashboardScreenWithHeader(
                         unit = "m",
                         progress = if (isConnected) (state.distance / 5000f).coerceIn(0f, 1f) else 0f,
                         gradientColors = listOf(NeonOrange, WarningAmber),
-                        glowColor = NeonOrange
+                        glowColor = NeonOrange,
+                        iconBgColor = DistanceIconBg
                     )
                 }
 
                 // Stress Card
-                NeonGlassCard(glowColor = getStressColor(stressLevel)) {
+                MetricGlassCard(modifier = Modifier.padding(horizontal = 0.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Left: Icon in circular background
                         Box(
                             modifier = Modifier.size(56.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            AnimatedRadialChart(
-                                modifier = Modifier.fillMaxSize(),
-                                progress = stressLevel / 100f,
-                                gradientColors = listOf(
-                                    getStressColor(stressLevel),
-                                    getStressColor(stressLevel).copy(alpha = 0.5f)
-                                ),
-                                strokeWidth = 6f,
-                                glowRadius = 4f
-                            )
+                            if (!AppColors.isDark) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                        .background(StressIconBg)
+                                )
+                            }
                             Icon(
                                 imageVector = Icons.Default.Face,
                                 contentDescription = null,
                                 tint = getStressColor(stressLevel),
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(28.dp)
                             )
                         }
+                        
                         Spacer(modifier = Modifier.width(16.dp))
+                        
+                        // Middle: Text section
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "STRESS LEVEL",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (AppColors.isDark) MaterialTheme.colorScheme.onSurfaceVariant else MetricLabelGray,
+                                fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "$stressLevel",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                StatusBadge(
-                                    text = getStressStatus(stressLevel),
-                                    color = getStressColor(stressLevel)
-                                )
-                            }
+                            Text(
+                                text = "$stressLevel",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = if (AppColors.isDark) MaterialTheme.colorScheme.onSurface else MetricValueDark,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        
+                        // Right: Status chip
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (AppColors.isDark) getStressColor(stressLevel).copy(alpha = 0.15f) else StressStatusBg
+                        ) {
+                            Text(
+                                text = getStressStatus(stressLevel),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (AppColors.isDark) getStressColor(stressLevel) else StressStatusText,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                            )
                         }
                     }
                 }
@@ -723,44 +737,56 @@ fun PremiumBatteryCard(battery: Int) {
 
 @Composable
 fun DailySummaryCard() {
-    NeonGlassCard(
-        glowColor = PrimaryPurple,
-        showGlow = false
-    ) {
+    MetricGlassCard(modifier = Modifier.padding(horizontal = 0.dp)) {
         Text(
             text = "DAILY SUMMARY",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (AppColors.isDark) MaterialTheme.colorScheme.onSurfaceVariant else MetricLabelGray,
+            fontWeight = FontWeight.Medium
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        
         SummaryRow(icon = "🏃", label = "Distance", value = "5.2 km")
+        DividerRow()
         SummaryRow(icon = "⏱️", label = "Active Time", value = "1h 23m")
+        DividerRow()
         SummaryRow(icon = "🔥", label = "Avg Heart Rate", value = "68 bpm")
+        DividerRow()
         SummaryRow(icon = "😴", label = "Sleep Score", value = "85%")
     }
 }
 
 @Composable
+private fun DividerRow() {
+    HorizontalDivider(
+        modifier = Modifier.padding(vertical = 12.dp),
+        thickness = 1.dp,
+        color = if (AppColors.isDark) AppColors.dividerColor else MetricDividerColor
+    )
+}
+
+@Composable
 private fun SummaryRow(icon: String, label: String, value: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = icon, style = MaterialTheme.typography.bodyMedium)
+        // Icon + Label
+        Text(text = icon, style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f)
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (AppColors.isDark) MaterialTheme.colorScheme.onSurfaceVariant else MetricLabelGray,
+            modifier = Modifier.weight(1f),
+            fontWeight = FontWeight.Medium
         )
+        // Value Text
         Text(
             text = value,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold
+            style = MaterialTheme.typography.titleMedium,
+            color = if (AppColors.isDark) MaterialTheme.colorScheme.onSurface else MetricValueDark,
+            fontWeight = FontWeight.Bold
         )
     }
 }
