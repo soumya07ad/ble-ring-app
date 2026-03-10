@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -102,48 +103,74 @@ fun FloatingMetricTile(
     unit: String = "",
     progress: Float = 0f,
     gradientColors: List<Color> = listOf(NeonCyan, NeonBlue),
-    glowColor: Color = gradientColors.first()
+    glowColor: Color = gradientColors.first(),
+    iconBgColor: Color = Color.Transparent
 ) {
     val isDark = AppColors.isDark
+    val shape = RoundedCornerShape(18.dp)
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            // Outer 3D shadow
+            .shadow(
+                elevation = 8.dp,
+                shape = shape,
+                ambientColor = if (isDark) Color.Transparent else PremiumShadowColor,
+                spotColor = if (isDark) Color.Transparent else PremiumShadowColor
+            )
+            // Secondary sky blue glow
+            .shadow(
+                elevation = if (isDark) 0.dp else 4.dp,
+                shape = shape,
+                ambientColor = SkyBlue.copy(alpha = 0.15f),
+                spotColor = SkyBlue.copy(alpha = 0.15f)
+            )
+            .clip(shape)
             .then(
                 if (isDark) {
-                    Modifier.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
+                    Modifier.border(1.dp, MaterialTheme.colorScheme.outline, shape)
                 } else {
-                    Modifier.border(1.dp, LightGlassBorderStrong, RoundedCornerShape(20.dp))
+                    Modifier.border(1.dp, MetricCardBorder, shape)
                 }
             ),
-        shape = RoundedCornerShape(20.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surface else LightGlassCard,
-        shadowElevation = if (isDark) 0.dp else 6.dp
+        shape = shape,
+        color = if (isDark) MaterialTheme.colorScheme.surface else MetricCardGlass,
+        shadowElevation = 0.dp
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .background(if (isDark) CardGlassBrush else Brush.verticalGradient(
                     listOf(
-                        Color(0x33FFFFFF),
-                        Color(0x0DFFFFFF)
+                        PremiumGlassHighlight,  // 60% white top
+                        MetricCardGlass         // 65% white bottom
                     )
                 ))
-                .padding(20.dp)
+                .padding(16.dp)
         ) {
-            // Radial chart
+            // Icon inside a colored circle
             Box(
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(48.dp),
                 contentAlignment = Alignment.Center
             ) {
-                AnimatedRadialChart(
-                    modifier = Modifier.fillMaxSize(),
-                    progress = progress,
-                    gradientColors = gradientColors,
-                    strokeWidth = 6f,
-                    glowRadius = 4f
-                )
+                // Pastel circle bg (light mode) or radial chart (dark mode)
+                if (!isDark && iconBgColor != Color.Transparent) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(iconBgColor)
+                    )
+                } else {
+                    AnimatedRadialChart(
+                        modifier = Modifier.fillMaxSize(),
+                        progress = progress,
+                        gradientColors = gradientColors,
+                        strokeWidth = 6f,
+                        glowRadius = 4f
+                    )
+                }
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
@@ -152,13 +179,14 @@ fun FloatingMetricTile(
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else MetricLabelGray,
+                    fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
@@ -167,7 +195,7 @@ fun FloatingMetricTile(
                     Text(
                         text = value,
                         style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = if (isDark) MaterialTheme.colorScheme.onSurface else MetricValueDark,
                         fontWeight = FontWeight.Bold
                     )
                     if (unit.isNotEmpty()) {
@@ -175,13 +203,68 @@ fun FloatingMetricTile(
                         Text(
                             text = unit,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else MetricLabelGray,
                             modifier = Modifier.padding(bottom = 3.dp)
                         )
                     }
                 }
             }
         }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// METRIC GLASS CARD — Unified dashboard glass container without double border
+// ═══════════════════════════════════════════════════════════════════════
+
+@Composable
+fun MetricGlassCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val isDark = AppColors.isDark
+    val shape = RoundedCornerShape(20.dp)
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            // Outer 3D shadow
+            .shadow(
+                elevation = 8.dp,
+                shape = shape,
+                ambientColor = if (isDark) Color.Transparent else PremiumShadowColor,
+                spotColor = if (isDark) Color.Transparent else PremiumShadowColor
+            )
+            // Secondary sky blue glow
+            .shadow(
+                elevation = if (isDark) 0.dp else 4.dp,
+                shape = shape,
+                ambientColor = SkyBlue.copy(alpha = 0.15f),
+                spotColor = SkyBlue.copy(alpha = 0.15f)
+            )
+            .clip(shape)
+            .then(
+                if (isDark) {
+                    Modifier.border(1.dp, MaterialTheme.colorScheme.outline, shape)
+                } else {
+                    Modifier.border(1.dp, MetricCardBorder, shape)
+                }
+            ),
+        shape = shape,
+        color = if (isDark) MaterialTheme.colorScheme.surface else MetricCardGlass,
+        shadowElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .background(if (isDark) CardGlassBrush else Brush.verticalGradient(
+                    listOf(
+                        PremiumGlassHighlight,  // 60% white top
+                        MetricCardGlass         // 65% white bottom
+                    )
+                ))
+                .padding(20.dp),
+            content = content
+        )
     }
 }
 

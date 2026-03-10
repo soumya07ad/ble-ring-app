@@ -268,28 +268,45 @@ private fun EmotionCard(
     isSelected: Boolean,
     onSelect: () -> Unit
 ) {
+    val isDark = AppColors.isDark
+    val shape = RoundedCornerShape(16.dp)
+
     val borderColor by animateColorAsState(
-        targetValue = if (isSelected) NeonCyan else AppColors.dividerColor,
+        targetValue = if (isSelected) {
+            if (isDark) NeonCyan else SkyBlue
+        } else {
+            if (isDark) AppColors.dividerColor else PremiumGlassBorder
+        },
         animationSpec = tween(300),
         label = "emotionBorder"
     )
-    val bgColor by animateColorAsState(
-        targetValue = if (isSelected) NeonCyan.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant,
-        animationSpec = tween(300),
-        label = "emotionBg"
-    )
+
+    val bgBrush = if (isSelected) {
+        Brush.horizontalGradient(listOf(SkyBlue, HighlighterGreen))
+    } else {
+        if (isDark) Brush.verticalGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant))
+        else Brush.verticalGradient(
+            listOf(
+                PremiumGlassHighlight,
+                PremiumGlassWhite
+            )
+        )
+    }
 
     Box(
         modifier = modifier
             .shadow(
-                elevation = if (isSelected) 8.dp else 4.dp,
-                shape = RoundedCornerShape(16.dp),
-                ambientColor = if (isSelected) NeonCyan.copy(alpha = 0.3f) else Color.Transparent,
-                spotColor = if (isSelected) NeonCyan.copy(alpha = 0.3f) else Color.Transparent
+                elevation = if (isSelected) 10.dp else 6.dp,
+                shape = shape,
+                ambientColor = if (isSelected) SkyBlue.copy(alpha = 0.35f) else PremiumShadowColor,
+                spotColor = if (isSelected) SkyBlue.copy(alpha = 0.35f) else PremiumShadowColor
             )
-            .clip(RoundedCornerShape(16.dp))
-            .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .clip(shape)
+            .background(bgBrush)
+            .then(
+                if (!isSelected) Modifier.border(1.dp, borderColor, shape)
+                else Modifier
+            )
             .clickable { onSelect() }
             .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center
@@ -300,8 +317,10 @@ private fun EmotionCard(
             Text(
                 emotion.name,
                 fontSize = 13.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) NeonCyan else MaterialTheme.colorScheme.onSurfaceVariant
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                color = if (isSelected) Color.White
+                    else if (isDark) MaterialTheme.colorScheme.onSurfaceVariant
+                    else DarkGrayText
             )
         }
     }
@@ -711,10 +730,15 @@ private fun MeditationCard(
             // Start Button
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
+                    .shadow(
+                        8.dp,
+                        RoundedCornerShape(28.dp),
+                        ambientColor = SkyBlue.copy(alpha = 0.3f),
+                        spotColor = SkyBlue.copy(alpha = 0.3f)
+                    )
+                    .clip(RoundedCornerShape(28.dp))
                     .background(
-                        if (isActive) Brush.horizontalGradient(listOf(NeonGreen, NeonCyan))
-                        else AppColors.accentGradient
+                        Brush.horizontalGradient(listOf(SkyBlue, SoftHighlighterGreen))
                     )
                     .clickable { onStart() }
                     .padding(horizontal = 18.dp, vertical = 10.dp)
@@ -723,7 +747,7 @@ private fun MeditationCard(
                     if (isActive) "Active" else "Start",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = Color.White
                 )
             }
         }

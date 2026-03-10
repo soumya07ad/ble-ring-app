@@ -98,6 +98,29 @@ val LightGlassShadow = Color(0x224FC3F7)        // Sky blue shadow
 val LightGlassBorder = Color(0x224FC3F7)         // 13% sky blue
 val LightGlassOverlay = Color(0x0A4FC3F7)        // 4% sky blue
 
+// ── Premium Glass (Light Mode Buttons) ──────────────────────────────
+val PremiumGlassWhite = Color(0x59FFFFFF)         // 35% white glass bg
+val PremiumGlassBorder = Color(0x73FFFFFF)        // 45% white border
+val PremiumGlassHighlight = Color(0x99FFFFFF)     // 60% white inner shine
+val PremiumShadowColor = Color(0x14000000)        // 8% black outer shadow
+val DarkGrayText = Color(0xFF2A2A2A)              // Dark button text
+
+// ── Metric Card Glass (Light Mode Dashboard) ────────────────────────
+val MetricCardGlass = Color(0xA6FFFFFF)            // 65% white solid glass
+val MetricCardBorder = Color(0x99FFFFFF)            // 60% white border
+val MetricLabelGray = Color(0xFF6A6A6A)            // Metric label text
+val MetricValueDark = Color(0xFF1A1A1A)            // Metric value text
+
+// ── Metric Icon Circle Backgrounds ──────────────────────────────────
+val HeartRateIconBg = Color(0xFFFFEAEA)            // Soft red
+val BloodOxygenIconBg = Color(0xFFE8F9FF)          // Light cyan
+val StepsIconBg = Color(0xFFF3E9FF)                // Light purple
+val DistanceIconBg = Color(0xFFFFF4E5)             // Light amber
+val StressIconBg = Color(0xFFE8FFF1)               // Light green
+val StressStatusBg = Color(0xFFDFFFEA)             // Soft green for status pill
+val StressStatusText = Color(0xFF2E7D32)           // Dark green text for status pill
+val MetricDividerColor = Color(0x0D000000)         // 5% black row separator
+
 // ═══════════════════════════════════════════════════════════════════════
 // THEME-AWARE COMPOSABLE ACCESSORS
 // ═══════════════════════════════════════════════════════════════════════
