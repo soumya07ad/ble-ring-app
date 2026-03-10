@@ -405,9 +405,12 @@ private fun HeroDashboardHeader(
             modifier = Modifier.padding(horizontal = 0.dp)
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        GlowDivider(color = NeonCyan.copy(alpha = 0.5f))
+        HorizontalDivider(
+            color = SkyBlue.copy(alpha = 0.35f),
+            thickness = 1.dp
+        )
     }
 }
 

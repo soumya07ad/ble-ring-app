@@ -29,6 +29,7 @@ import com.fitness.app.domain.model.MeditationData
 import com.fitness.app.domain.model.MeditationExercise
 import com.fitness.app.presentation.wellness.MeditationTimerState
 import com.fitness.app.presentation.wellness.MeditationViewModel
+import com.fitness.app.ui.components.MetricGlassCard
 import com.fitness.app.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -114,11 +115,13 @@ fun MeditationListScreen(
 
             // Exercise cards
             items(exercises, key = { it.id }) { exercise ->
-                ExerciseGlassCard(
-                    exercise = exercise,
-                    onClick = { onExerciseClick(exercise) }
-                )
-                Spacer(Modifier.height(12.dp))
+                Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    ExerciseGlassCard(
+                        exercise = exercise,
+                        onClick = { onExerciseClick(exercise) }
+                    )
+                }
+                Spacer(Modifier.height(18.dp))
             }
         }
     }
@@ -133,39 +136,22 @@ private fun ExerciseGlassCard(
     exercise: MeditationExercise,
     onClick: () -> Unit
 ) {
-    val iconBgColor = when {
-        exercise.category == "morning_calm" -> Color(0xFFFFF3E0)  // soft orange
-        exercise.category == "breathing" -> Color(0xFFE0F7FA)     // soft cyan
-        exercise.category == "sleep" -> Color(0xFFEDE7F6)          // soft purple
-        else -> SkyBlue.copy(alpha = 0.1f)
-    }
-    val iconBgColorDark = when {
-        exercise.category == "morning_calm" -> NeonOrange.copy(alpha = 0.15f)
-        exercise.category == "breathing" -> NeonCyan.copy(alpha = 0.15f)
-        exercise.category == "sleep" -> PrimaryPurple.copy(alpha = 0.15f)
-        else -> SkyBlue.copy(alpha = 0.15f)
+    val iconBgColor = when (exercise.id) {
+        "m_1" -> Color(0xFFFFF5E1) // soft yellow for Mindful Start
+        "m_2" -> Color(0xFFFFEBD8) // soft orange for Gratitude 
+        "m_3" -> Color(0xFFFFE6E6) // soft red for Focus Booster
+        else -> when {
+            exercise.category == "morning_calm" -> Color(0xFFFFF3E0)
+            exercise.category == "breathing" -> Color(0xFFE0F7FA)
+            exercise.category == "sleep" -> Color(0xFFEDE7F6)
+            else -> SkyBlue.copy(alpha = 0.1f)
+        }
     }
 
-    Box(
+    MetricGlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .shadow(
-                8.dp, RoundedCornerShape(20.dp),
-                ambientColor = if (AppColors.isDark) Color.Transparent else LightGlassShadow
-            )
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                if (AppColors.isDark) CardGlassBrush
-                else Brush.verticalGradient(listOf(Color(0x59FFFFFF), Color(0x0DFFFFFF)))
-            )
-            .border(
-                1.dp,
-                if (AppColors.isDark) GlassBorder else LightGlassBorderStrong,
-                RoundedCornerShape(20.dp)
-            )
             .clickable { onClick() }
-            .padding(16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -175,21 +161,21 @@ private fun ExerciseGlassCard(
             Box(
                 modifier = Modifier
                     .size(52.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(if (AppColors.isDark) iconBgColorDark else iconBgColor),
+                    .clip(CircleShape)
+                    .background(iconBgColor),
                 contentAlignment = Alignment.Center
             ) {
                 Text(exercise.emoji, fontSize = 24.sp)
             }
 
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     exercise.name,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MetricValueDark
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -207,20 +193,20 @@ private fun ExerciseGlassCard(
                 )
             }
 
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(16.dp))
 
             // Start button
             Box(
                 modifier = Modifier
                     .shadow(
                         8.dp,
-                        RoundedCornerShape(28.dp),
+                        RoundedCornerShape(24.dp),
                         ambientColor = SkyBlue.copy(alpha = 0.3f),
                         spotColor = SkyBlue.copy(alpha = 0.3f)
                     )
-                    .clip(RoundedCornerShape(28.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .background(
-                        Brush.horizontalGradient(listOf(SkyBlue, SoftHighlighterGreen))
+                        Brush.horizontalGradient(listOf(SkyBlue, NeonGreen))
                     )
                     .clickable { onClick() }
                     .padding(horizontal = 18.dp, vertical = 10.dp)

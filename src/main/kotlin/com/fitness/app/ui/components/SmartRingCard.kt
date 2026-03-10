@@ -57,65 +57,37 @@ fun SmartRingCard(
         label = "pulseAlpha"
     )
 
-    NeonGlassCard(
-        modifier = modifier,
-        glowColor = glowColor
+    MetricGlassCard(
+        modifier = modifier
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Ring icon with status glow
+            // Ring icon
             Box(
-                modifier = Modifier.size(52.dp),
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(BloodOxygenIconBg),
                 contentAlignment = Alignment.Center
             ) {
-                // Outer glow ring
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    glowColor.copy(alpha = if (isConnected) 0.25f * pulseAlpha else 0.1f),
-                                    Color.Transparent
-                                )
-                            )
-                        )
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Ring",
+                    tint = glowColor,
+                    modifier = Modifier.size(24.dp)
                 )
-                // Inner icon circle
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    glowColor.copy(alpha = 0.2f),
-                                    glowColor.copy(alpha = 0.05f)
-                                )
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = "Ring",
-                        tint = glowColor,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             // Title + status
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = ringName,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = MetricValueDark,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -139,13 +111,15 @@ fun SmartRingCard(
                         else
                             "Not connected",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (isConnected) NeonGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (isConnected) NeonGreen else MetricLabelGray
                     )
                 }
             }
 
+            Spacer(modifier = Modifier.width(16.dp))
+
             // Action button
-            val buttonShape = RoundedCornerShape(14.dp)
+            val buttonShape = RoundedCornerShape(24.dp)
 
             if (isConnected) {
                 // Disconnect button
@@ -180,7 +154,7 @@ fun SmartRingCard(
                 // Connect button with gradient
                 Button(
                     onClick = onConnectClick,
-                    shape = RoundedCornerShape(28.dp),
+                    shape = buttonShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent
                     ),
@@ -188,7 +162,7 @@ fun SmartRingCard(
                     modifier = Modifier
                         .shadow(
                             10.dp,
-                            RoundedCornerShape(28.dp),
+                            buttonShape,
                             ambientColor = SkyBlue.copy(alpha = 0.3f),
                             spotColor = SkyBlue.copy(alpha = 0.3f)
                         )
@@ -197,21 +171,14 @@ fun SmartRingCard(
                         modifier = Modifier
                             .background(
                                 brush = Brush.horizontalGradient(
-                                    listOf(SkyBlue, SoftHighlighterGreen)
+                                    listOf(SkyBlue, NeonGreen)
                                 ),
-                                shape = RoundedCornerShape(28.dp)
+                                shape = buttonShape
                             )
-                            .padding(horizontal = 18.dp, vertical = 10.dp),
+                            .padding(horizontal = 20.dp, vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Connect Ring",
                                 fontSize = 12.sp,
