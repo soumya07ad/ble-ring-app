@@ -44,7 +44,11 @@ class AppViewModelFactory(private val container: AppContainer) : ViewModelProvid
                 ) as T
 
             modelClass.isAssignableFrom(WellnessViewModel::class.java) ->
-                WellnessViewModel() as T
+                WellnessViewModel(
+                    moodRepository = container.moodRepository,
+                    journalRepository = container.journalRepository,
+                    application = container.application
+                ) as T
 
             modelClass.isAssignableFrom(StreakViewModel::class.java) ->
                 StreakViewModel(
