@@ -25,6 +25,8 @@ import com.fitness.app.data.repository.SettingsRepository
 import com.fitness.app.data.repository.ThemeManager
 import com.fitness.app.domain.repository.IStreakRepository
 import com.fitness.app.domain.repository.ISettingsRepository
+import com.fitness.app.data.repository.MoodRepository
+import com.fitness.app.data.repository.JournalRepository
 
 /**
  * Manual Dependency Injection Container
@@ -39,6 +41,9 @@ import com.fitness.app.domain.repository.ISettingsRepository
  * ```
  */
 class AppContainer private constructor(private val context: Context) {
+
+    val application: android.app.Application
+        get() = context.applicationContext as android.app.Application
 
     // ── Core Services ──────────────────────────────────────────────
 
@@ -72,6 +77,10 @@ class AppContainer private constructor(private val context: Context) {
     val coachRepository: ICoachRepository by lazy { CoachRepositoryImpl(appDatabase.coachDao()) }
 
     val streakRepository: IStreakRepository by lazy { StreakRepository(appDatabase.streakDao()) }
+
+    val moodRepository: MoodRepository by lazy { MoodRepository(appDatabase.moodDao()) }
+
+    val journalRepository: JournalRepository by lazy { JournalRepository(appDatabase.journalDao()) }
 
     val settingsRepository: ISettingsRepository by lazy { SettingsRepository(context) }
 

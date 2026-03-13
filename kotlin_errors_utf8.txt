@@ -1,0 +1,72 @@
+﻿Configuration on demand is an incubating feature.
+> Task :checkKotlinGradlePluginConfigurationErrors
+> Task :preBuild UP-TO-DATE
+> Task :preDebugBuild UP-TO-DATE
+> Task :checkDebugAarMetadata UP-TO-DATE
+> Task :generateDebugResValues UP-TO-DATE
+> Task :mapDebugSourceSetPaths UP-TO-DATE
+> Task :generateDebugResources UP-TO-DATE
+> Task :mergeDebugResources UP-TO-DATE
+> Task :createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :extractDeepLinksDebug UP-TO-DATE
+> Task :processDebugMainManifest UP-TO-DATE
+> Task :processDebugManifest UP-TO-DATE
+> Task :processDebugManifestForPackage UP-TO-DATE
+> Task :processDebugResources UP-TO-DATE
+> Task :kspDebugKotlin UP-TO-DATE
+
+> Task :compileDebugKotlin
+.\gradlew.bat : e: file:///C:/Users/adhik/Down
+loads/DKGS%20LABS/Ring/FitnessAndroidApp/src/m
+ain/kotlin/com/fitness/app/presentation/wellne
+ss/screens/WellnessScreen.kt:326:26 None of 
+the following functions can be called with 
+the arguments supplied: 
+At line:1 char:1
++ .\gradlew.bat compileDebugKotlin > 
+kotlin_errors.txt 2>&1 ; Get-Conte ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( 
+   e: file:///C:/U...ents supplied: :String)  
+   [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandEr 
+   ror
+ 
+public fun Modifier.background(brush: Brush, 
+shape: Shape = ..., alpha: Float = ...): 
+Modifier defined in 
+androidx.compose.foundation
+public fun Modifier.background(color: Color, 
+shape: Shape = ...): Modifier defined in 
+androidx.compose.foundation
+e: file:///C:/Users/adhik/Downloads/DKGS%20LAB
+S/Ring/FitnessAndroidApp/src/main/kotlin/com/f
+itness/app/presentation/wellness/screens/Welln
+essScreen.kt:420:40 @Composable invocations 
+can only happen from the context of a 
+@Composable function
+
+> Task :compileDebugKotlin FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task 
+':compileDebugKotlin'.
+> A failure occurred while executing org.jetbr
+ains.kotlin.compilerRunner.GradleCompilerRunne
+rWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more 
+details
+
+* Try:
+> Run with --stacktrace option to get the 
+stack trace.
+> Run with --info or --debug option to get 
+more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 17s
+14 actionable tasks: 2 executed, 12 up-to-date

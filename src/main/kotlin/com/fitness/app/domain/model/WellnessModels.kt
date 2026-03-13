@@ -2,7 +2,8 @@ package com.fitness.app.domain.model
 
 data class Emotion(
     val name: String,
-    val emoji: String
+    val emoji: String,
+    val score: Int
 )
 
 data class MeditationItem(
