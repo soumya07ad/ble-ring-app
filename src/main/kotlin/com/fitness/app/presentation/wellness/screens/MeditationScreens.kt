@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fitness.app.domain.model.MeditationData
 import com.fitness.app.domain.model.MeditationExercise
-import com.fitness.app.presentation.wellness.MeditationTimerState
+// import com.fitness.app.presentation.wellness.MeditationTimerState // Removed unused
 import com.fitness.app.presentation.wellness.MeditationViewModel
 import com.fitness.app.ui.components.MetricGlassCard
 import com.fitness.app.ui.theme.*
@@ -43,7 +44,6 @@ import android.media.ToneGenerator
 @Composable
 fun MeditationListScreen(
     category: String,
-    viewModel: MeditationViewModel,
     onExerciseClick: (MeditationExercise) -> Unit,
     onBack: () -> Unit
 ) {
@@ -69,7 +69,7 @@ fun MeditationListScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onBack) {
                             Icon(
-                                Icons.Default.ArrowBack,
+                                Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
@@ -94,20 +94,12 @@ fun MeditationListScreen(
                 }
 
                 // Divider
-                Box(
+                HorizontalDivider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(1.dp)
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color.Transparent,
-                                    SkyBlue.copy(alpha = 0.35f),
-                                    SkyBlue.copy(alpha = 0.35f),
-                                    Color.Transparent
-                                )
-                            )
-                        )
+                        .height(1.dp),
+                    thickness = 1.dp,
+                    color = SkyBlue.copy(alpha = 0.35f) // Simplify for now or keep gradient
                 )
 
                 Spacer(Modifier.height(20.dp))
@@ -122,6 +114,175 @@ fun MeditationListScreen(
                     )
                 }
                 Spacer(Modifier.height(18.dp))
+            }
+
+            if (category == "morning_calm") {
+                item {
+                    Spacer(Modifier.height(24.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        MaterialTheme.colorScheme.surface
+                                    )
+                                )
+                            )
+                            .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                            .padding(20.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("✨", fontSize = 20.sp)
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                "General Relaxation Enhancers",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "• Practice at the same time daily to train your body-mind rhythm.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "• Between sessions, stretch lightly or sip water to refresh.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "• Note how your mood or focus changes after the exercises in the journal.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+            }
+
+            if (category == "breathing") {
+                item {
+                    Spacer(Modifier.height(24.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        MaterialTheme.colorScheme.surface
+                                    )
+                                )
+                            )
+                            .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                            .padding(20.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("🌬️", fontSize = 20.sp)
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                "General Breathing Tips",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "• Practice daily at the same time.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "• Use a quiet, comfortable space.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "• If distracted, gently return focus to breath.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "• Pair with calming music or silence.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+            }
+
+            if (category == "sleep") {
+                item {
+                    Spacer(Modifier.height(24.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        MaterialTheme.colorScheme.surface
+                                    )
+                                )
+                            )
+                            .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                            .padding(20.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("🌙", fontSize = 20.sp)
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                "General Sleep Tips",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "• Keep a consistent bedtime routine.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "• Avoid screens 30 minutes before meditation.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "• Use soft background sounds if it helps relaxation.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
             }
         }
     }
@@ -248,11 +409,11 @@ fun MeditationTimerScreen(
     val isGuidedBreathing = isBoxBreathing || is478Breathing
 
     // Custom Breathing State
-    var breathingTime by remember { mutableStateOf(0f) }
+    var breathingTime by remember { mutableFloatStateOf(0f) }
     var currentPhase by remember { mutableStateOf("Ready") }
     
     // Scale pulse effect when breathing phase changes
-    var pulseTrigger by remember { mutableStateOf(0) }
+    var pulseTrigger by remember { mutableIntStateOf(0) }
     val basePhaseScale by animateFloatAsState(
         targetValue = if (pulseTrigger % 2 == 0) 1f else 1.05f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
@@ -394,7 +555,7 @@ fun MeditationTimerScreen(
             ) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        Icons.Default.ArrowBack,
+                        Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = MaterialTheme.colorScheme.onSurface
                     )
@@ -424,7 +585,7 @@ fun MeditationTimerScreen(
             ) {
                 // Outer glow
                 if (timerState.isRunning) {
-                    androidx.compose.foundation.Canvas(
+                    Canvas(
                         modifier = Modifier
                             .size((260 * breatheScale).dp)
                     ) {
@@ -436,7 +597,7 @@ fun MeditationTimerScreen(
                 }
 
                 // Progress ring
-                androidx.compose.foundation.Canvas(
+                Canvas(
                     modifier = Modifier.size(240.dp)
                 ) {
                     // Background track
@@ -536,7 +697,7 @@ fun MeditationTimerScreen(
                 DurationSelectionGrid(
                     selectedMinutes = timerState.selectedDurationMinutes,
                     enabled = !timerState.isRunning && !timerState.isPaused && !timerState.isCompleted,
-                    onSelect = { viewModel.setDuration(it) }
+                    onSelect = { minutes -> viewModel.setDuration(minutes) }
                 )
             }
 
@@ -658,6 +819,488 @@ fun MeditationTimerScreen(
                             )
                         }
                     }
+                }
+            }
+
+            if (exerciseId == "mc_1") {
+                Spacer(Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("💡", fontSize = 20.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Mindful Start Tips",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "• Sit in a quiet spot with natural light if possible.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Inhale for 4 counts, exhale for 6 counts — longer exhale deepens calm.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• If the mind wanders, simply return to the breath without judgment.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+
+            if (exerciseId == "mc_2") {
+                Spacer(Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🙏", fontSize = 20.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Gratitude Meditation Tips",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "• Choose small, real details (a smile, a meal, a kind word).",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Imagine how those moments looked, sounded, or felt.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Place your hand on your chest while recalling gratitude — it strengthens the emotional link.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+
+            if (exerciseId == "mc_3") {
+                Spacer(Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🎯", fontSize = 20.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Focus Booster Tips",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "• Silence notifications and keep only one task in front of you.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Sit Straight spine, relaxed shoulders, feet grounded — this boosts alertness.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• If focus slips, take one deep breath and gently return to the task.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+
+            if (exerciseId == "br_1") {
+                Spacer(Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📦", fontSize = 20.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Box Breathing Tips",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "• Keep counts equal (4–4–4–4).",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Sit upright, shoulders relaxed.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Visualize a square with each breath cycle.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+
+            if (exerciseId == "br_2") {
+                Spacer(Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🌊", fontSize = 20.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "4-7-8 Breathing Tips",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "• Inhale quietly through nose for 4.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Hold breath gently for 7.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Exhale fully through mouth for 8.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Best done before sleep or when anxious.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+
+            if (exerciseId == "br_3") {
+                Spacer(Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🍃", fontSize = 20.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Relaxation Breathing Tips",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "• Inhale deeply into belly, not chest.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Exhale longer than inhale for calm.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Close eyes and focus on breath rhythm.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Use for 5–10 minutes to reset stress.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+
+            if (exerciseId == "sl_1") {
+                Spacer(Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("💤", fontSize = 20.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Deep Sleep Relaxation Tips",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "• Dim lights and silence devices before starting.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Breathe slowly and evenly to ease into calm.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Visualize a peaceful place as you drift off.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+
+            if (exerciseId == "sl_2") {
+                Spacer(Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🧘", fontSize = 20.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Body Scan Tips",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "• Lie down comfortably with arms at your sides.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Move attention from head to toe, releasing tension.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• If distracted, gently return focus to the body part.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+
+            if (exerciseId == "sl_3") {
+                Spacer(Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .border(1.dp, AppColors.dividerColor, RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🌌", fontSize = 20.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Calm Night Meditation Tips",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "• Picture a serene scene (stars, ocean, forest).",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Pair visualization with slow breathing.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• Let thoughts pass without holding onto them.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
                 }
             }
 

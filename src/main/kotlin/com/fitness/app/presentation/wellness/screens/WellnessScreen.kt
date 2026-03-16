@@ -57,7 +57,8 @@ import com.fitness.app.ui.components.GlowDivider
 fun WellnessScreen(
     viewModel: WellnessViewModel,
     onBack: () -> Unit = {},
-    onMeditationClick: (String) -> Unit = {}
+    onMeditationClick: (String) -> Unit = {},
+    onJournalClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -162,6 +163,7 @@ fun WellnessScreen(
                         onResumePlayback = { viewModel.resumePlayback() },
                         onSeekTo = { viewModel.seekTo(it) },
                         onStopPlayback = { viewModel.stopPlayback() },
+                        onDiscardRecording = { viewModel.discardRecording() },
                         hasAudioPermission = hasAudioPermission,
                         onRequestPermission = {
                             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
@@ -223,16 +225,75 @@ fun WellnessScreen(
 
             // ── Section 4: Journal ──────────────────────────────
             item {
-                val entries by viewModel.journalEntries.collectAsState()
                 Spacer(modifier = Modifier.height(24.dp))
-                JournalSection(
-                    entries = entries,
-                    uiState = uiState,
-                    onPlayAudio = { viewModel.playJournalAudio(it) },
-                    onPauseAudio = { viewModel.pausePlayback() },
-                    onResumeAudio = { viewModel.resumePlayback() },
-                    onSeekAudio = { viewModel.seekTo(it) }
-                )
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    SectionHeader(
+                        title = "Journal",
+                        dotColor = NeonOrange
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(
+                                8.dp, RoundedCornerShape(20.dp),
+                                ambientColor = NeonOrange.copy(alpha = 0.2f),
+                                spotColor = NeonOrange.copy(alpha = 0.3f)
+                            )
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        MaterialTheme.colorScheme.surface
+                                    )
+                                )
+                            )
+                            .border(
+                                1.5.dp,
+                                AppColors.sectionBorder(NeonOrange),
+                                RoundedCornerShape(20.dp)
+                            )
+                            .clickable { onJournalClick() }
+                            .padding(20.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(NeonOrange.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("📔", fontSize = 24.sp)
+                            }
+                            Spacer(Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Open My Journal",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = "View and reflect on past entries",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(
+                                Icons.Default.ArrowForward,
+                                contentDescription = "Open Journal",
+                                tint = NeonOrange
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -480,6 +541,7 @@ private fun JournalInputDialog(
     onResumePlayback: () -> Unit,
     onSeekTo: (Int) -> Unit,
     onStopPlayback: () -> Unit,
+    onDiscardRecording: () -> Unit,
     hasAudioPermission: Boolean,
     onRequestPermission: () -> Unit
 ) {
@@ -700,6 +762,30 @@ private fun JournalInputDialog(
                                 inactiveTrackColor = Color(0xFFCBD5E1)
                             )
                         )
+
+                        Spacer(Modifier.height(8.dp))
+
+                        // Record Again button
+                        OutlinedButton(
+                            onClick = onDiscardRecording,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, ErrorRed.copy(alpha = 0.5f))
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Record Again",
+                                tint = ErrorRed,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "Record Again",
+                                color = ErrorRed,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
                 }
 

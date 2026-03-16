@@ -161,7 +161,15 @@ fun AppNavigationFlow(
                                     else -> Screen.MorningCalm.route
                                 }
                                 navController.navigate(route)
-                            }
+                            },
+                            onJournalClick = { navController.navigate(Screen.Journal.route) }
+                        )
+                    }
+
+                    composable(Screen.Journal.route) {
+                        com.fitness.app.presentation.wellness.screens.JournalScreen(
+                            viewModel = viewModel(factory = factory),
+                            onBack = { navController.popBackStack() }
                         )
                     }
 
@@ -169,7 +177,6 @@ fun AppNavigationFlow(
                     composable(Screen.MorningCalm.route) {
                         MeditationListScreen(
                             category = "morning_calm",
-                            viewModel = viewModel(),
                             onExerciseClick = { exercise ->
                                 navController.navigate(
                                     Screen.MeditationTimer.createRoute(exercise.id, exercise.category)
@@ -182,7 +189,6 @@ fun AppNavigationFlow(
                     composable(Screen.BreathingExercise.route) {
                         MeditationListScreen(
                             category = "breathing",
-                            viewModel = viewModel(),
                             onExerciseClick = { exercise ->
                                 navController.navigate(
                                     Screen.MeditationTimer.createRoute(exercise.id, exercise.category)
@@ -195,7 +201,6 @@ fun AppNavigationFlow(
                     composable(Screen.SleepMeditation.route) {
                         MeditationListScreen(
                             category = "sleep",
-                            viewModel = viewModel(),
                             onExerciseClick = { exercise ->
                                 navController.navigate(
                                     Screen.MeditationTimer.createRoute(exercise.id, exercise.category)

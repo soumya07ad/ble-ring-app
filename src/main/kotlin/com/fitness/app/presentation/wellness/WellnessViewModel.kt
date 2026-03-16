@@ -368,6 +368,25 @@ class WellnessViewModel(
         startPlaybackInternal(audioPath)
     }
 
+    // Discard the current recording and return to idle state
+    fun discardRecording() {
+        stopPlayback()
+        val path = currentAudioPath
+        if (path != null) {
+            try { File(path).delete() } catch (_: Exception) {}
+        }
+        currentAudioPath = null
+        _uiState.update {
+            it.copy(
+                hasRecording = false,
+                isPlayingPreview = false,
+                playingAudioPath = null,
+                audioDurationMs = 0,
+                playbackPositionMs = 0
+            )
+        }
+    }
+
     // --- Mood Data ---
 
     fun setTab(index: Int) {

@@ -1053,18 +1053,8 @@ private fun StressCard(stress: Int, onMeasureClick: () -> Unit = {}) {
             FilledTonalIconButton(
                 onClick = onMeasureClick,
                 colors = IconButtonDefaults.filledTonalIconButtonColors(
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    containerColor = PrimaryBlue.copy(alpha = 0.15f),
-                    contentColor = PrimaryBlue
-=======
-                    containerColor = AccentCyan.copy(alpha = 0.15f),
-                    contentColor = AccentCyan
->>>>>>> dev
-=======
                     containerColor = NeonCyan.copy(alpha = 0.1f),
                     contentColor = NeonCyan
->>>>>>> dev
                 )
             ) {
                 Icon(
