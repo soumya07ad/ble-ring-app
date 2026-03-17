@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.fitness.app.domain.model.ConnectionStatus
 import com.fitness.app.domain.repository.IFitnessRepository
 import com.fitness.app.domain.repository.IRingRepository
+import com.fitness.app.data.repository.StepRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +22,8 @@ import kotlinx.coroutines.launch
  */
 class DashboardViewModel(
     private val ringRepository: IRingRepository,
-    private val fitnessRepository: IFitnessRepository
+    private val fitnessRepository: IFitnessRepository,
+    private val stepRepository: StepRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -70,8 +72,6 @@ class DashboardViewModel(
                     state.copy(
                         heartRate = ringData.heartRate,
                         spO2 = ringData.spO2,
-                        steps = ringData.steps,
-                        distance = ringData.distance,
                         calories = ringData.calories,
                         stressLevel = ringData.stress,
                         batteryLevel = ringData.battery
@@ -79,6 +79,33 @@ class DashboardViewModel(
                 }
             }
         }
+
+        viewModelScope.launch {
+            stepRepository.steps.collect { stepsValue ->
+                _uiState.update { state ->
+                    state.copy(steps = stepsValue)
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            stepRepository.distance.collect { distanceValue ->
+                _uiState.update { state ->
+                    state.copy(distance = distanceValue.toInt())
+                }
+            }
+        }
+    }
+
+    val stepTrackingSupported: StateFlow<Boolean> = stepRepository.phoneStepDataSource.isSupported
+    val isUsingPhone: StateFlow<Boolean> = stepRepository.isUsingPhone
+
+    fun startPhoneStepTracking() {
+        stepRepository.phoneStepDataSource.startListening()
+    }
+
+    fun stopPhoneStepTracking() {
+        stepRepository.phoneStepDataSource.stopListening()
     }
 
     /**

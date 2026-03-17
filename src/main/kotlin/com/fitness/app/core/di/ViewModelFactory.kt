@@ -30,8 +30,10 @@ class AppViewModelFactory(private val container: AppContainer) : ViewModelProvid
             modelClass.isAssignableFrom(DashboardViewModel::class.java) ->
                 DashboardViewModel(
                     ringRepository = container.ringRepository,
-                    fitnessRepository = container.fitnessLocalRepository
+                    fitnessRepository = container.fitnessLocalRepository,
+                    stepRepository = container.stepRepository
                 ) as T
+
 
             modelClass.isAssignableFrom(SleepTrackerViewModel::class.java) ->
                 SleepTrackerViewModel(

@@ -21,6 +21,9 @@
     <!-- Audio recording permission for mood journal -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Permission for phone-based step counter -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
     <application
         android:name=".FitnessApplication"
         android:allowBackup="true"

@@ -27,6 +27,8 @@ import com.fitness.app.domain.repository.IStreakRepository
 import com.fitness.app.domain.repository.ISettingsRepository
 import com.fitness.app.data.repository.MoodRepository
 import com.fitness.app.data.repository.JournalRepository
+import com.fitness.app.data.repository.StepRepository
+import com.fitness.app.data.source.PhoneStepDataSource
 
 /**
  * Manual Dependency Injection Container
@@ -71,6 +73,11 @@ class AppContainer private constructor(private val context: Context) {
     // ── Repositories (all exposed via interface) ────────────────────
 
     val ringRepository: IRingRepository by lazy { RingRepositoryImpl(context) }
+
+    val phoneStepDataSource: PhoneStepDataSource by lazy { PhoneStepDataSource(context) }
+
+    val stepRepository: StepRepository by lazy { StepRepository(ringRepository, phoneStepDataSource) }
+
 
     val sleepRepository: SleepRepository by lazy { SleepRepositoryImpl(appDatabase.sleepDao()) }
 

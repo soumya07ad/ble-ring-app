@@ -17,6 +17,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -62,6 +70,38 @@ fun DashboardRoute(
     val state by viewModel.uiState.collectAsState()
     val ringConnectionState by smartRingViewModel.connectionState.collectAsState()
     val currentTheme by themeViewModel.themeState.collectAsState()
+    
+    val isUsingPhone by viewModel.isUsingPhone.collectAsState()
+    val isSupported by viewModel.stepTrackingSupported.collectAsState()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.startPhoneStepTracking()
+        }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    permissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                } else {
+                    viewModel.startPhoneStepTracking()
+                }
+            } else if (event == Lifecycle.Event.ON_PAUSE) {
+                viewModel.stopPhoneStepTracking()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.stopPhoneStepTracking()
+        }
+    }
 
     DashboardScreenWithHeader(
         state = state,
@@ -76,7 +116,9 @@ fun DashboardRoute(
             navController?.navigate(Screen.Settings.route)
         },
         currentTheme = currentTheme,
-        onThemeChange = { themeViewModel.setTheme(it) }
+        onThemeChange = { themeViewModel.setTheme(it) },
+        isUsingPhone = isUsingPhone,
+        isSupported = isSupported
     )
 }
 
@@ -88,7 +130,9 @@ fun DashboardScreenWithHeader(
     onDisconnectClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     currentTheme: AppTheme = AppTheme.SYSTEM,
-    onThemeChange: (AppTheme) -> Unit = {}
+    onThemeChange: (AppTheme) -> Unit = {},
+    isUsingPhone: Boolean = false,
+    isSupported: Boolean = true
 ) {
     val stressLevel = state.stressLevel.coerceIn(0, 100)
     val pairedRing = state.connectedRing
@@ -256,13 +300,28 @@ fun DashboardScreenWithHeader(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    val stepsValueStr = when {
+                        isConnected -> "${state.steps}"
+                        isUsingPhone && isSupported -> "${state.steps}"
+                        isUsingPhone && !isSupported -> "N/A"
+                        else -> "0"
+                    }
+                    val distanceValueStr = when {
+                        isConnected -> "${state.distance}"
+                        isUsingPhone && isSupported -> "${state.distance}"
+                        isUsingPhone && !isSupported -> "N/A"
+                        else -> "0"
+                    }
+                    val stepsLabel = if (isUsingPhone) "STEPS (PHONE)" else "STEPS"
+                    val distanceLabel = if (isUsingPhone) "DISTANCE (PHONE)" else "DISTANCE"
+
                     FloatingMetricTile(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Star,
-                        label = "STEPS",
-                        value = if (isConnected) "${state.steps}" else "0",
+                        label = stepsLabel,
+                        value = stepsValueStr,
                         unit = "",
-                        progress = if (isConnected) (state.steps / 10000f).coerceIn(0f, 1f) else 0f,
+                        progress = (state.steps / 10000f).coerceIn(0f, 1f),
                         gradientColors = listOf(PrimaryPurple, NeonPink),
                         glowColor = PrimaryPurple,
                         iconBgColor = StepsIconBg
@@ -270,10 +329,10 @@ fun DashboardScreenWithHeader(
                     FloatingMetricTile(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Build,
-                        label = "DISTANCE",
-                        value = if (isConnected) "${state.distance}" else "0",
+                        label = distanceLabel,
+                        value = distanceValueStr,
                         unit = "m",
-                        progress = if (isConnected) (state.distance / 5000f).coerceIn(0f, 1f) else 0f,
+                        progress = (state.distance / 5000f).coerceIn(0f, 1f),
                         gradientColors = listOf(NeonOrange, WarningAmber),
                         glowColor = NeonOrange,
                         iconBgColor = DistanceIconBg
