@@ -72,6 +72,16 @@ class AppViewModelFactory(private val container: AppContainer) : ViewModelProvid
                     themeManager = container.themeManager
                 ) as T
 
+            modelClass.isAssignableFrom(com.fitness.app.presentation.auth.AuthViewModel::class.java) ->
+                com.fitness.app.presentation.auth.AuthViewModel(
+                    authRepository = container.authRepository
+                ) as T
+
+            modelClass.isAssignableFrom(com.fitness.app.presentation.dashboard.FitnessHistoryViewModel::class.java) ->
+                com.fitness.app.presentation.dashboard.FitnessHistoryViewModel(
+                    fitnessRepository = container.fitnessLocalRepository
+                ) as T
+
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
     }

@@ -3,6 +3,7 @@ package com.fitness.app.domain.repository
 import com.fitness.app.core.util.Result
 import com.fitness.app.domain.model.CalorieMetrics
 import com.fitness.app.domain.model.DailyHealthSummary
+import com.fitness.app.domain.model.FitnessHistoryEntry
 import com.fitness.app.domain.model.HeartRateMetrics
 import com.fitness.app.domain.model.StepMetrics
 import com.fitness.app.domain.model.WorkoutInfo
@@ -40,6 +41,10 @@ interface IFitnessRepository {
     fun getWorkouts(): List<WorkoutInfo>
     fun addWorkout(workout: WorkoutInfo): WorkoutInfo
     fun deleteWorkout(workoutId: String)
+
+    // ── History ─────────────────────────────────────────────────────
+
+    fun getFitnessHistory(days: Int = 30): List<FitnessHistoryEntry>
 
     // ── Preferences ────────────────────────────────────────────────
 

@@ -5,9 +5,10 @@ sealed class Screen(val route: String, val label: String, val emoji: String) {
     object Sleep : Screen("sleep", "Sleep", "😴")
     object Wellness : Screen("wellness", "Wellness", "💎") 
     object Streaks : Screen("streaks", "Streaks", "🔥")
-    object Coach : Screen("coach", "Coach", "🤖")
+    object Coach : Screen("coach", "AURA", "🤖")
     object Settings : Screen("settings", "Settings", "⚙️")
     object Journal : Screen("journal", "Journal", "📔")
+    object FitnessHistory : Screen("fitnessHistory", "Fitness History", "📊")
 
     // Meditation sub-screens
     object MorningCalm : Screen("meditation/morning_calm", "Morning Calm", "🌅")

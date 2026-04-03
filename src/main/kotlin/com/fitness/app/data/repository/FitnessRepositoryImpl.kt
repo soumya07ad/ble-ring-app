@@ -3,6 +3,7 @@ package com.fitness.app.data.repository
 import com.fitness.app.FitnessAPI
 import com.fitness.app.domain.model.CalorieMetrics
 import com.fitness.app.domain.model.DailyHealthSummary
+import com.fitness.app.domain.model.FitnessHistoryEntry
 import com.fitness.app.domain.model.HeartRateMetrics
 import com.fitness.app.domain.model.StepMetrics
 import com.fitness.app.domain.model.WorkoutInfo
@@ -149,6 +150,36 @@ class FitnessRepositoryImpl(
 
     override fun setDailyCalorieGoal(goal: Int) {
         fitnessAPI.setDailyCalorieGoal(goal)
+    }
+
+    // ── History ──────────────────────────────────────────────────────
+
+    override fun getFitnessHistory(days: Int): List<FitnessHistoryEntry> {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        val displaySdf = java.text.SimpleDateFormat("dd MMM", java.util.Locale.getDefault())
+        val calendar = java.util.Calendar.getInstance()
+        val entries = mutableListOf<FitnessHistoryEntry>()
+
+        for (i in 0 until days) {
+            val date = sdf.format(calendar.time)
+            val displayDate = displaySdf.format(calendar.time)
+            // Generate deterministic but varied data based on day offset
+            val seed = (calendar.get(java.util.Calendar.DAY_OF_YEAR) * 31 + calendar.get(java.util.Calendar.YEAR)) % 100
+            val steps = 3000 + (seed * 97) % 9000   // Range: 3000–11999
+            val distance = (steps * 0.7).toInt()      // ~0.7m per step
+            val calories = (steps * 0.04).toInt()      // ~0.04 kcal per step
+
+            entries.add(
+                FitnessHistoryEntry(
+                    date = displayDate,
+                    steps = steps,
+                    distance = distance,
+                    calories = calories
+                )
+            )
+            calendar.add(java.util.Calendar.DAY_OF_YEAR, -1)
+        }
+        return entries
     }
 
     // ── Helpers ─────────────────────────────────────────────────────

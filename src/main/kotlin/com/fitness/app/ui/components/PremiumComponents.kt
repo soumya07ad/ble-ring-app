@@ -104,7 +104,8 @@ fun FloatingMetricTile(
     progress: Float = 0f,
     gradientColors: List<Color> = listOf(NeonCyan, NeonBlue),
     glowColor: Color = gradientColors.first(),
-    iconBgColor: Color = Color.Transparent
+    iconBgColor: Color = Color.Transparent,
+    onClick: (() -> Unit)? = null
 ) {
     val isDark = AppColors.isDark
     val shape = RoundedCornerShape(18.dp)
@@ -133,6 +134,9 @@ fun FloatingMetricTile(
                 } else {
                     Modifier.border(1.dp, MetricCardBorder, shape)
                 }
+            )
+            .then(
+                if (onClick != null) Modifier.clickable { onClick() } else Modifier
             ),
         shape = shape,
         color = if (isDark) MaterialTheme.colorScheme.surface else MetricCardGlass,

@@ -37,8 +37,10 @@ import com.fitness.app.core.di.AppContainer
 import com.fitness.app.network.sync.SyncWorker
 import com.fitness.app.presentation.navigation.AppNavigationViewModel
 import com.fitness.app.presentation.dashboard.screens.DashboardRoute
+import com.fitness.app.presentation.dashboard.screens.FitnessHistoryRoute
 import com.fitness.app.presentation.dashboard.screens.SleepTrackerScreen
 import com.fitness.app.presentation.coach.screens.CoachScreen
+import com.fitness.app.presentation.dashboard.FitnessHistoryViewModel
 import com.fitness.app.presentation.wellness.screens.WellnessScreen
 import com.fitness.app.presentation.wellness.screens.MeditationListScreen
 import com.fitness.app.presentation.wellness.screens.MeditationTimerScreen
@@ -106,9 +108,12 @@ fun AppNavigationFlow(
 
     when {
         !navState.userLoggedIn -> {
-            FitnessWebView(onLoginSuccess = {
-                navViewModel.onLoginSuccess()
-            })
+            com.fitness.app.presentation.auth.screens.AuthNavGraph(
+                viewModel = viewModel(factory = factory),
+                onAuthSuccess = {
+                    navViewModel.onLoginSuccess()
+                }
+            )
         }
         !navState.setupComplete -> {
             com.fitness.app.presentation.ring.screens.RingSetupRoute(
@@ -236,6 +241,13 @@ fun AppNavigationFlow(
 
                     composable(Screen.Settings.route) {
                         com.fitness.app.presentation.settings.screens.SettingsScreen(
+                            viewModel = viewModel(factory = factory),
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(Screen.FitnessHistory.route) {
+                        FitnessHistoryRoute(
                             viewModel = viewModel(factory = factory),
                             onBack = { navController.popBackStack() }
                         )
@@ -398,7 +410,7 @@ fun AppBottomNav(navController: NavHostController) {
                     fontSize = 24.sp
                 )
                 Text(
-                    text = "Coach",
+                    text = "AURA",
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface

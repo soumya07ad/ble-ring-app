@@ -72,6 +72,10 @@ class AppContainer private constructor(private val context: Context) {
 
     // ── Repositories (all exposed via interface) ────────────────────
 
+    val authRepository: com.fitness.app.domain.repository.IAuthRepository by lazy { 
+        com.fitness.app.data.repository.AuthRepositoryImpl() 
+    }
+
     val ringRepository: IRingRepository by lazy { RingRepositoryImpl(context) }
 
     val phoneStepDataSource: PhoneStepDataSource by lazy { PhoneStepDataSource(context) }

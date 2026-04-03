@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fitness.app.presentation.coach.*
@@ -32,6 +33,7 @@ import com.fitness.app.ui.components.GlowDivider
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +108,7 @@ fun CoachScreen(
                         
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "🤖  Wellness Coach",
+                                text = "🤖  AURA",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -135,6 +137,7 @@ fun CoachScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
+                    .imePadding()
             ) {
                 // Messages List
                 LazyColumn(
@@ -334,14 +337,15 @@ fun SessionHistoryItem(
 
 @Composable
 fun MessageBubble(message: CoachMessage) {
-    val alignment = if (message.isUser) Alignment.End else Alignment.Start
-    val bgBrush = if (message.isUser) {
+    val isUser = message.isUser
+    val alignment = if (isUser) Alignment.End else Alignment.Start
+    val bgBrush = if (isUser) {
         AppColors.accentGradient
     } else {
         Brush.verticalGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surface))
     }
     val textColor = MaterialTheme.colorScheme.onSurface
-    val shape = if (message.isUser) {
+    val shape = if (isUser) {
         RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 4.dp)
     } else {
         RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp)
@@ -353,35 +357,63 @@ fun MessageBubble(message: CoachMessage) {
     ) {
         Box(
             modifier = Modifier
-                .widthIn(max = 280.dp)
-                .shadow(
-                    elevation = 4.dp,
-                    shape = shape,
-                    ambientColor = if (message.isUser) PrimaryPurple.copy(alpha = 0.3f) else Color.Transparent,
-                    spotColor = if (message.isUser) PrimaryPurple.copy(alpha = 0.4f) else Color.Transparent
-                )
-                .clip(shape)
-                .background(bgBrush)
-                .border(
-                    width = 1.dp,
-                    color = if (message.isUser) PrimaryPurple.copy(alpha = 0.5f) else AppColors.dividerColor,
-                    shape = shape
-                )
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .fillMaxWidth(0.85f)
+                .wrapContentWidth(if (isUser) Alignment.End else Alignment.Start)
+        ) {
+            Box(
+                modifier = Modifier
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = shape,
+                        ambientColor = if (isUser) PrimaryPurple.copy(alpha = 0.3f) else Color.Transparent,
+                        spotColor = if (isUser) PrimaryPurple.copy(alpha = 0.4f) else Color.Transparent
+                    )
+                    .clip(shape)
+                    .background(bgBrush)
+                    .border(
+                        width = 1.dp,
+                        color = if (isUser) PrimaryPurple.copy(alpha = 0.5f) else AppColors.dividerColor,
+                        shape = shape
+                    )
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                if (isUser) {
+                    Text(
+                        text = message.text,
+                        color = textColor,
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp
+                    )
+                } else {
+                    MarkdownText(
+                        markdown = message.text,
+                        color = textColor,
+                        fontSize = 15.sp,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            lineHeight = 22.sp,
+                            color = textColor
+                        )
+                    )
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.padding(top = 4.dp, start = 4.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = message.text,
-                color = textColor,
-                fontSize = 15.sp,
-                lineHeight = 22.sp
+                text = if (isUser) "You" else "AURA",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isUser) PrimaryPurple else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp)),
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
             )
         }
-        Text(
-            text = if (message.isUser) "You" else "Coach",
-            fontSize = 10.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.padding(top = 4.dp, start = 4.dp, end = 4.dp)
-        )
     }
 }
 
@@ -442,7 +474,7 @@ fun ChatInput(
             TextField(
                 value = value,
                 onValueChange = onValueChange,
-                placeholder = { Text("Ask your coach...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                placeholder = { Text("Ask AURA...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(24.dp)),
@@ -507,5 +539,13 @@ fun TypingIndicator() {
         Box(Modifier.size(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha1)))
         Box(Modifier.size(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha2)))
         Box(Modifier.size(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha3)))
+
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "AURA is typing...",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            fontStyle = FontStyle.Italic
+        )
     }
 }

@@ -54,3 +54,13 @@ data class WorkoutInfo(
     val date: String = "",
     val notes: String = ""
 )
+
+/**
+ * Domain model for a single day's fitness history entry
+ */
+data class FitnessHistoryEntry(
+    val date: String,
+    val steps: Int,
+    val distance: Int, // in meters
+    val calories: Int
+)

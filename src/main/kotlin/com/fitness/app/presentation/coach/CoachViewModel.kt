@@ -58,7 +58,7 @@ class CoachViewModel(
         _uiState.update { 
             it.copy(
                 activeSessionId = null,
-                messages = listOf(CoachMessage("Hello! I'm your Wellness Coach. How can I help you reach your goals today?", false)),
+                messages = listOf(CoachMessage("Hello! I'm AURA, your Wellness Coach. How can I help you reach your goals today?", false)),
                 messageInput = ""
             ) 
         }
@@ -99,17 +99,7 @@ class CoachViewModel(
             coachRepository.saveMessage(input, true, currentSessionId)
 
             delay(1500)
-            val responseText = when {
-                input.contains("motivation", ignoreCase = true) -> 
-                    "Remember, consistency is better than perfection. Every small step counts towards your ultimate goal!"
-                input.contains("workout", ignoreCase = true) -> 
-                    "A balanced workout include strength, cardio, and flexibility. Try alternating between them this week."
-                input.contains("nutrition", ignoreCase = true) -> 
-                    "Focus on whole foods and stayed hydrated. Small changes in your diet can lead to big improvements in energy."
-                input.contains("sleep", ignoreCase = true) -> 
-                    "Your sleep quality directly impacts your recovery. Try to keep a consistent wake-up time even on weekends."
-                else -> "That's interesting! Let's explore how we can optimize your wellness journey together."
-            }
+            val responseText = coachRepository.getAiResponse(input)
             
             coachRepository.saveMessage(responseText, false, currentSessionId)
             _uiState.update { it.copy(isLoading = false) }

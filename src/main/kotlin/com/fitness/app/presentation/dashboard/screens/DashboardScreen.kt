@@ -115,6 +115,9 @@ fun DashboardRoute(
         onSettingsClick = {
             navController?.navigate(Screen.Settings.route)
         },
+        onFitnessHistoryClick = {
+            navController?.navigate(Screen.FitnessHistory.route)
+        },
         currentTheme = currentTheme,
         onThemeChange = { themeViewModel.setTheme(it) },
         isUsingPhone = isUsingPhone,
@@ -129,6 +132,7 @@ fun DashboardScreenWithHeader(
     onConnectClick: () -> Unit = {},
     onDisconnectClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onFitnessHistoryClick: () -> Unit = {},
     currentTheme: AppTheme = AppTheme.SYSTEM,
     onThemeChange: (AppTheme) -> Unit = {},
     isUsingPhone: Boolean = false,
@@ -324,7 +328,8 @@ fun DashboardScreenWithHeader(
                         progress = (state.steps / 10000f).coerceIn(0f, 1f),
                         gradientColors = listOf(PrimaryPurple, NeonPink),
                         glowColor = PrimaryPurple,
-                        iconBgColor = StepsIconBg
+                        iconBgColor = StepsIconBg,
+                        onClick = onFitnessHistoryClick
                     )
                     FloatingMetricTile(
                         modifier = Modifier.weight(1f),
@@ -335,7 +340,8 @@ fun DashboardScreenWithHeader(
                         progress = (state.distance / 5000f).coerceIn(0f, 1f),
                         gradientColors = listOf(NeonOrange, WarningAmber),
                         glowColor = NeonOrange,
-                        iconBgColor = DistanceIconBg
+                        iconBgColor = DistanceIconBg,
+                        onClick = onFitnessHistoryClick
                     )
                 }
 

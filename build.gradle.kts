@@ -1,8 +1,18 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application") version "8.5.0"
     kotlin("android") version "1.9.22"
     id("com.google.devtools.ksp") version "1.9.22-1.0.17"
+    id("com.google.gms.google-services") version "4.4.2"
 }
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
 
 android {
     namespace = "com.fitness.app"
@@ -14,10 +24,13 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
+        
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -60,6 +73,9 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
     implementation("androidx.activity:activity-compose:1.9.0")
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.8")
+    
+    // Compose Markdown
+    implementation("com.github.jeziellago:compose-markdown:0.5.4")
 
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0")
@@ -87,6 +103,7 @@ dependencies {
     
     // Coroutines for async operations
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     
     // Room Database
     val roomVersion = "2.6.1"
@@ -94,8 +111,15 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
     
-        // WorkManager for background sync
+    // WorkManager for background sync
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
+    implementation("com.google.firebase:firebase-auth")
+
+    // Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
 
     // ══════════════════════════════════════════════════════════
     // Manridy MRD SDK (for R9 Ring) - WORKING SDK!
