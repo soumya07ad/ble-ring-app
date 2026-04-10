@@ -8,12 +8,14 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import kotlinx.coroutines.runBlocking
 
 class RetrofitClient(private val context: Context) {
     
     companion object {
-        // Configure your backend server URL here
-        private const val BASE_URL = "https://api.fitness-app.com/"
+        // Localhost URL for Android Emulator (10.0.2.2 points to host machine's localhost)
+        // For physical device testing over Wi-Fi, using the host machine's IPv4 address:
+        private const val BASE_URL = "https://wellness-backend-a0gqd5jzq-soumya07ads-projects.vercel.app/"
         
         @Volatile
         private var instance: RetrofitClient? = null
@@ -69,8 +71,8 @@ private class AuthInterceptor(private val tokenManager: TokenManager) : Intercep
             return chain.proceed(originalRequest)
         }
         
-        // Try to get token (this is blocking call, ideally should be in async block)
-        val token = "" // We'll handle this in Repository layer
+        // Try to get token (this is blocking call)
+        val token = runBlocking { tokenManager.getToken() } ?: ""
         
         val requestWithToken = if (token.isNotEmpty()) {
             originalRequest.newBuilder()

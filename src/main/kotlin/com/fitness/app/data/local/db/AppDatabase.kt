@@ -13,11 +13,15 @@ import com.fitness.app.data.local.entity.StreakEntry
 import com.fitness.app.data.local.entity.MoodEntry
 import com.fitness.app.data.local.entity.JournalEntry
 
-@Database(entities = [SleepEntry::class, CoachMessageEntity::class, StreakEntry::class, MoodEntry::class, JournalEntry::class], version = 6, exportSchema = false)
+import com.fitness.app.data.local.dao.DailyFitnessDao
+import com.fitness.app.data.local.entity.DailyFitnessRecord
+
+@Database(entities = [SleepEntry::class, CoachMessageEntity::class, StreakEntry::class, MoodEntry::class, JournalEntry::class, DailyFitnessRecord::class], version = 7, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun sleepDao(): SleepDao
     abstract fun coachDao(): CoachDao
     abstract fun streakDao(): StreakDao
     abstract fun moodDao(): MoodDao
     abstract fun journalDao(): JournalDao
+    abstract fun dailyFitnessDao(): DailyFitnessDao
 }

@@ -36,5 +36,27 @@ class FitnessApplication : Application() {
         Log.i(TAG, "✓ No SDK dependency")
         Log.i(TAG, "✓ Pure byte-array protocol")
         Log.i(TAG, "═══════════════════════════════════")
+
+        setupBackgroundSync()
+    }
+
+    private fun setupBackgroundSync() {
+        val constraints = androidx.work.Constraints.Builder()
+            // Require ANY form of internet (Wi-Fi or Mobile Data) as per user request
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .build()
+
+        val syncRequest = androidx.work.PeriodicWorkRequestBuilder<com.fitness.app.network.sync.BackendSyncWorker>(
+            15, java.util.concurrent.TimeUnit.MINUTES // Minimum allowed periodic interval is 15 minutes
+        )
+            .setConstraints(constraints)
+            .build()
+
+        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "BackendSyncWorker",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            syncRequest
+        )
+        Log.i(TAG, "✓ Backend Sync Worker Scheduled")
     }
 }

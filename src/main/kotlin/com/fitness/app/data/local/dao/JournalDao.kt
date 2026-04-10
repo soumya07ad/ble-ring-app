@@ -14,4 +14,7 @@ interface JournalDao {
 
     @Query("SELECT * FROM journal_entries ORDER BY createdAt DESC")
     fun getAllEntries(): Flow<List<JournalEntry>>
+
+    @Query("SELECT * FROM journal_entries ORDER BY createdAt DESC")
+    suspend fun getAllEntriesSync(): List<JournalEntry>
 }

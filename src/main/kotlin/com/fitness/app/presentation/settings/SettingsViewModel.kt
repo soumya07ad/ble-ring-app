@@ -8,6 +8,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
+import com.fitness.app.domain.repository.IAuthRepository
+import com.fitness.app.network.auth.TokenManager
+import android.content.Context
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import kotlinx.coroutines.launch
+
 data class SettingsUiState(
     val notificationsEnabled: Boolean = true,
     val metricUnitsEnabled: Boolean = true,
@@ -18,7 +25,11 @@ data class SettingsUiState(
     val userGender: String = ""
 )
 
-class SettingsViewModel(private val settingsRepository: ISettingsRepository) : ViewModel() {
+class SettingsViewModel(
+    private val settingsRepository: ISettingsRepository,
+    private val authRepository: IAuthRepository,
+    private val tokenManager: TokenManager
+) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
         settingsRepository.notificationsEnabled,
@@ -49,7 +60,29 @@ class SettingsViewModel(private val settingsRepository: ISettingsRepository) : V
     fun toggleBedtimeReminder(enabled: Boolean) = settingsRepository.setBedtimeReminderEnabled(enabled)
     fun toggleDataSync(enabled: Boolean)        = settingsRepository.setDataSyncEnabled(enabled)
 
+    fun logout(context: Context, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            authRepository.signOut()
+            
+            // Sign out from Google to clear the cached account
+            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
+            val googleSignInClient = GoogleSignIn.getClient(context, gso)
+            googleSignInClient.signOut()
+            
+            // Clear local token and user info
+            tokenManager.clearToken()
+            
+            // Invoke the callback to trigger navigation
+            onComplete()
+        }
+    }
+
     fun saveProfile(name: String, dob: String, gender: String) {
         settingsRepository.saveProfile(name, dob, gender)
+    }
+
+    fun triggerManualSync(context: Context) {
+        val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.fitness.app.network.sync.BackendSyncWorker>().build()
+        androidx.work.WorkManager.getInstance(context).enqueue(syncRequest)
     }
 }

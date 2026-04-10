@@ -5,6 +5,7 @@ import com.fitness.app.network.auth.TokenManager
 import com.fitness.app.network.models.*
 import okhttp3.MultipartBody
 import retrofit2.Response
+import kotlinx.coroutines.tasks.await
 
 sealed class ApiResult<T> {
     data class Success<T>(val data: T) : ApiResult<T>()
@@ -179,7 +180,6 @@ class FitnessRepository(
     // ============= Image Upload =============
     
     suspend fun uploadProfileImage(imagePart: MultipartBody.Part): ApiResult<ImageUploadResponse> {
-        val token = getAuthToken()
         return safeApiCall {
             // This would need ImageUploadService integration
             throw Exception("Image upload endpoint not yet integrated")
@@ -213,6 +213,37 @@ class FitnessRepository(
         val token = getAuthToken()
         return safeApiCall {
             apiService.deleteTimer("Bearer $token", timerId)
+        }
+    }
+    
+    // ============= Universal Sync =============
+    suspend fun syncHealth(request: HealthSyncRequest): ApiResult<SyncResponse> {
+        val token = getAuthToken()
+        return try {
+            val response = apiService.syncHealth("Bearer $token", request)
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success) ApiResult.Success(body) else ApiResult.Error(body.message)
+            } else {
+                ApiResult.Error("Network error: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            ApiResult.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    suspend fun syncJournal(request: JournalSyncRequest): ApiResult<SyncResponse> {
+        val token = getAuthToken()
+        return try {
+            val response = apiService.syncJournal("Bearer $token", request)
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success) ApiResult.Success(body) else ApiResult.Error(body.message)
+            } else {
+                ApiResult.Error("Network error: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            ApiResult.Error(e.message ?: "Unknown error")
         }
     }
     
@@ -257,10 +288,17 @@ class FitnessRepository(
     }
     
     /**
-     * Get auth token from TokenManager
+     * Get auth token from FirebaseAuth
      */
     private suspend fun getAuthToken(): String {
-        // This is a simplified version - in real app, you'd use Flow
-        return "dummy_token" // Will be replaced with actual token from DataStore
+        return try {
+            val tokenResult = com.google.firebase.auth.FirebaseAuth.getInstance()
+                .currentUser?.getIdToken(true)
+                ?.await()
+            tokenResult?.token ?: ""
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
     }
 }

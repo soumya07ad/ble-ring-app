@@ -97,6 +97,18 @@ class AppContainer private constructor(private val context: Context) {
 
     val meditationLocalRepository: IMeditationRepository by lazy { MeditationRepositoryImpl() }
 
+    val healthConnectManager: com.fitness.app.data.source.HealthConnectManager by lazy {
+        com.fitness.app.data.source.HealthConnectManager(context)
+    }
+
+    val fitnessHistoryRepository: com.fitness.app.data.repository.FitnessHistoryRepository by lazy {
+        com.fitness.app.data.repository.FitnessHistoryRepository(
+            healthConnectManager,
+            appDatabase.dailyFitnessDao(),
+            phoneStepDataSource
+        )
+    }
+
     val fitnessLocalRepository: IFitnessRepository by lazy { FitnessRepositoryImpl(fitnessAPI) }
 
     val themeManager: ThemeManager by lazy { ThemeManager(context) }

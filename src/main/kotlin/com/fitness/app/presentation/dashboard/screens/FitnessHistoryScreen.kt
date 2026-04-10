@@ -40,7 +40,7 @@ import com.fitness.app.ui.theme.*
 
 @Composable
 fun FitnessHistoryRoute(
-    viewModel: FitnessHistoryViewModel = viewModel(),
+    viewModel: FitnessHistoryViewModel = viewModel<FitnessHistoryViewModel>(),
     onBack: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -49,7 +49,9 @@ fun FitnessHistoryRoute(
         history = state.history,
         last7Days = state.last7Days,
         isLoading = state.isLoading,
-        onBack = onBack
+        errorMessage = state.errorMessage,
+        onBack = onBack,
+        onRetrySync = { viewModel.retrySync() }
     )
 }
 
@@ -59,7 +61,9 @@ fun FitnessHistoryScreen(
     history: List<FitnessHistoryEntry>,
     last7Days: List<FitnessHistoryEntry>,
     isLoading: Boolean,
-    onBack: () -> Unit
+    errorMessage: String?,
+    onBack: () -> Unit,
+    onRetrySync: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         CinematicBackground()
@@ -97,6 +101,36 @@ fun FitnessHistoryScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = NeonCyan)
+                }
+            } else if (errorMessage != null) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = errorMessage, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = onRetrySync, colors = ButtonDefaults.buttonColors(containerColor = NeonCyan)) {
+                            Text("Retry Sync", color = Color.Black)
+                        }
+                    }
+                }
+            } else if (history.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = "No fitness history found.\nWalk a few steps or sync with Health Connect!", color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(onClick = onRetrySync, colors = ButtonDefaults.buttonColors(containerColor = NeonCyan)) {
+                            Text("Sync with Health Connect", color = Color.Black)
+                        }
+                    }
                 }
             } else {
                 LazyColumn(

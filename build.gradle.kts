@@ -121,6 +121,9 @@ dependencies {
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.0.0")
 
+    // Health Connect (for reading steps, distance, calories from phone sensors)
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
+
     // ══════════════════════════════════════════════════════════
     // Manridy MRD SDK (for R9 Ring) - WORKING SDK!
     // ══════════════════════════════════════════════════════════

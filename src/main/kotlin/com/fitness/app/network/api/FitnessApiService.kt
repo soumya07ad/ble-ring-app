@@ -160,4 +160,17 @@ interface FitnessApiService {
         @Header("Authorization") token: String,
         @Path("id") timerId: String
     ): Response<ApiResponse<Unit>>
+    
+    // ============= Sync Endpoints =============
+    @POST("api/health/sync")
+    suspend fun syncHealth(
+        @Header("Authorization") token: String,
+        @Body request: HealthSyncRequest
+    ): Response<SyncResponse>
+    
+    @POST("api/journal/sync")
+    suspend fun syncJournal(
+        @Header("Authorization") token: String,
+        @Body request: JournalSyncRequest
+    ): Response<SyncResponse>
 }

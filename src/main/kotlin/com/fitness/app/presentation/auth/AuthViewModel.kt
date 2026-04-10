@@ -3,6 +3,7 @@ package com.fitness.app.presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fitness.app.domain.repository.IAuthRepository
+import com.fitness.app.network.auth.TokenManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -20,7 +21,8 @@ sealed class AuthState {
 }
 
 class AuthViewModel(
-    private val authRepository: IAuthRepository
+    private val authRepository: IAuthRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -34,6 +36,20 @@ class AuthViewModel(
         }
     }
 
+    private suspend fun persistTokenFromUser(user: FirebaseUser?) {
+        user?.let {
+            try {
+                val tokenResult = it.getIdToken(true).await()
+                tokenResult.token?.let { token ->
+                    tokenManager.saveToken(token)
+                    tokenManager.saveUserInfo(it.uid, it.email ?: it.phoneNumber ?: "")
+                }
+            } catch (e: Exception) {
+                // Token capture failed, but session might still be active
+            }
+        }
+    }
+
     fun signIn(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Email and password cannot be empty")
@@ -43,6 +59,7 @@ class AuthViewModel(
             _authState.value = AuthState.Loading
             val result = authRepository.signIn(email, password)
             result.onSuccess {
+                persistTokenFromUser(authRepository.getCurrentUser())
                 _authState.value = AuthState.Success("Logged in successfully")
             }.onFailure {
                 _authState.value = AuthState.Error(it.message ?: "Authentication failed")
@@ -63,6 +80,7 @@ class AuthViewModel(
             _authState.value = AuthState.Loading
             val result = authRepository.signUp(email, password)
             result.onSuccess {
+                persistTokenFromUser(authRepository.getCurrentUser())
                 _authState.value = AuthState.Success("Account created successfully")
             }.onFailure {
                 _authState.value = AuthState.Error(it.message ?: "Sign up failed")
@@ -79,7 +97,8 @@ class AuthViewModel(
             _authState.value = AuthState.Loading
             try {
                 val credential = GoogleAuthProvider.getCredential(idToken, null)
-                FirebaseAuth.getInstance().signInWithCredential(credential).await()
+                val authResult = FirebaseAuth.getInstance().signInWithCredential(credential).await()
+                persistTokenFromUser(authResult.user)
                 _authState.value = AuthState.Success("Signed in with Google")
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Google Sign-In failed")
@@ -88,8 +107,11 @@ class AuthViewModel(
     }
 
     fun signOut() {
-        authRepository.signOut()
-        _authState.value = AuthState.Idle
+        viewModelScope.launch {
+            authRepository.signOut()
+            tokenManager.clearToken()
+            _authState.value = AuthState.Idle
+        }
     }
     
     fun resetState() {

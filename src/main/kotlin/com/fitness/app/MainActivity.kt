@@ -53,10 +53,14 @@ import com.fitness.app.presentation.coach.CoachViewModel
 import com.fitness.app.presentation.wellness.WellnessViewModel
 import com.fitness.app.presentation.streaks.StreakViewModel
 import com.fitness.app.presentation.settings.SettingsViewModel
+import com.fitness.app.presentation.settings.screens.SettingsScreen
+import com.fitness.app.presentation.settings.screens.SupportScreen
+import com.fitness.app.presentation.settings.screens.PrivacyPolicyScreen
 import com.fitness.app.presentation.theme.ThemeViewModel
 import com.fitness.app.domain.model.AppTheme
 import com.fitness.app.ui.theme.FitnessAppTheme
 import com.fitness.app.ui.theme.AppColors
+import com.fitness.app.ui.theme.NeonCyan
 import androidx.compose.runtime.remember
 
 class MainActivity : ComponentActivity() {
@@ -98,13 +102,21 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigationFlow(
-    navViewModel: AppNavigationViewModel = viewModel(),
     themeViewModel: ThemeViewModel = viewModel()
 ) {
-    val navState by navViewModel.uiState.collectAsState()
-    val navController = rememberNavController()
     val context = androidx.compose.ui.platform.LocalContext.current
     val factory = remember { AppContainer.getInstance(context).viewModelFactory }
+    val navViewModel: AppNavigationViewModel = viewModel(factory = factory)
+    val navState by navViewModel.uiState.collectAsState()
+    val navController = rememberNavController()
+
+    // Don't show anything while loading persistent state
+    if (navState.isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = NeonCyan)
+        }
+        return
+    }
 
     when {
         !navState.userLoggedIn -> {
@@ -240,8 +252,23 @@ fun AppNavigationFlow(
                     }
 
                     composable(Screen.Settings.route) {
-                        com.fitness.app.presentation.settings.screens.SettingsScreen(
+                        SettingsScreen(
                             viewModel = viewModel(factory = factory),
+                            onBack = { navController.popBackStack() },
+                            onLogout = { navViewModel.onLogout() },
+                            onNavigateToSupport = { navController.navigate(Screen.Support.route) },
+                            onNavigateToPrivacy = { navController.navigate(Screen.PrivacyPolicy.route) }
+                        )
+                    }
+
+                    composable(Screen.Support.route) {
+                        SupportScreen(
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(Screen.PrivacyPolicy.route) {
+                        PrivacyPolicyScreen(
                             onBack = { navController.popBackStack() }
                         )
                     }

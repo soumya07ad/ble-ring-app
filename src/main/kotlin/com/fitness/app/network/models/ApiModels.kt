@@ -266,3 +266,34 @@ data class ImageUploadResponse(
     @SerializedName("fileName")
     val fileName: String
 )
+
+// Sync Requests
+data class JournalSyncEntry(
+    val title: String,
+    val content: String,
+    val date: String
+)
+data class JournalSyncRequest(
+    val entries: List<JournalSyncEntry>
+)
+data class HealthMetric(
+    @SerializedName("heartRate") val heartRate: Int? = null,
+    @SerializedName("spo2") val spo2: Int? = null,
+    @SerializedName("systolic") val systolic: Int? = null,
+    @SerializedName("diastolic") val diastolic: Int? = null,
+    @SerializedName("stress") val stress: Int? = null,
+    @SerializedName("steps") val steps: Int? = null,
+    @SerializedName("calories") val calories: Double? = null,
+    @SerializedName("distance") val distance: Double? = null,
+    @SerializedName("recordedAt") val recordedAt: String
+)
+
+data class HealthSyncRequest(
+    @SerializedName("metrics") val metrics: List<HealthMetric>
+)
+data class SyncResponse(
+    @SerializedName("success")
+    val success: Boolean,
+    @SerializedName("message")
+    val message: String
+)

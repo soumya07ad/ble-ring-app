@@ -59,7 +59,9 @@ class AppViewModelFactory(private val container: AppContainer) : ViewModelProvid
 
             modelClass.isAssignableFrom(SettingsViewModel::class.java) ->
                 SettingsViewModel(
-                    settingsRepository = container.settingsRepository
+                    settingsRepository = container.settingsRepository,
+                    authRepository = container.authRepository,
+                    tokenManager = container.retrofitClient.getTokenManager()
                 ) as T
 
             modelClass.isAssignableFrom(SmartRingViewModel::class.java) ->
@@ -74,12 +76,18 @@ class AppViewModelFactory(private val container: AppContainer) : ViewModelProvid
 
             modelClass.isAssignableFrom(com.fitness.app.presentation.auth.AuthViewModel::class.java) ->
                 com.fitness.app.presentation.auth.AuthViewModel(
-                    authRepository = container.authRepository
+                    authRepository = container.authRepository,
+                    tokenManager = container.retrofitClient.getTokenManager()
                 ) as T
 
             modelClass.isAssignableFrom(com.fitness.app.presentation.dashboard.FitnessHistoryViewModel::class.java) ->
                 com.fitness.app.presentation.dashboard.FitnessHistoryViewModel(
-                    fitnessRepository = container.fitnessLocalRepository
+                    fitnessHistoryRepository = container.fitnessHistoryRepository
+                ) as T
+
+            modelClass.isAssignableFrom(com.fitness.app.presentation.navigation.AppNavigationViewModel::class.java) ->
+                com.fitness.app.presentation.navigation.AppNavigationViewModel(
+                    tokenManager = container.retrofitClient.getTokenManager()
                 ) as T
 
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

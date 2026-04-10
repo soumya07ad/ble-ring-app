@@ -41,11 +41,15 @@ import java.time.format.DateTimeParseException
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    onNavigateToSupport: () -> Unit = {},
+    onNavigateToPrivacy: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showProfileSheet by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -125,6 +129,15 @@ fun SettingsScreen(
                     onCheckedChange = { viewModel.toggleDataSync(it) }
                 )
                 SettingsActionRow(
+                    icon = "☁️",
+                    title = "Sync Now",
+                    iconColor = PrimaryPurple,
+                    onClick = { 
+                        viewModel.triggerManualSync(context)
+                        Toast.makeText(context, "Manual sync triggered...", Toast.LENGTH_SHORT).show()
+                    }
+                )
+                SettingsActionRow(
                     icon = "💍",
                     title = "Paired Ring Configuration",
                     iconColor = NeonCyan,
@@ -139,13 +152,13 @@ fun SettingsScreen(
                     icon = "❓",
                     title = "Help Center",
                     iconColor = NeonBlue,
-                    onClick = { Toast.makeText(context, "Help Center opened", Toast.LENGTH_SHORT).show() }
+                    onClick = onNavigateToSupport
                 )
                 SettingsActionRow(
                     icon = "🛡️",
                     title = "Privacy Policy",
                     iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    onClick = { Toast.makeText(context, "Privacy Policy opened", Toast.LENGTH_SHORT).show() }
+                    onClick = onNavigateToPrivacy
                 )
                 Spacer(modifier = Modifier.height(36.dp))
 
@@ -156,7 +169,7 @@ fun SettingsScreen(
                         .clip(RoundedCornerShape(12.dp))
                         .background(ErrorRed.copy(alpha = 0.1f))
                         .border(1.dp, ErrorRed.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                        .clickable { Toast.makeText(context, "Logged out", Toast.LENGTH_SHORT).show() }
+                        .clickable { showLogoutDialog = true }
                         .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -168,6 +181,34 @@ fun SettingsScreen(
                     )
                 }
             }
+        }
+
+        if (showLogoutDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = { Text("Log Out", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) },
+                text = { Text("Are you sure you want to log out?", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.logout(context) {
+                                showLogoutDialog = false
+                                onLogout()
+                            }
+                        }
+                    ) {
+                        Text("Log Out", color = ErrorRed, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLogoutDialog = false }) {
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         if (showProfileSheet) {

@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "fitness_auth")
 
@@ -18,6 +19,7 @@ class TokenManager(private val context: Context) {
         private val TOKEN_KEY = stringPreferencesKey("auth_token")
         private val USER_ID_KEY = stringPreferencesKey("user_id")
         private val PHONE_KEY = stringPreferencesKey("phone_number")
+        private val SETUP_COMPLETE_KEY = stringPreferencesKey("setup_complete")
     }
     
     // Get token as Flow for reactive updates
@@ -25,19 +27,27 @@ class TokenManager(private val context: Context) {
         preferences[TOKEN_KEY]
     }
     
+    // Get setup complete as Flow
+    val setupCompleteFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[SETUP_COMPLETE_KEY] == "true"
+    }
+    
     // Get token synchronously - not recommended, use tokenFlow instead
     suspend fun getToken(): String? {
-        var result: String? = null
-        context.dataStore.data.collect { preferences ->
-            result = preferences[TOKEN_KEY]
-        }
-        return result
+        return context.dataStore.data.first()[TOKEN_KEY]
     }
     
     // Save token
     suspend fun saveToken(token: String) {
         context.dataStore.edit { preferences ->
             preferences[TOKEN_KEY] = token
+        }
+    }
+
+    // Save setup status
+    suspend fun setSetupComplete(complete: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SETUP_COMPLETE_KEY] = if (complete) "true" else "false"
         }
     }
     
@@ -65,6 +75,7 @@ class TokenManager(private val context: Context) {
             preferences.remove(TOKEN_KEY)
             preferences.remove(USER_ID_KEY)
             preferences.remove(PHONE_KEY)
+            preferences.remove(SETUP_COMPLETE_KEY)
         }
     }
     
